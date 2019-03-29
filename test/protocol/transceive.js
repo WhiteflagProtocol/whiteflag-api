@@ -1,0 +1,237 @@
+'use strict';
+/**
+ * @module test/protocol/transceive
+ * @summary Whiteflag message transmit and reveive test script
+ * @description Script for testing Whiteflag message receive (rx) event chain
+ * @todo test irregular tx and rx flows
+ */
+
+// Node.js core and external modules //
+const testCase = require('mocha').describe;
+const assertion = require('mocha').it;
+const assert = require('assert');
+
+// Project modules required for test //
+const wfTransmit = require('../../lib/protocol/transmit');
+const wfReceive = require('../../lib/protocol/receive');
+const { ProcessingError, ProtocolError } = require('../../lib/common/errors');
+
+// Whiteflag event emitters //
+const wfRxEvent = require('../../lib/protocol/events').rxEvent;
+const wfTxEvent = require('../../lib/protocol/events').txEvent;
+
+// Set logger to log only fatal conditions //
+const log = require('../../lib/common/logger');
+log.setLogLevel(6, ignore);
+
+// Constants //
+/**
+ * @constant {object} testVector
+ * @description Defines the encoding and decoding test data
+ */
+const testVector = {
+    '3': {
+        wfMessageEncoded: {
+            'MetaHeader': {
+                'test': true,
+                'blockchain': 'test',
+                'transactionHash': '0',
+                'originatorAddress': '0',
+                'originatorPubKey': '0',
+                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
+            }
+        },
+        wfMessageUnecoded: {
+            'MetaHeader': {
+                'test': true
+            },
+            'MessageHeader': {
+                'Prefix': 'WF',
+                'Version': '1',
+                'EncryptionIndicator': '0',
+                'DuressIndicator': '0',
+                'MessageCode': 'F',
+                'ReferenceIndicator': '0',
+                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
+            },
+            'MessageBody': {
+                'Text': 'Whiteflag test message!'
+            }
+        }
+    },
+    '4': {
+        wfMessageEncoded: {
+            'MetaHeader': {
+                'test': true,
+                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
+            }
+        }
+    },
+    '5': {
+        wfMessageEncoded: {
+            'MetaHeader': {
+                'test': true,
+                'blockchain': 'test',
+                'transactionHash': '0',
+                'originatorAddress': '0',
+                'originatorPubKey': '0',
+                'encodedMessage': '574520191296a59e0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
+            }
+        }
+    },
+    '6': {
+        wfMessageEncoded: {
+            'MetaHeader': {
+                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
+            }
+        },
+        wfMessageUnecoded: {
+            'MetaHeader': {
+                'test': true,
+                'blockchain': 'test',
+                'originatorAddress': '0'
+            },
+            'MessageHeader': {
+                'Prefix': 'WF',
+                'Version': '1',
+                'EncryptionIndicator': '0',
+                'DuressIndicator': '0',
+                'MessageCode': 'F',
+                'ReferenceIndicator': '0',
+                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
+            },
+            'MessageBody': {
+                'Text': 'Whiteflag test message!'
+            }
+        }
+    },
+    '7': {
+        wfMessageUnecoded: {
+            'MetaHeader': {
+                'test': true
+            },
+            'MessageHeader': {
+                'Prefix': 'WF',
+                'Version': '1',
+                'EncryptionIndicator': '0',
+                'DuressIndicator': '0',
+                'MessageCode': 'F',
+                'ReferenceIndicator': '0',
+                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
+            },
+            'MessageBody': {
+                'Text': 'Whiteflag test message!'
+            }
+        }
+    },
+    '8': {
+        wfMessageUnecoded: {
+            'MetaHeader': {
+                'test': true,
+                'blockchain': 'test',
+                'originatorAddress': '0'
+            },
+            'MessageHeader': {
+                'Prefix': 'WF',
+                'Version': '1',
+                'EncryptionIndicator': '0',
+                'DuressIndicator': '0',
+                'MessageCode': 'Z',
+                'ReferenceIndicator': '0',
+                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
+            },
+            'MessageBody': {
+                'Text': 'Whiteflag test message!'
+            }
+        }
+    }
+};
+
+// TEST SCRIPT //
+testCase('Whiteflag message transceive modules', function() {
+    testCase('Initialisation of tx and rx event chains', function() {
+        // Test 1
+        assertion(' 1. should initialise rx events without errors', function(done) {
+            wfReceive.init(function test1InitReceiveCb() {
+                return done();
+            });
+        });
+        // Test 2
+        assertion(' 2. should initialise tx events without errors', function(done) {
+            wfTransmit.init(function test2InitTransmitCb() {
+                return done();
+            });
+        });
+    });
+    testCase('Processing of incoming messages', function() {
+        // Test 3
+        assertion(' 3. should pass the full rx chain without errors', function(done) {
+            wfRxEvent.emit('messageReceived', testVector['3'].wfMessageEncoded, function test3ReceiveCb(err, wfMessage) {
+                if (err) return done(err);
+                assert.strictEqual(wfMessage.MetaHeader.transceiveDirection, 'RX');
+                assert.deepStrictEqual(wfMessage.MessageHeader, testVector['3'].wfMessageUnecoded.MessageHeader);
+                assert.deepStrictEqual(wfMessage.MessageBody, testVector['3'].wfMessageUnecoded.MessageBody);
+                return done();
+            });
+        });
+        // Test 4
+        assertion(' 4. should return protocol error if incorrect metaheader', function(done) {
+            wfRxEvent.emit('messageReceived', testVector['4'].wfMessageEncoded, function test4ReceiveCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_METAHEADER_ERROR');
+                return done();
+            });
+        });
+        // Test 5
+        assertion(' 5. should return protocol error if invalid message format', function(done) {
+            wfRxEvent.emit('messageReceived', testVector['5'].wfMessageEncoded, function test5ReceiveCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_FORMAT_ERROR');
+                return done();
+            });
+        });
+    });
+    testCase('Processing of outgoing messages', function() {
+        // Test 6
+        assertion(' 6. should pass the tx chain without errors until message is passed to blockchain', function(done) {
+            wfTxEvent.emit('messageCommitted', testVector['6'].wfMessageUnecoded, function test6TransmitCb(err, wfMessage) {
+                if (err && !(err instanceof ProcessingError)) return done(err);
+                if (err) assert.strictEqual(err.code, 'WF_API_NOT_IMPLEMENTED');
+                assert.strictEqual(wfMessage.MetaHeader.transceiveDirection, 'TX');
+                assert.strictEqual(wfMessage.MetaHeader.encodedMessage, testVector['6'].wfMessageEncoded.MetaHeader.encodedMessage);
+                return done();
+            });
+        });
+        // Test 7
+        assertion(' 7. should return protocol error if incorrect metaheader', function(done) {
+            wfTxEvent.emit('messageCommitted', testVector['7'].wfMessageUnecoded, function test7TransmitCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_METAHEADER_ERROR');
+                return done();
+            });
+        });
+        // Test 8
+        assertion(' 8. should return protocol error if invalid message format', function(done) {
+            wfTxEvent.emit('messageCommitted', testVector['8'].wfMessageUnecoded, function test8TransmitCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_FORMAT_ERROR');
+                return done();
+            });
+        });
+    });
+});
+
+// PRIVATE TEST FUNCTIONS //
+/**
+ * Ignores its arguments
+ * @private
+ */
+function ignore() {}

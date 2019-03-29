@@ -1,0 +1,39 @@
+# Whiteflag API configuration file
+#
+# This configuration file provides global configuration parameters for the api.
+# Please see `./doc/configuration.md` for a description.
+#
+
+[logger]
+loglevel = 5
+
+[server]
+protocol = "http"
+hostname = "localhost"
+port = "5746"
+
+[authorization]
+username = ""
+password = ""
+
+[ssl]
+keyFile = ""
+certificateFile = ""
+
+[http]
+enableCors = false
+trustProxy = false
+
+[socket]
+enable = true
+
+[endpoints]
+sendMessage = true
+receiveMessage = false
+transferValue = true
+createAccount = false
+updateAccount = false
+deleteAccount = false
+createSignature = true
+storePreSharedKey = true
+deletePreSharedKey = true

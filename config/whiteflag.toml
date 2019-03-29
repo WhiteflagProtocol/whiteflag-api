@@ -1,0 +1,29 @@
+# Whiteflag protocol configuration file
+#
+# This configuration file contains Whiteflag protocol related configuration parameters
+# Please see `./doc/configuration.md` for a description.
+#
+
+[state]
+masterKey = "b5a758b037a0c3a05b943d6215709f8920e62c4104018b4983ca0f2e0c36a255"
+encryption = true
+saveToFile = false
+file = "/var/lib/whiteflag/whiteflag.state"
+
+[tx]
+verifyReference = true
+
+[rx]
+verifyOriginator = true
+verifyReference = true
+
+[authentication]
+strict = false
+
+[authentication.1]
+validDomains = []
+
+[authentication.2]
+
+[encryption]
+psk = ""

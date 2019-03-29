@@ -1,0 +1,48 @@
+## Development Environments
+# (these should be in developers' gitignore)
+.eslintcache
+.DS_Store
+.idea
+.vscode/
+launch.json
+
+## Gitignore for NodeJS
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# NPM
+.npm
+*.tgz
+package-lock.json
+
+# Other
+.env
+.grunt
+.lock-wscript
+.next
+.node_repl_history
+.nuxt
+.nyc_output
+.serverless
+.vuepress/dist
+.yarn-integrity
+bower_components
+build/Releases
+coverage
+lib-cov
+typings/

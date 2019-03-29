@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "BlockchainsConfig",
+    "description": "Blcockchains config schema",
+    "version": "1",
+    "type": "object",
+    "required": [
+        "blockchains"
+    ],
+    "properties": {
+        "blockchains": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "module",
+                    "active"
+                ],
+                "additionalProperties": true,
+                "properties": {
+                    "name": {
+                        "description": "The name by which the blockchain is identified in the software and in loggings",
+                        "type": "string"
+                    },
+                    "module": {
+                        "description": "The name of the source code module in `./lib/blockchains` without the `.js` extention",
+                        "type": "string"
+                    },
+                    "active": {
+                        "description": "Indicates whether the blockchain is active or can be ignored",
+                        "type": "boolean"
+                    },
+                    "node": {
+                        "description": "Indicates whether a full node is avaialble for queries and retrieval of transactions from the blockchain",
+                        "type": "boolean"
+                    },
+                    "rpcProtocol": {
+                        "description": "The network protocol used to make an RPC connection with the blockchain node",
+                        "type": "string"
+                    },
+                    "rpcHost": {
+                        "description": "The hostname of the blockchain node",
+                        "type": "string"
+                    },
+                    "rpcPort": {
+                        "description": "The network port used by the blockchain node",
+                        "type": "string"
+                    },
+                    "username": {
+                        "description": "The username required to connect to the blockchain node",
+                        "type": "string"
+                    },
+                    "password": {
+                        "description": "The password required to connect to the blockchain node",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

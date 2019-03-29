@@ -1,0 +1,85 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DatastoresConfig",
+    "description": "Datastores config schema",
+    "version": "1",
+    "type": "object",
+    "required": [
+        "databases"
+    ],
+    "properties": {
+        "databases": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "module",
+                    "active",
+                    "primary",
+                    "rxStoreEvent",
+                    "txStoreEvent"
+                ],
+                "additionalProperties": true,
+                "properties": {
+                    "name": {
+                        "description": "The name by which the datastore is identified in the software and in loggings",
+                        "type": "string"
+                    },
+                    "module": {
+                        "description": "The name of the source code module in `./lib/datastores` without the `.js` extention",
+                        "type": "string"
+                    },
+                    "active": {
+                        "description": "Indicates whether the datastore is active or can be ignored",
+                        "type": "boolean"
+                    },
+                    "primary": {
+                        "description": "Indicates if this is the primary datastore for queries and state information",
+                        "type": "boolean"
+                    },
+                    "rxStoreEvent": {
+                        "description": "The rx event on which a message should be stored in datastore",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [ "metadataVerified", "messageDecoded", "originatorVerified", "referenceVerified", "messageProcessed" ]
+                        }
+                    },
+                    "txStoreEvent": {
+                        "description": "The tx event on which a message should be stored in datastore",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [ "metadataVerified", "referenceVerified", "messageEncoded", "messageSent", "messageProcessed" ]
+                        }
+                    },
+                    "dbProtocol": {
+                        "description": "The network protocol used to make a connection with the database system",
+                        "type": "string"
+                    },
+                    "dbHost": {
+                        "description": "The hostname of the database system",
+                        "type": "string"
+                    },
+                    "dbPort": {
+                        "description": "The network port used by the database system",
+                        "type": "string"
+                    },
+                    "username": {
+                        "description": "The username required to connect to the datastore",
+                        "type": "string"
+                    },
+                    "password": {
+                        "description": "The password required to connect to the datastore",
+                        "type": "string"
+                    },
+                    "database": {
+                        "description": "The name of the database",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -2,14 +2,175 @@
 
 ## Introduction
 
-This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/) software implementation of the API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains. As such,
-it acts as a message transceiver between one or more blockchains and one or more end-user applications.
+This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
+software implementation of the API layer that provides an interface with the
+Whiteflag messaging network on one or more underlying blockchains. As such,
+it acts as a message transceiver between one or more blockchains and one or
+more end-user applications.
 
-For interaction with an end-user application, two methods are used. A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) is available for originators to provide Whiteflag message to be sent on the blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is available for clients to listen for incoming Whiteflag messages from a
+For interaction with an end-user application, two methods are used.
+A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
+is available for originators to provide Whiteflag message to be sent on the
+blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
+available for clients to listen for incoming Whiteflag messages from a
 blockchain.
 
-This Whiteflag API is a so called Minimum Viable Product (MVP). This means that it only supports the core features of the Whiteflag protocol and nothing more. As such, it serves as the reference implementation of the Whiteflag protocol, but it is not specifically designed and tested for secure usage and performance in a production environment.
+This Whiteflag API is a so called Minimum Viable Product (MVP). This means
+that it only supports the core features of the Whiteflag protocol and
+nothing more. As such, it serves as the reference implementation of the
+Whiteflag protocol, but it is not designed and tested for secure usage
+and performance in a production environment.
+
+More detailed documentation of the API can be found in the markdown files in
+the `doc/` directory and at `http://localhost:5746/` (default URL) when the
+API is running.
+
+The repository structure and development guidelines for the source code are
+described in `CONTRIBUTING.md`.
 
 ## Versions
 
-Version `v1.0.0-alpha` of the Whiteflag API will be made available as open source software as soon a possible.
+The current version is version **1.0.0-alpha**.
+
+This version is based on **v1-draft.6** of the Whiteflag protocol. The
+supported functionality and Whiteflag protocol features are described
+in `SCOPE.md`.
+
+## License
+
+The Whiteflag API software is dedicated to the public domain
+under the [Creative Commons CC0-1.0 Universal Public Domain Dedication](http://creativecommons.org/publicdomain/zero/1.0/)
+statement. See `LICENSE.md` for details.
+
+The Whiteflag API software requires third party software packages, which are
+not part of this distribution and may be licenced differently.
+
+## Installation
+
+### Prerequisites
+
+To deploy the Whiteflag API, make sure the following prerequisite software
+is installed:
+
+* [Node.js](https://nodejs.org/en/about/) w/ dependecies as in `package.json`
+* At least one datastore for storage of messages, e.g. [MongoDB](https://www.mongodb.com/what-is-mongodb)
+
+### Deployment and Testing
+
+First, copy the repository to the deployment directory, such as
+`/opt/whiteflag-api`. Please use a version tagged commit for a stable version.
+
+After copying the repository, install the required Node.js modules of
+external software libraries by running the following command in the
+deployment directory:
+
+```shell
+npm install
+```
+
+It might be necessary to install other dependecnies, such as Python
+and `node-gyp`, first to process all packages correctly during install,
+e.g. on Linux:
+
+```shell
+sudo apt install node-gyp
+```
+
+To run an automated test of the software, use the following command in the
+deployment directory:
+
+```shell
+npm test
+```
+
+### Configuration
+
+Configurable parameters of the API can be found in the [TOML](https://github.com/toml-lang/toml)
+files in the `config/` directory:
+
+* `api.toml`: for various general API settings, such as hostname, port, etc.
+* `blockchains.toml`: for blockchain specific configuration
+* `datastores.toml`: for datastore specific configuration
+* `whiteflag.toml`: for Whiteflag protocol related parameters
+
+Please see `doc/configuration.md` for more details.
+
+## Running the API
+
+To run the Whitefag API from the command line, use npm with the following
+command in the deployment directory:
+
+```shell
+npm start
+```
+
+Alternatively, a service may be created. An example `whiteflag-api.service`
+for linux systems using `systemctl` cound be found in `etc/`. Enable the
+and start the service with:
+
+```shell
+sudo systemctl enable ./etc/whiteflag-api.service
+sudo service whiteflag-api start
+```
+
+## API Functionality
+
+The detailed [OpenAPI](https://swagger.io/specification/) definition can be
+found in `static/openapi.json`. The API definition is provided in human
+readible format at the root endpoint by the running API; just got to
+`http://localhost:5746/` with a browser.
+
+Some of the endpoint functionalities
+(see the API defintion for all details):
+
+### Messages
+
+* `/messages`: endpoint to GET an array of all messages contained in the API database
+* `/messages/send`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
+* `/messages/send`: endpoint to POST a new Whiteflag as if received the blockchain
+* `/messages/encode`: endpoint to POST a Whiteflag message to be encoded
+* `/messages/decode`: endpoint to POST a Whiteflag message to be decoded
+* `/messages/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
+* `/messages?transactionHash=<transaction hash>`: endpoint to GET a specific message by its transaction hash
+
+### Blockchains
+
+* `/blockchains`: endpoint to GET the current configuration and state of all blockchains
+* `/blockchains/{blockchain}`: endpoint to GET the configuration and state of the specified blockchain
+* `/blockchains/{blockchain}/accounts`: endpoint to GET account details or POST a new blockchain account
+* `/blockchains/{blockchain}/accounts/{address}` endpoint to PATCH or DELETE to update or remove the specified blockchain account
+* `/blockchains/{blockchain}/accounts/{address}/sign`: endpoint to POST a payload to be signed as a Whiteflag authentication signature
+* `/blockchains/{blockchain}/accounts/{address}/transfer`: endpoint to POST a transaction to transfer value to another account
+
+### Originators
+
+* `/originators`: endpoint to GET the currently known originators
+* `/originators/{address}`: endpoint to GET details of the specified originator
+
+### Signature operations
+
+* `/signature/decode`: endpoint to POST a Whiteflag authentication signature to be decoded
+* `/signature/validate`: endpoint to POST a Whiteflag authentication signature to be validated
+
+## Testing and Using the API
+
+A minimal set of automated tests is implemented with the [Mocha](https://mochajs.org/)
+test framework. To do a full test and run all the test scripts, use the
+following NPM command in the project root:
+
+```shell
+npm test
+```
+
+In addition, the following tools are useful for manual testing:
+
+* [Postman](https://www.getpostman.com/) for testing of POST and GET method on the endpoints
+* an example for testing from the command line:
+
+```shell
+curl http://localhost:3000/messages/send -X POST -H "Content-Type:application/json" -d @A1.message.json
+```
+
+The API also exposes a webpage with an embedded client side socket listener
+that is available on `http://localhost:5746/listen` (default URL) when the
+API is running.

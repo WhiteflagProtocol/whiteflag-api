@@ -1,0 +1,31 @@
+# Whiteflag blockchains configuration file
+#
+# This configuration file contains Whiteflag protocol related configuration parameters
+# Please see `./doc/configuration.md` for a description.
+#
+
+[confirmation]
+enabled = true
+interval = 6000
+maxBlockDepth = 8
+updateEachBlock = false
+
+[[blockchains]]
+name = "ethereum-rinkeby"
+module = "ethereum"
+active = false
+createAccount = false
+blockRetrievalInterval = 6000
+blockRetrievalStart = 0
+blockRetrievalEnd = 0
+blockRetrievalRestart = 100
+blockMaxRetries = 0
+transactionBatchSize = 64
+transactionValue = "0"
+traceRawTransaction = false
+rpcProtocol = "http"
+rpcHost = "localhost"
+rpcPort = "8545"
+rpcPath = ""
+username = ""
+password = ""

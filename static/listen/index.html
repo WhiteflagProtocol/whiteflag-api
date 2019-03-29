@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"></meta>
+    <meta name="description" content="Message listener for the Whiteflag API"></meta>
+    <title>Whiteflag listener</title>
+    <style>body { margin: 1; padding: 1; }</style>
+    <style>h1 { font-family: Montserrat, sans-serif; font-weight: 400; font-size: 1.85714em; color: rgb(0, 112, 153); }</style>
+    <style>p { font-family: Roboto, sans-serif; font-weight: 400; line-height: 1.5; }</style>
+    <style>a { color: rgb(0, 112, 153); }</style>
+    <style>pre { white-space: pre-wrap; word-wrap: break-word; }</style>
+</head>
+<body>
+    <img src="/wflogo.png" alt="Whiteflag" height="62"></img>
+    <div class="Top" style="height: 120px;">
+    <h1>Whiteflag API message listener</h1>
+    <p>This page uses client side JavaScript to connect to the Whiteflag API socket and listen for incoming messages. See the <a href="/" target="_blank">API specification</a> for more details on other Whiteflag API endpoints and functionality.</p>
+    <hr style="height:1px;border-width:0;color:gray;background-color:gray"></hr>
+    <div>
+    <div id='wfdata' class="Container" style="height: 75vh; overflow-y: scroll;"></div>
+    <script src="/socket/socket.io.js"></script>
+    <script src="listener.js"></script>
+</body>
+</html>

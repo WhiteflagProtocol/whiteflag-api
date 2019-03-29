@@ -1,0 +1,33 @@
+# Whiteflag datastores configuration file
+#
+# This configuration file contains Whiteflag protocol related configuration parameters
+# Please see `./doc/configuration.md` for a description.
+#
+
+[[databases]]
+name = "mongodb"
+module = "mongodb"
+active = true
+primary = true
+dbProtocol = "mongodb"
+dbHost = "localhost"
+dbPort = "27017"
+username = ""
+password = ""
+database = "whiteflag"
+rxStoreEvent = ["messageProcessed"]
+txStoreEvent = ["messageProcessed"]
+
+[[databases]]
+name = "rest-db"
+module = "rest"
+active = false
+primary = false
+dbProtocol = "https"
+dbHost = ""
+dbPort = ""
+dbPath = "/whiteflag/services/wfapi.xsjs"
+username = ""
+password = ""
+rxStoreEvent = ["messageProcessed"]
+txStoreEvent = ["messageProcessed"]
