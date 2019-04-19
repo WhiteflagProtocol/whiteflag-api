@@ -30,7 +30,7 @@ described in `CONTRIBUTING.md`.
 
 ## Versions
 
-The current version is version **1.0.0-alpha**.
+The current version is version **1.0.0-alpha.*x***.
 
 This version is based on **v1-draft.6** of the Whiteflag protocol. The
 supported functionality and Whiteflag protocol features are described
