@@ -85,6 +85,11 @@ npm test
 
 ### Configuration
 
+The API uses two optional environment variables:
+
+* `WFCONFDIR`: the directory containing the configuration files; if set it overrides the default `./config` directory
+* `WFPORT`: the server port to be used; if set it overrides the port set in the `api.toml` configuration file
+
 Configurable parameters of the API can be found in the [TOML](https://github.com/toml-lang/toml)
 files in the `config/` directory:
 
