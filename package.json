@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.0-alpha",
+    "version": "1.0.0-alpha.1",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "license": "CC0-1.0",
     "dependencies": {
@@ -20,6 +20,7 @@
     },
     "devDependencies": {
         "eslint": "^6.0.1",
+        "semver": "^6.2.0",
         "mocha": "^6.1.4",
         "cloc": "^2.5.0",
         "license-checker": "^25.0.1"

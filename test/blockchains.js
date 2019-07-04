@@ -20,7 +20,7 @@ log.setLogLevel(1, ignore);
 
 // TEST SCRIPT //
 testCase('Whiteflag API blockchains module', function() {
-    assertion(' ... should correctly load the general blockchains module', function(done) {
+    assertion(' 0. should correctly load', function(done) {
         const wfApiBlockchains = require('../lib/blockchains');
         ignore(wfApiBlockchains);
         done();

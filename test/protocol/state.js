@@ -361,7 +361,7 @@ testCase('Whiteflag protocol state management module', function() {
             // Enclose and encrypt
             stateObject = wfState.test.enclose();
             assert(stateObject);
-            assert(stateObject.hasOwnProperty('state'));
+            assert(Object.prototype.hasOwnProperty.call(stateObject, 'state'));
 
             // Check state against state schema
             let stateErrors = wfState.test.validate();
@@ -374,10 +374,10 @@ testCase('Whiteflag protocol state management module', function() {
             let wfStateData = wfState.test.extract(stateObject);
 
             // Check extracted state against the unenclosed state
-            assert(wfStateData.hasOwnProperty('blockchains'));
-            assert(wfStateData.hasOwnProperty('originators'));
-            assert(wfStateData.hasOwnProperty('queue'));
-            assert(wfStateData.hasOwnProperty('crypto'));
+            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'blockchains'));
+            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'originators'));
+            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'queue'));
+            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'crypto'));
 
             // Check state against state schema
             let stateErrors = wfState.test.validate(wfStateData);
