@@ -1,8 +1,19 @@
 # Whiteflag API Configuration
 
+## Environment variables
+
+Two optional environment variables may be used, e.g. when using different
+configurations in development environments or when running the API in a
+container:
+
+* `WFCONFDIR`: sets the directory containing the configuration files; if set it overrides the default `./config` directory.
+* `WFPORT`: sets the server port to be used; if set it overrides the port defined in the `api.toml` configuration file.
+
 ## Configuration files
 
 The API is configured with four configuration files in the `config/` directory.
+An alternative directory for the configuration files may be set with the
+`WFCONFDIR` environment variable.
 
 | Config file       | Purpose                                      |
 |-------------------|----------------------------------------------|
@@ -22,11 +33,11 @@ The `[logger]` section parameters are:
 * `loglevel`: the log level of the api:
               1=fatal, 2=error, 3=warning, 4=info, 5=debug, 6=trace
 
-The following `[server]` section parameters can be defined:
+The following `[server]` section parameters may be defined:
 
-* `protocol`: either `http` or `https`
-* `hostname`: the hostname used by the api, default is `localhost`
-* `port`: the port on which the api is listening, default is `5746`
+* `protocol`: either `http` or `https`, default is `http`
+* `hostname`: the hostname used by the api, default is no hostname
+* `port`: the port on which the api is listening, default is `5746`; may be overriden by the `WFPORT` environment variable
 
 In the `[authorization]` section, basic http authorization can be enabled
 by setting a `username` and `password`. Levae empty to disable basic auth.

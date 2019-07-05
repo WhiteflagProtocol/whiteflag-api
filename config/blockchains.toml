@@ -13,6 +13,7 @@ updateEachBlock = false
 [[blockchains]]
 name = "ethereum-rinkeby"
 module = "ethereum"
+chainID = 4 # Rinkeby
 active = false
 createAccount = false
 blockRetrievalInterval = 6000

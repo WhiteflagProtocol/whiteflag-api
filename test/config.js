@@ -22,7 +22,7 @@ log.setLogLevel(1, ignore);
 // TEST SCRIPT //
 testCase('Whiteflag API configuration module', function() {
     testCase('Loading configuration', function() {
-        assertion(' 1. should correctly load default configuration', function(done) {
+        assertion(' 1. should return the configuration object', function(done) {
             wfApiConfig.getConfig(function test1ConfigCb(err, apiConfig) {
                 if (err) done(err);
                 assert(apiConfig);
