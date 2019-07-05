@@ -10,6 +10,7 @@ the Ethereum specific parameters in one of its `[[blockchains]]` sections.
 
 * `name`: the name according to the naming convention: `{name}-{network}`, e.g. `ethereum-main` or `ethereum-rinkeby`
 * `module`: the Ethereum module in `lib/blockchains`, which should be "ethereum"
+* `chainID`: the appropriate Chain ID for the Ethereum network that is used
 * `active`: whether the blockchain is active or should be ignored
 
 These parameters manage Ethereum blockchain accounts:

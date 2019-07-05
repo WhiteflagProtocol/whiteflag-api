@@ -50,6 +50,10 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
         log.fatal(MODULELOG, `Configuration error: ${err.message}`);
         return process.exit(1);
     }
+    // Log version number
+    if (apiConfig.version) {
+        log.info(MODULELOG, `Running version ${apiConfig.version}`);
+    }
     // Set set logging level
     if (apiConfig.logger.loglevel) {
         log.setLogLevel(apiConfig.logger.loglevel, loglevelCb);
@@ -169,7 +173,7 @@ function loglevelCb(err, loglevel) {
         log.fatal(MODULELOG, `Error setting logging level: ${err.message}`);
         return process.exit(1);
     }
-    log.info(MODULELOG, `Logging level set to: ${loglevel}`);
+    log.info(MODULELOG, `Logging level set to ${loglevel}`);
 }
 
 /**

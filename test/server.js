@@ -20,7 +20,7 @@ log.setLogLevel(1, ignore);
 
 // TEST SCRIPT //
 testCase('Whiteflag API server module', function() {
-    assertion(' ... should correctly load the server module', function(done) {
+    assertion(' 0. should correctly load', function(done) {
         const wfApiServer = require('../lib/server');
         ignore(wfApiServer);
         done();

@@ -20,7 +20,7 @@ log.setLogLevel(1, ignore);
 
 // TEST SCRIPT //
 testCase('Whiteflag API datastores module', function() {
-    assertion(' ... should correctly load the general datastores module', function(done) {
+    assertion(' 0. should correctly load', function(done) {
         const wfApiDatastores = require('../lib/datastores');
         ignore(wfApiDatastores);
         done();
