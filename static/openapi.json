@@ -32,7 +32,7 @@
         },
         {
             "name": "State",
-            "description": "Endpoints for operations on the state of the API"
+            "description": "Endpoints for operations on the Whiteflag state of the running API instance"
         }
     ],
     "servers": [
@@ -61,7 +61,7 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array of messages in the primary datastore.",
+                "description": "Returns an array of messages from the primary datastore.",
                 "operationId": "getMessages",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" },
@@ -110,7 +110,7 @@
         "/messages/receive": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Receives a Whiteflag message as if comming from a blockchain. This operation may be disabled in the configuration.",
+                "description": "Accepts a Whiteflag message as if received from a blockchain. Normally only used for testing. This operation may be disabled in the configuration.",
                 "operationId": "receiveMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessageEncoded"
@@ -182,7 +182,7 @@
         "/messages/validate": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Validates format and reference of a Whiteflag message and returns the result.",
+                "description": "Validates the format and reference of a Whiteflag message and returns the result.",
                 "operationId": "validateMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessage"
@@ -230,7 +230,7 @@
         "/messages/sequence": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with the Whiteflag message in a sequence starting with the message with the given transaction hash.",
+                "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash.",
                 "operationId": "getMessageSequence",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" }
@@ -349,7 +349,7 @@
             },
             "patch": {
                 "tags": [ "Blockchains", "Accounts" ],
-                "description": "Updates or adds custom properties of the specified blockchain account. Please be carefull as all attributes can be changed resulting in an unusable account. This operation may be disabled in the configuration.",
+                "description": "Updates or adds custom properties of the specified blockchain account. Please be carefull as all attributes can be changed, which may result in an unusable account. This operation may be disabled in the configuration.",
                 "operationId": "updateAccount",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/updateAccount"
@@ -592,7 +592,7 @@
         "/queues/{queue}": {
             "get": {
                 "tags": [ "State" ],
-                "description": "Returns the requested queue from the state.",
+                "description": "Returns the requested queue from the Whiteflag state.",
                 "operationId": "getQueue",
                 "responses": {
                     "200": {
@@ -930,7 +930,7 @@
                 }
             },
             "error500": {
-                "description": "Internal error preventing the API to process the request",
+                "description": "Internal error preventing the running API instance to process the request",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1245,7 +1245,7 @@
                 }
             },
             "queueState": {
-                "description": "Successfully retrieved and returning the API's queue",
+                "description": "Successfully retrieved and returning the queue of the running API instance",
                 "content": {
                     "application/json": {
                         "schema": {

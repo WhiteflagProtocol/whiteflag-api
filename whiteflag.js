@@ -35,7 +35,7 @@ process.on('SIGINT', shutdownCb);
 process.on('SIGTERM', shutdownCb);
 
 // START THE API
-/**
+/*
  * Display usage warning upon startup
  */
 log.info('WHITEFLAG', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
@@ -74,9 +74,7 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
      * @listens module:lib/protocol/transmit.txEvent:initialised
      */
     wfTxEvent.once('initialised', function apiTxInitManagementCb() {
-        wfManagement.init(function apiManagementInitCb(err) {
-            managementInitCb(err);
-        });
+        wfManagement.init(managementInitCb);
     });
 
     /**
@@ -84,9 +82,7 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
      * @listens module:lib/protocol/transmit.txEvent:initialised
      */
     wfTxEvent.once('initialised', function apiTxInitEndpointsCb() {
-        wfApiServer.createEndpoints(endpointEventCb, function apiEndpointsInitCb(err) {
-            endpointsInitCb(err);
-        });
+        wfApiServer.createEndpoints(endpointEventCb, endpointsInitCb);
     });
 
     /**
@@ -98,7 +94,7 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
         wfApiServer.start(function apiServerInitTransmitCb(err, url) {
             serverStartCb(err, url);
 
-            // Create rest api endpoints after message transmission chain has been initiated
+            // Create rest api endpoints after message transmission chain has been initialised
             wfTransmit.init(function apiTxInitCb(err) {
                 transceiveInitCb(err, 'Whiteflag message transmit (tx) event chain initialised');
             });
@@ -112,9 +108,7 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
      * @listens module:lib/protocol/receive.rxEvent:initialised
      */
     wfRxEvent.once('initialised', function apiRxInitBlockchainsCb() {
-        wfApiBlockchains.init(function apiBlockchainsInitCb(err) {
-            blockhainsInitCb(err);
-        });
+        wfApiBlockchains.init(blockhainsInitCb);
     });
 
     /*
@@ -123,18 +117,14 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
      */
     wfApiDatastores.init(function apiDatastoresInitCb(err) {
         datastoresInitCb(err);
-
-         // Restore previous state
-        wfState.init(function apiStateInitCb(err) {
-            stateInitCb(err);
-        });
+        wfState.init(stateInitCb);
     });
 });
 
 // CALLBACK FUNCTIONS //
 /**
  * Callback to log uncaught exceptions
- * @callback uncaughtExceptionCb
+ * @callback shutdownCb
  * @param {object} err error object if any error
  */
 function shutdownCb() {
@@ -203,10 +193,9 @@ function socketEventCb(err, client, event, info) {
     return log.debug(MODULELOG, `Socket client ${client}: ${event}: ${info}`);
 }
 
-// PRIVATE MODULE FUNCTIONS //
 /**
  * Callback to log transceive chain initialisation
- * @function transceiveInitCb
+ * @callback transceiveInitCb
  * @param {string} info transceive init information
  */
 function transceiveInitCb(err, info) {
@@ -214,12 +203,12 @@ function transceiveInitCb(err, info) {
         log.fatal(`Cannot initialise transceive chain: ${err.message}`);
         return process.exit(1);
     }
-    log.info(MODULELOG, info);
+    if (info) log.info(MODULELOG, info);
 }
 
 /**
  * Callback to log datatstore initialisation
- * @function datastoresInitCb
+ * @callback datastoresInitCb
  * @param {object} err error object if any error
  */
 function datastoresInitCb(err) {
@@ -236,7 +225,7 @@ function datastoresInitCb(err) {
 
 /**
  * Callback to log blockchain initialisation
- * @function blockhainsInitCb
+ * @callback blockhainsInitCb
  * @param {object} err error object if any error
  */
 function blockhainsInitCb(err) {
@@ -253,7 +242,7 @@ function blockhainsInitCb(err) {
 
 /**
  * Callback to log Whiteflag protocol state initialisation
- * @function stateInitCb
+ * @callback stateInitCb
  * @param {object} err error object if any error
  */
 function stateInitCb(err) {
@@ -266,7 +255,7 @@ function stateInitCb(err) {
 
 /**
  * Callback to log Whiteflag protocol management messages handler initialisation
- * @function managementInitCb
+ * @callback managementInitCb
  * @param {object} err error object if any error
  */
 function managementInitCb(err) {
@@ -279,7 +268,7 @@ function managementInitCb(err) {
 
 /**
  * Callback to log endpoints initialisation
- * @function endpointsInitCb
+ * @callback endpointsInitCb
  * @param {object} err error object if any error
  */
 function endpointsInitCb(err) {
