@@ -200,7 +200,7 @@
             "title": "Originator state",
             "description": "Originator details and authentication status",
             "type": "object",
-            "required": [ "blockchain", "address" ],
+            "required": [ "name", "blockchain", "address" ],
             "additionalProperties": true,
             "properties": {
                 "name": {
@@ -215,6 +215,10 @@
                     "description": "The blockchain address that identifies the originator account",
                     "type": "string"
                 },
+                "authTokenId": {
+                    "description": "The state crypto key identifier of the authentication token for this originator",
+                    "type": "string"
+                }, 
                 "authenticationValid": {
                     "description": "Indication whether the originator has been authenticated at some point in time",
                     "type": "boolean"
