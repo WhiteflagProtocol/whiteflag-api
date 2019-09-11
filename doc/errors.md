@@ -60,6 +60,7 @@ http response codes *generally* correspond *if* used in combination.
 |                   |`WF_API_BAD_REQUEST`      | level 5: `debug`  | 400              |
 |                   |`WF_API_NO_DATA`          | level 5: `debug`  | 404              |
 |                   |`WF_API_NO_RESOURCE`      | level 5: `debug`  | 404              |
+|                   |`WF_APT_RESOURCE_CONFLICT`| level 5: `debug`  | 409              |
 |                   |`WF_API_NOT_IMPLEMENTED`  | level 5: `debug`  | 501              |
 |                   |`WF_API_NOT_AVAILABLE`    | level 3: `warn`   | 503              |
 | `ProtocolError`   |`WF_PROTOCOL_ERROR`       | level 5: `debug`  | 400              |

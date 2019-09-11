@@ -122,7 +122,7 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 1
         assertion(' 1. should successfully put new initialisation vector data on queue', function(done) {
             const ivObject = testVector['1'];
-            wfState.updateQueueData('initVectors', 'referencedMessage', ivObject);
+            wfState.upsertQueueData('initVectors', 'referencedMessage', ivObject);
 
             // Check state against state schema
             let valerr = validateState();
@@ -137,7 +137,7 @@ testCase('Whiteflag protocol state management module', function() {
                 if (err) return done(err);
                 assert(ivObject);
                 ivObject.initVector = initVector;
-                wfState.updateQueueData('initVectors', 'transactionHash', ivObject);
+                wfState.upsertQueueData('initVectors', 'transactionHash', ivObject);
 
                 // Check state against state schema
                 let valerr = validateState();
@@ -177,7 +177,7 @@ testCase('Whiteflag protocol state management module', function() {
 
         // Test 5
         assertion(' 5. should successfully put new originator in state', function(done) {
-            wfState.updateOriginatorData(testVector['5']);
+            wfState.upsertOriginatorData(testVector['5']);
 
             // Check state against state schema
             let valerr = validateState();
@@ -203,7 +203,7 @@ testCase('Whiteflag protocol state management module', function() {
                 // Update data
                 originator1.authenticationValid = false;
                 originator1.authenticationMessages.push(transactionHash);
-                wfState.updateOriginatorData(originator1);
+                wfState.upsertOriginatorData(originator1);
 
                 // Check state against state schema
                 let valerr = validateState();
@@ -222,7 +222,7 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 7
         assertion(' 7. should remove the correct originator from state', function(done) {
             // Add another originator and remove the first
-            wfState.updateOriginatorData(testVector['7']);
+            wfState.upsertOriginatorData(testVector['7']);
             wfState.removeOriginatorData(testVector['5'].address);
 
             // Check state against state schema
@@ -273,7 +273,7 @@ testCase('Whiteflag protocol state management module', function() {
     testCase('Cryptographic key storage', function() {
         // Test 10
         assertion('10a. should store new private blockchain key in state', function(done) {
-            wfState.storeKey('blockchainKeys', testVector['10'].id, testVector['10'].key);
+            wfState.upsertKey('blockchainKeys', testVector['10'].id, testVector['10'].key);
             let valerr = validateState();
             if (valerr) return done(valerr);
             return done();
@@ -287,7 +287,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
         // Test 11
         assertion('11a. should store new ECDH private key in state', function(done) {
-            wfState.storeKey('ecdhPrivateKeys', testVector['11'].id, testVector['11'].key);
+            wfState.upsertKey('ecdhPrivateKeys', testVector['11'].id, testVector['11'].key);
             let valerr = validateState();
             if (valerr) return done(valerr);
             return done();
@@ -301,7 +301,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
         // Test 12
         assertion('12a. should store new preshared secret in state', function(done) {
-            wfState.storeKey('presharedKeys', testVector['12'].id, testVector['12'].key);
+            wfState.upsertKey('presharedKeys', testVector['12'].id, testVector['12'].key);
             let valerr = validateState();
             if (valerr) return done(valerr);
             return done();
@@ -315,7 +315,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
         // Test 13
         assertion('13a. should store new ECDH negotiated secret in state', function(done) {
-            wfState.storeKey('negotiatedKeys', testVector['13'].id, testVector['13'].key);
+            wfState.upsertKey('negotiatedKeys', testVector['13'].id, testVector['13'].key);
             let valerr = validateState();
             if (valerr) return done(valerr);
             return done();
@@ -329,7 +329,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
         // Test 14
         assertion('14a. should store new originator authentication token in state', function(done) {
-            wfState.storeKey('authTokens', testVector['14'].id, testVector['14'].key);
+            wfState.upsertKey('authTokens', testVector['14'].id, testVector['14'].key);
             let valerr = validateState();
             if (valerr) return done(valerr);
             return done();
