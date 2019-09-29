@@ -318,6 +318,9 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "409": {
+                        "$ref": "#/components/responses/error409"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     },
@@ -491,11 +494,11 @@
         "/originators/{address}/psk/{account}": {
             "get": {
                 "tags": [ "Originators", "State" ],
-                "description": "Checks for existence of a pre-shared key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
+                "description": "Checks for existence of a pre-shared key for the specified Whiteflag originator to be used with the specified blockchain account.",
                 "operationId": "getPreSharedKey",
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/originatorPsk"
+                        "$ref": "#/components/responses/pskAvailable"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -514,7 +517,7 @@
                 },
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorPskPut"
+                        "$ref": "#/components/responses/pskAccepted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -530,7 +533,65 @@
                 "operationId": "deletePreSharedKey",
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorPskDeleted"
+                        "$ref": "#/components/responses/pskDeleted"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
+        "/originators/tokens": {
+            "post": {
+                "tags": [ "Originators", "State" ],
+                "description": "Stores a unique authentication token together with the provided Whiteflag originator data. This operation may be disabled in the configuration.",
+                "operationId": "storeAuthToken",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/storeAuthToken"
+                },
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/authTokenAccepted"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/error409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
+        "/originators/tokens/{authTokenId}": {
+            "get": {
+                "tags": [ "Originators", "State" ],
+                "description": "Checks for the existence of an originator authentication token with the specified token id.",
+                "operationId": "getAuthToken",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/authTokenAvailable"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [ "Originators", "State" ],
+                "description": "Deletes the originator authentication token with the specified token id. This operation may be disabled in the configuration.",
+                "operationId": "deleteAuthToken",
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/authTokenDeleted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -631,6 +692,15 @@
             "originatorAddress": {
                 "description": "The address identifying an originator",
                 "name": "address",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "authenticationTokenId": {
+                "description": "The identifer of an originator authentication token",
+                "name": "authTokenId",
                 "in": "path",
                 "required": true,
                 "schema": {
@@ -772,6 +842,7 @@
                 "content": {
                     "application/json": {
                         "schema": {
+                            "required": [ "MetaHeader" ],
                             "properties": {
                                 "MetaHeader": {
                                     "$ref": "protocol/metaheader.schema.json"
@@ -819,7 +890,7 @@
                             "title": "Blockchain value transfer request body",
                             "description": "Blockchain value transfer request body",
                             "type": "object",
-                            "additionalProperties": true,
+                            "required": [ "toAddress", "value" ],
                             "properties": {
                                 "fromAddress": {
                                     "description": "The address of the blockchain account to transfer value from",
@@ -886,11 +957,42 @@
                         "schema": {
                             "description": "Pre-shared key data object",
                             "type": "object",
+                            "required": [ "preSharedKey" ],
                             "properties": {
                                 "preSharedKey": {
                                     "description": "A pre-shared key in raw hexadecimal format",
                                     "type": "string",
                                     "pattern": "[a-fA-F0-9]"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "storeAuthToken": {
+                "description": "Request to store a pre-shared key for an originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "description": "Authentication token data object",
+                            "type": "object",
+                            "required": [ "name", "blockchain", "authToken" ],
+                            "properties": {
+                                "name": {
+                                    "description": "The name of the orginator",
+                                    "type": "string"
+                                },
+                                "blockchain": {
+                                    "description": "The name of the blockchain used by the originator",
+                                    "type": "string"
+                                },
+                                "address": {
+                                    "description": "The blockchain address of the originator, if already known",
+                                    "type": "string"
+                                },
+                                "authToken": {
+                                    "description": "A pre-shared and secret authentication token",
+                                    "type": "string"
                                 }
                             }
                         }
@@ -929,6 +1031,16 @@
                     }
                 }
             },
+            "error409": {
+                "description": "The request conflicts with an already existing resource",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/responseBodyErrors"
+                        }
+                    }
+                }
+            },
             "error500": {
                 "description": "Internal error preventing the running API instance to process the request",
                 "content": {
@@ -950,7 +1062,7 @@
                 }
             },
             "error503": {
-                "description": "Function currently not available, such as a blockchain connection that is not enabled",
+                "description": "Function currently not available, such as unavailable blockchain connection",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1190,7 +1302,7 @@
                     }
                 }
             },
-            "originatorPsk": {
+            "pskAvailable": {
                 "description": "A pre-shared key for the Whiteflag originator is available",
                 "content": {
                     "application/json": {
@@ -1208,7 +1320,7 @@
                     }
                 }
             },
-            "originatorPskPut": {
+            "pskAccepted": {
                 "description": "Successfully accepted new or updated pre-shared key for the Whiteflag originator",
                 "content": {
                     "application/json": {
@@ -1226,8 +1338,62 @@
                     }
                 }
             },
-            "originatorPskDeleted": {
+            "pskDeleted": {
                 "description": "Successfully accepted the delete request for the pre-shared key for the Whiteflag originators",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "authTokenAvailable": {
+                "description": "An authentication token for the Whiteflag originator is available",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "authTokenAccepted": {
+                "description": "Successfully accepted the new authentication token for the Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "authTokenDeleted": {
+                "description": "Successfully accepted the delete request for the authentication token of the Whiteflag originator",
                 "content": {
                     "application/json": {
                         "schema": {
