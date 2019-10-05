@@ -108,7 +108,7 @@ const testVector = {
         id: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
         key: '85b8f3d22f17fd087e5cb5b99cb5b02fdc9a6f6f66e4957f3c89229190f2d088479fc21f877598319fb8129abbeb861f19368f6f1e773aa13b996f17a5ed3de1'
     },
-    '15': {
+    '16': {
         blockchain: 'blockchain-test',
         address: '194f88933f00F9400b34d75E5987361302208770',
         privateKey: 'e9873d79c6d87dc0fb6a5778633389f4453213303da61f20bd67fc233aa33262'
@@ -293,7 +293,7 @@ testCase('Whiteflag protocol state management module', function() {
             return done();
         });
         assertion('11b. should correctly retrieve ECDH private key from state', function(done) {
-            wfState.getKey('ecdhPrivateKeys', testVector['11'].id, function test10GetKey(err, key) {
+            wfState.getKey('ecdhPrivateKeys', testVector['11'].id, function test11GetKey(err, key) {
                 if (err) return done(err);
                 assert.strictEqual(key, testVector['11'].key);
                 return done();
@@ -307,7 +307,7 @@ testCase('Whiteflag protocol state management module', function() {
             return done();
         });
         assertion('12b. should correctly retrieve preshared secret from state', function(done) {
-            wfState.getKey('presharedKeys', testVector['12'].id, function test10GetKey(err, key) {
+            wfState.getKey('presharedKeys', testVector['12'].id, function test12GetKey(err, key) {
                 if (err) return done(err);
                 assert.strictEqual(key, testVector['12'].key);
                 return done();
@@ -321,7 +321,7 @@ testCase('Whiteflag protocol state management module', function() {
             return done();
         });
         assertion('13b. should correctly retrieve ECDH negotiated secret from state', function(done) {
-            wfState.getKey('negotiatedKeys', testVector['13'].id, function test10GetKey(err, key) {
+            wfState.getKey('negotiatedKeys', testVector['13'].id, function test13GetKey(err, key) {
                 if (err) return done(err);
                 assert.strictEqual(key, testVector['13'].key);
                 return done();
@@ -335,9 +335,16 @@ testCase('Whiteflag protocol state management module', function() {
             return done();
         });
         assertion('14b. should correctly retrieve originator authentication token from state', function(done) {
-            wfState.getKey('authTokens', testVector['14'].id, function test10GetKey(err, key) {
+            wfState.getKey('authTokens', testVector['14'].id, function test14GetKey(err, key) {
                 if (err) return done(err);
                 assert.strictEqual(key, testVector['14'].key);
+                return done();
+            });
+        });
+        assertion('15. should correctly retrieve key identifiers', function(done) {
+            wfState.getKeyIds('authTokens', function testGetKeyId(err, keyArray) {
+                if (err) return done(err);
+                assert.deepEqual(keyArray, [ testVector['14'].id ]);
                 return done();
             });
         });
@@ -346,13 +353,13 @@ testCase('Whiteflag protocol state management module', function() {
     testCase('State enclosing/encryption and extraction/decryption functions', function() {
         let stateObject = {};
 
-        // Test 15
-        assertion('15. should correctly enclose and encrypt state', function(done) {
+        // Test 16
+        assertion('16. should correctly enclose and encrypt state', function(done) {
             // Some test data with old private keys
             let blockchainState = {};
             blockchainState.accounts = [];
-            blockchainState.accounts.push(testVector['15']);
-            wfState.updateBlockchainData(testVector['15'].blockchain, blockchainState);
+            blockchainState.accounts.push(testVector['16']);
+            wfState.updateBlockchainData(testVector['16'].blockchain, blockchainState);
 
             // Check state against state schema
             let valerr = validateState();
@@ -369,7 +376,7 @@ testCase('Whiteflag protocol state management module', function() {
             done();
         });
         // Test 16
-        assertion('16. should correctly decrypt, extract and update state ', function(done) {
+        assertion('17. should correctly decrypt, extract and update state ', function(done) {
             // Decrypt and extract
             let wfStateData = wfState.test.extract(stateObject);
 
@@ -387,7 +394,7 @@ testCase('Whiteflag protocol state management module', function() {
             assert.deepStrictEqual(wfStateData.originators[0], testVector['7']);
 
             // Check private blockchain keys moved to keystore, as second item after test vector 10
-            let privateKeyId = hash(testVector['15'].blockchain + testVector['15'].address, 12);
+            let privateKeyId = hash(testVector['16'].blockchain + testVector['16'].address, 12);
             assert.strictEqual(wfStateData.crypto.blockchainKeys[1].id, privateKeyId);
             done();
         });
