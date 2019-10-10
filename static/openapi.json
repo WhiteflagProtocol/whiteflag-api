@@ -23,8 +23,8 @@
             "description": "Endpoints for operations related to a specific blockchain accounts, such as creating, updating and deleting accounts"
         },
         {
-            "name": "Signatures",
-            "description": "Endpoints for operations on Whiteflag authentication signatures, such as creation and validation"
+            "name": "Authentication",
+            "description": "Endpoints for operations on Whiteflag authentication, such as signature and token creation and validation"
         },
         {
             "name": "Originators",
@@ -400,7 +400,7 @@
         },
         "/blockchains/{blockchain}/accounts/{account}/sign": {
             "post": {
-                "tags": [ "Blockchains", "Accounts", "Signatures" ],
+                "tags": [ "Blockchains", "Accounts", "Authentication" ],
                 "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature. This operation may be disabled in the configuration.",
                 "operationId": "createSignature",
                 "requestBody": {
@@ -604,7 +604,7 @@
         },
         "/signature/decode": {
             "post": {
-                "tags": [ "Signatures" ],
+                "tags": [ "Authentication" ],
                 "description": "Decodes a Whiteflag authentication signature.",
                 "operationId": "decodeSignature",
                 "requestBody": {
@@ -625,7 +625,7 @@
         },
         "/signature/verify": {
             "post": {
-                "tags": [ "Signatures" ],
+                "tags": [ "Authentication" ],
                 "description": "Verifies a Whiteflag authentication signature.",
                 "operationId": "verifySignature",
                 "requestBody": {
@@ -634,6 +634,33 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/wfSignatureDecoded"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    },
+                    "501": {
+                        "$ref": "#/components/responses/error501"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/error503"
+                    }
+                }
+            }
+        },
+        "/token/create": {
+            "post": {
+                "tags": [ "Authentication" ],
+                "description": "Creates a Whiteflag authentication token.",
+                "operationId": "createToken",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfAuthToken"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfAuthToken"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -878,6 +905,33 @@
                     "application/json": {
                         "schema": {
                             "$ref": "protocol/signature.schema.json#/definitions/wfExtSignature"
+                        }
+                    }
+                }
+            },
+            "wfAuthToken": {
+                "description": "Whiteflag Authentication Token",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "title": "Whiteflag Authentication Token request body",
+                            "description": "Whiteflag Authentication Token request body",
+                            "type": "object",
+                            "required": [ "blockchain", "address", "authToken" ],
+                            "properties": {
+                                "blockchain": {
+                                    "description": "The name of the blockchain used by the originator",
+                                    "type": "string"
+                                },
+                                "address": {
+                                    "description": "The address of the originator blockchain account with which the token is used",
+                                    "type": "string"
+                                },
+                                "authToken": {
+                                    "description": "The secret pre-shared authentication token of an originator",
+                                    "type": "string"
+                                }
+                            }
                         }
                     }
                 }
@@ -1141,6 +1195,30 @@
                                 },
                                 "data": {
                                     "$ref": "protocol/signature.schema.json#/definitions/wfSignatureDecoded"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "wfAuthToken": {
+                "description": "Succesfully created the Whiteflag authentication token and returning the result",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "VerificationData": {
+                                            "description": "The authentication token of an originator used as Verification Data in a Whiteflag authentication message",
+                                            "type": "string"
+                                        }
+                                    }
                                 }
                             }
                         }
