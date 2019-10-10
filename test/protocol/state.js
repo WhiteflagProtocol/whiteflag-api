@@ -195,28 +195,26 @@ testCase('Whiteflag protocol state management module', function() {
         assertion(' 6. should correctly update originator in state', function(done) {
             const originatorAddress = testVector['6'].address;
             const transactionHash = testVector['6'].authenticationMessage;
-            wfState.getOriginatorData(originatorAddress, function test6GetOriginator1Cb(err, originator1) {
+
+            // Update data
+            let originatorUpdate = {};
+            originatorUpdate.address = originatorAddress;
+            originatorUpdate.authenticationValid = false;
+            originatorUpdate.authenticationMessages = [ transactionHash ];
+            wfState.upsertOriginatorData(originatorUpdate);
+
+            // Check state against state schema
+            let valerr = validateState();
+            if (valerr) return done(valerr);
+
+            // Check data after update
+            wfState.getOriginatorData(originatorAddress, function test6GetOriginator2Cb(err, originator2) {
                 if (err) return done(err);
-                assert(originator1);
-                assert(originator1.authenticationValid);
-
-                // Update data
-                originator1.authenticationValid = false;
-                originator1.authenticationMessages.push(transactionHash);
-                wfState.upsertOriginatorData(originator1);
-
-                // Check state against state schema
-                let valerr = validateState();
-                if (valerr) return done(valerr);
-
-                // Check data after update
-                wfState.getOriginatorData(originatorAddress, function test6GetOriginator2Cb(err, originator2) {
-                    if (err) return done(err);
-                    assert(originator2);
-                    assert(!originator2.authenticationValid);
-                    assert.strictEqual(originator2.authenticationMessages.length, (authMessagesLength + 1));
-                    return done();
-                });
+                console.log(JSON.stringify(originator2));
+                assert(originator2);
+                assert(!originator2.authenticationValid);
+                assert.strictEqual(originator2.authenticationMessages.length, (authMessagesLength + 1));
+                return done();
             });
         });
         // Test 7
