@@ -210,7 +210,6 @@ testCase('Whiteflag protocol state management module', function() {
             // Check data after update
             wfState.getOriginatorData(originatorAddress, function test6GetOriginator2Cb(err, originator2) {
                 if (err) return done(err);
-                console.log(JSON.stringify(originator2));
                 assert(originator2);
                 assert(!originator2.authenticationValid);
                 assert.strictEqual(originator2.authenticationMessages.length, (authMessagesLength + 1));
