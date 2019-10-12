@@ -38,7 +38,7 @@ const testVector = {
         referencedMessage: '3abeef169a98c82467404525397f56b3199fd4eeb8466cb6fdb359495590e01f',
         initVector: 'ff9d88900a45e66375a477dbfdfa09bb'
     },
-    '5': {
+    '5A': {
         name: 'Orange 1',
         url: 'https://organisation.int/signature.json',
         blockchain: 'blockchain-test',
@@ -55,13 +55,24 @@ const testVector = {
             'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c'
         ]
     },
-    '6': {
-        name: 'Orange 1',
-        url: 'https://organisation.int/signature.json',
+    '5B': {
+        address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
+        blockchain: 'blockchain-test',
+        authenticationValid: false,
+        authenticationMessages: [ 'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c' ]
+    },
+    '6A': {
+        name: 'Orange 2',
+        blockchain: 'blockchain-test',
+        authTokenId: 'a24af18f799ecb997b5e8666125ca642'
+    },
+    '6B': {
         blockchain: 'blockchain-test',
         address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
         originatorPubKey: '049eba9b08425ef10dda9fc6b3db7c77bbd490150038a26cf921e27af182799dcb8e7b5e866611cca661c61689f01da9f37eb01587c5a48cd4be22de3b5935a462',
-        authenticationMessage: 'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c'
+        authTokenId: 'a24af18f799ecb997b5e8666125ca642',
+        authenticationValid: true,
+        authenticationMessages: [ '11257467e139c5006c9ad543aaed4c3feb52429ae64bf2651315173b2d8e4f6a' ]
     },
     '7': {
         name: 'Black 1',
@@ -125,8 +136,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.upsertQueueData('initVectors', 'referencedMessage', ivObject);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         // Test 2
@@ -140,8 +151,8 @@ testCase('Whiteflag protocol state management module', function() {
                 wfState.upsertQueueData('initVectors', 'transactionHash', ivObject);
 
                 // Check state against state schema
-                let valerr = validateState();
-                if (valerr) return done(valerr);
+                let stateError = validateState();
+                if (stateError) return done(stateError);
                 return done();
             });
         });
@@ -156,8 +167,8 @@ testCase('Whiteflag protocol state management module', function() {
                 wfState.removeQueueData('initVectors', 'referencedMessage', messageTransactionHash);
 
                 // Check state against state schema
-                let valerr = validateState();
-                if (valerr) return done(valerr);
+                let stateError = validateState();
+                if (stateError) return done(stateError);
                 return done();
             });
         });
@@ -171,44 +182,33 @@ testCase('Whiteflag protocol state management module', function() {
         });
     });
     // Originators
+    let authMessagesLength = testVector['5A'].authenticationMessages.length;
     testCase('Originator state functions', function() {
-        // Preserve test vector information
-        let authMessagesLength = testVector['5'].authenticationMessages.length;
-
         // Test 5
-        assertion(' 5. should successfully put new originator in state', function(done) {
-            wfState.upsertOriginatorData(testVector['5']);
+        assertion(' 5a. should successfully put new originator in state', function(done) {
+            wfState.upsertOriginatorData(testVector['5A']);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
 
             // Only one originator should be in state
             wfState.getOriginators(function test5GetOriginatorsCb(err, originators) {
                 if (err) return done(err);
                 assert.strictEqual(originators.length, 1);
-                assert.deepStrictEqual(originators[0], testVector['5']);
+                assert.deepStrictEqual(originators[0], testVector['5A']);
                 return done();
             });
         });
-        // Test 6
-        assertion(' 6. should correctly update originator in state', function(done) {
-            const originatorAddress = testVector['6'].address;
-            const transactionHash = testVector['6'].authenticationMessage;
-
-            // Update data
-            let originatorUpdate = {};
-            originatorUpdate.address = originatorAddress;
-            originatorUpdate.authenticationValid = false;
-            originatorUpdate.authenticationMessages = [ transactionHash ];
-            wfState.upsertOriginatorData(originatorUpdate);
+        assertion(' 5b. should correctly update originator in state', function(done) {
+            wfState.upsertOriginatorData(testVector['5B']);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
 
             // Check data after update
-            wfState.getOriginatorData(originatorAddress, function test6GetOriginator2Cb(err, originator2) {
+            wfState.getOriginatorData(testVector['5B'].address, function test5GetOriginator2Cb(err, originator2) {
                 if (err) return done(err);
                 assert(originator2);
                 assert(!originator2.authenticationValid);
@@ -216,15 +216,48 @@ testCase('Whiteflag protocol state management module', function() {
                 return done();
             });
         });
+        // Test 6
+        assertion(' 6a. should successfully put originator authentication token in state', function(done) {
+            wfState.upsertOriginatorData(testVector['6A']);
+
+            // Check state against state schema
+            let stateError = validateState();
+            if (stateError) return done(stateError);
+
+            // Check data after update
+            wfState.getOriginatorAuthToken(testVector['6A'].authTokenId, function test6GetOriginatorAuthTokenCb(err, originator) {
+                if (err) return done(err);
+                assert(originator);
+                assert(!originator.address);
+                assert.strictEqual(originator.address, '');
+                return done();
+            });
+        });
+        assertion(' 6b. should correctly update originator based on authentication token', function(done) {
+            wfState.upsertOriginatorData(testVector['6B']);
+
+            // Check state against state schema
+            let stateError = validateState();
+            if (stateError) return done(stateError);
+
+            // Check data after update
+            wfState.getOriginatorData(testVector['5A'].address, function test6GetOriginatorAuthTokenCb(err, originator) {
+                if (err) return done(err);
+                assert(originator);
+                assert(originator.authenticationValid);
+                assert.strictEqual(originator.authenticationMessages.length, (authMessagesLength + 2));
+                return done();
+            });
+        });
         // Test 7
         assertion(' 7. should remove the correct originator from state', function(done) {
             // Add another originator and remove the first
             wfState.upsertOriginatorData(testVector['7']);
-            wfState.removeOriginatorData(testVector['5'].address);
+            wfState.removeOriginatorData(testVector['5A'].address);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
 
             // Only one originator should be left in state
             wfState.getOriginators(function test7GetOriginatorsCb(err, originators) {
@@ -253,8 +286,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.updateBlockchainData(blockchain, newBlockchainState);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
 
             // Check data after adding new blockchain
             wfState.getBlockchainData(blockchain, function test9GetBlockchainCb(err, blockchainState) {
@@ -271,8 +304,8 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 10
         assertion('10a. should store new private blockchain key in state', function(done) {
             wfState.upsertKey('blockchainKeys', testVector['10'].id, testVector['10'].key);
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         assertion('10b. should correctly retrieve private blockchain key from state', function(done) {
@@ -285,8 +318,8 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 11
         assertion('11a. should store new ECDH private key in state', function(done) {
             wfState.upsertKey('ecdhPrivateKeys', testVector['11'].id, testVector['11'].key);
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         assertion('11b. should correctly retrieve ECDH private key from state', function(done) {
@@ -299,8 +332,8 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 12
         assertion('12a. should store new preshared secret in state', function(done) {
             wfState.upsertKey('presharedKeys', testVector['12'].id, testVector['12'].key);
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         assertion('12b. should correctly retrieve preshared secret from state', function(done) {
@@ -313,8 +346,8 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 13
         assertion('13a. should store new ECDH negotiated secret in state', function(done) {
             wfState.upsertKey('negotiatedKeys', testVector['13'].id, testVector['13'].key);
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         assertion('13b. should correctly retrieve ECDH negotiated secret from state', function(done) {
@@ -327,8 +360,8 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 14
         assertion('14a. should store new originator authentication token in state', function(done) {
             wfState.upsertKey('authTokens', testVector['14'].id, testVector['14'].key);
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
             return done();
         });
         assertion('14b. should correctly retrieve originator authentication token from state', function(done) {
@@ -359,17 +392,13 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.updateBlockchainData(testVector['16'].blockchain, blockchainState);
 
             // Check state against state schema
-            let valerr = validateState();
-            if (valerr) return done(valerr);
+            let stateError = validateState();
+            if (stateError) return done(stateError);
 
             // Enclose and encrypt
             stateObject = wfState.test.enclose();
             assert(stateObject);
             assert(Object.prototype.hasOwnProperty.call(stateObject, 'state'));
-
-            // Check state against state schema
-            let stateErrors = wfState.test.validate();
-            if (stateErrors.length > 0) return done(new Error('State does not validate against schema: ' + JSON.stringify(stateErrors)));
             done();
         });
         // Test 16
@@ -384,8 +413,8 @@ testCase('Whiteflag protocol state management module', function() {
             assert(Object.prototype.hasOwnProperty.call(wfStateData, 'crypto'));
 
             // Check state against state schema
-            let stateErrors = wfState.test.validate(wfStateData);
-            if (stateErrors.length > 0) return done(new Error('State does not validate against schema: ' + JSON.stringify(stateErrors)));
+            let stateError = validateState(wfStateData);
+            if (stateError) return done(stateError);
 
             // Check extracted state against the one originator from test vector 7
             assert.deepStrictEqual(wfStateData.originators[0], testVector['7']);
@@ -410,8 +439,8 @@ function ignore() {}
  * @private
  */
 // Check state against state schema
-function validateState() {
-    let stateErrors = wfState.test.validate();
+function validateState(stateData) {
+    let stateErrors = wfState.test.validate(stateData);
     if (stateErrors.length > 0) return new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));
     return null;
 }
