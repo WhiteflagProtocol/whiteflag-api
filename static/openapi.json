@@ -12,27 +12,31 @@
     "tags": [
         {
             "name": "Messages",
-            "description": "Endpoints for operations on Whiteflag messages, such as retrieval, sending, encoding, decoding and validation"
+            "description": "Endpoints for operations on Whiteflag messages, such as retrieval, sending, encoding, decoding and validation."
         },
         {
             "name": "Blockchains",
-            "description": "Endpoints for operations related to a specific blockchain and blockchain accounts, such as blockchain information settings, account information and authentication signatures"
+            "description": "Endpoints for operations related to a specific blockchain and blockchain accounts, such as blockchain information settings, account information and authentication signatures."
         },
         {
             "name": "Accounts",
-            "description": "Endpoints for operations related to a specific blockchain accounts, such as creating, updating and deleting accounts"
+            "description": "Endpoints for operations related to a specific blockchain accounts, such as creating, updating and deleting accounts."
         },
         {
             "name": "Authentication",
-            "description": "Endpoints for operations on Whiteflag authentication, such as signature and token creation and validation"
+            "description": "Endpoints for operations on Whiteflag authentication, such as signature and token creation and validation."
+        },
+        {
+            "name": "Encryption",
+            "description": "Endpoints for operations on Whiteflag encryption, such as managing cryptographic keys."
         },
         {
             "name": "Originators",
-            "description": "Endpoints for operations on Whiteflag originators, such as authentication and management of shared secrets"
+            "description": "Endpoints for operations on Whiteflag originators, such as authentication and management of shared secrets."
         },
         {
             "name": "State",
-            "description": "Endpoints for operations on the Whiteflag state of the running API instance"
+            "description": "Endpoints for operations on the Whiteflag state of a running API instance."
         }
     ],
     "servers": [
@@ -61,7 +65,7 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array of messages from the primary datastore.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore.",
                 "operationId": "getMessages",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" },
@@ -110,7 +114,7 @@
         "/messages/receive": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Accepts a Whiteflag message as if received from a blockchain. Normally only used for testing. This operation may be disabled in the configuration.",
+                "description": "Accepts a Whiteflag message as if received from a blockchain. This may be done for simulation of incoming messages or if a direct connection with a blockchain node is not possible. Typically only used for testing. This operation may be disabled in the configuration.",
                 "operationId": "receiveMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessageEncoded"
@@ -134,7 +138,7 @@
         "/messages/encode": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Encodes a Whiteflag message and returns the result.",
+                "description": "Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages.",
                 "operationId": "encodeMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessage"
@@ -158,7 +162,7 @@
         "/messages/decode": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Decodes a Whiteflag message and returns the result.",
+                "description": "Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages.",
                 "operationId": "decodeMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessageEncoded"
@@ -182,7 +186,7 @@
         "/messages/validate": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Validates the format and reference of a Whiteflag message and returns the result.",
+                "description": "Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages.",
                 "operationId": "validateMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessage"
@@ -257,7 +261,7 @@
         "/blockchains": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns the full blockchain configuration and state.",
+                "description": "Returns an array with all blockchains, regardless of their current status.",
                 "operationId": "getAllBlockchains",
                 "responses": {
                     "200": {
@@ -272,7 +276,7 @@
         "/blockchains/{blockchain}": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns the configuration and state of the specified blockchain.",
+                "description": "Returns the configuration and status of the specified blockchain.",
                 "operationId": "getBlockchainState",
                 "responses": {
                     "200": {
@@ -306,7 +310,7 @@
             },
             "post": {
                 "tags": [ "Blockchains", "Accounts" ],
-                "description": "Creates a new blockchain account. This operation may be disabled in the configuration.",
+                "description": "Creates a new account for the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "createAccount",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/createAccount"
@@ -352,7 +356,7 @@
             },
             "patch": {
                 "tags": [ "Blockchains", "Accounts" ],
-                "description": "Updates or adds custom properties of the specified blockchain account. Please be carefull as all attributes can be changed, which may result in an unusable account. This operation may be disabled in the configuration.",
+                "description": "Updates or adds custom properties of the specified blockchain account. Please BE CAREFUL as all attributes can be changed, which may result in an unusable account. This operation may be disabled in the configuration.",
                 "operationId": "updateAccount",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/updateAccount"
@@ -377,7 +381,7 @@
             },
             "delete": {
                 "tags": [ "Blockchains", "Accounts" ],
-                "description": "Deletes the specified blockchain account. Be carefull as all data will be unrecoverably lost. This operation may be disabled in the configuration.",
+                "description": "Deletes the specified blockchain account. Please BE CAREFUL as all blockchain data will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deleteAccount",
                 "responses": {
                     "200": {
@@ -401,7 +405,7 @@
         "/blockchains/{blockchain}/accounts/{account}/sign": {
             "post": {
                 "tags": [ "Blockchains", "Accounts", "Authentication" ],
-                "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature. This operation may be disabled in the configuration.",
+                "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature to be used with authentication method 1. This signature should be made available on an internet resource to which an `A1` authentication message refers. This operation may be disabled in the configuration.",
                 "operationId": "createSignature",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfSignaturePayload"
@@ -458,10 +462,58 @@
                 }
             }
         },
+        "/signature/decode": {
+            "post": {
+                "tags": [ "Authentication" ],
+                "description": "Decodes a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages.",
+                "operationId": "decodeSignature",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfSignature"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfSignatureDecoded"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
+        "/signature/verify": {
+            "post": {
+                "tags": [ "Authentication" ],
+                "description": "Verifies a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages.",
+                "operationId": "verifySignature",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfExtSignature"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfSignatureDecoded"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    },
+                    "501": {
+                        "$ref": "#/components/responses/error501"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/error503"
+                    }
+                }
+            }
+        },
         "/originators": {
             "get": {
                 "tags": [ "Originators", "State" ],
-                "description": "Returns known details of all Whiteflag originators.",
+                "description": "Returns the details of all kwown Whiteflag originators.",
                 "operationId": "getAllOriginators",
                 "responses": {
                     "200": {
@@ -493,8 +545,8 @@
         },
         "/originators/{address}/psk/{account}": {
             "get": {
-                "tags": [ "Originators", "State" ],
-                "description": "Checks for existence of a pre-shared key for the specified Whiteflag originator to be used with the specified blockchain account.",
+                "tags": [ "Encryption", "Originators", "State" ],
+                "description": "Checks for existence of a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account.",
                 "operationId": "getPreSharedKey",
                 "responses": {
                     "200": {
@@ -509,8 +561,8 @@
                 }
             },
             "put": {
-                "tags": [ "Originators", "State" ],
-                "description": "Stores or updates a pre-shared key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
+                "tags": [ "Encryption", "Originators", "State" ],
+                "description": "Stores or updates a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "storePreSharedKey",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/storePreSharedKey"
@@ -528,8 +580,8 @@
                 }
             },
             "delete": {
-                "tags": [ "Originators", "State" ],
-                "description": "Deletes a pre-shared key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
+                "tags": [ "Encryption", "Originators", "State" ],
+                "description": "Deletes a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. Please BE CAREFUL as the encryption key will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deletePreSharedKey",
                 "responses": {
                     "202": {
@@ -546,8 +598,8 @@
         },
         "/originators/tokens": {
             "post": {
-                "tags": [ "Originators", "State" ],
-                "description": "Stores a unique authentication token together with the provided Whiteflag originator data. This operation may be disabled in the configuration.",
+                "tags": [ "Authentication", "Originators", "State" ],
+                "description": "Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, both used for authentication method 2. This operation may be disabled in the configuration.",
                 "operationId": "storeAuthToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/storeAuthToken"
@@ -570,8 +622,8 @@
         },
         "/originators/tokens/{authTokenId}": {
             "get": {
-                "tags": [ "Originators", "State" ],
-                "description": "Checks for the existence of an originator authentication token with the specified token id.",
+                "tags": [ "Authentication", "Originators", "State" ],
+                "description": "Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2.",
                 "operationId": "getAuthToken",
                 "responses": {
                     "200": {
@@ -586,8 +638,8 @@
                 }
             },
             "delete": {
-                "tags": [ "Originators", "State" ],
-                "description": "Deletes the originator authentication token with the specified token id. This operation may be disabled in the configuration.",
+                "tags": [ "Authentication", "Originators", "State" ],
+                "description": "Deletes the pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. Please BE CAREFUL as the authentication token will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deleteAuthToken",
                 "responses": {
                     "202": {
@@ -602,58 +654,10 @@
                 }
             }
         },
-        "/signature/decode": {
-            "post": {
-                "tags": [ "Authentication" ],
-                "description": "Decodes a Whiteflag authentication signature.",
-                "operationId": "decodeSignature",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/wfSignature"
-                },
-                "responses": {
-                    "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/error400"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/error500"
-                    }
-                }
-            }
-        },
-        "/signature/verify": {
-            "post": {
-                "tags": [ "Authentication" ],
-                "description": "Verifies a Whiteflag authentication signature.",
-                "operationId": "verifySignature",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/wfExtSignature"
-                },
-                "responses": {
-                    "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/error400"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/error500"
-                    },
-                    "501": {
-                        "$ref": "#/components/responses/error501"
-                    },
-                    "503": {
-                        "$ref": "#/components/responses/error503"
-                    }
-                }
-            }
-        },
         "/token/create": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Creates a Whiteflag authentication token.",
+                "description": "Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an `A2` authentication message by the specified blockchain account.",
                 "operationId": "createToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfAuthToken"
@@ -680,7 +684,7 @@
         "/queues/{queue}": {
             "get": {
                 "tags": [ "State" ],
-                "description": "Returns the requested queue from the Whiteflag state.",
+                "description": "Returns the requested queue in the Whiteflag state. The queues used by the API are:\n * `initVectors`: stores the initialiation vectors received with `K` messages until the corresponding encrypted message is received\n * `blockDepths`: tracks the block depth of incoming and outgoing messages until their configured confirmation depth is reached",
                 "operationId": "getQueue",
                 "responses": {
                     "200": {
@@ -928,7 +932,7 @@
                                     "type": "string"
                                 },
                                 "authToken": {
-                                    "description": "The secret pre-shared authentication token of an originator",
+                                    "description": "A pre-shared secret authentication token in raw hexadecimal format",
                                     "type": "string"
                                 }
                             }
@@ -1005,7 +1009,7 @@
                 }
             },
             "storePreSharedKey": {
-                "description": "Request to store a pre-shared key for an originator",
+                "description": "Request to store a pre-shared encryption key for an originator",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1014,7 +1018,7 @@
                             "required": [ "preSharedKey" ],
                             "properties": {
                                 "preSharedKey": {
-                                    "description": "A pre-shared key in raw hexadecimal format",
+                                    "description": "A pre-shared secret encryption key in raw hexadecimal format",
                                     "type": "string",
                                     "pattern": "[a-fA-F0-9]"
                                 }
@@ -1024,7 +1028,7 @@
                 }
             },
             "storeAuthToken": {
-                "description": "Request to store a pre-shared key for an originator",
+                "description": "Request to store a pre-shared secret authentication token for an originator",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1045,7 +1049,7 @@
                                     "type": "string"
                                 },
                                 "authToken": {
-                                    "description": "A pre-shared and secret authentication token",
+                                    "description": "A pre-shared secret authentication token in raw hexadecimal format",
                                     "type": "string"
                                 }
                             }
@@ -1202,7 +1206,7 @@
                 }
             },
             "wfAuthToken": {
-                "description": "Succesfully created the Whiteflag authentication token and returning the result",
+                "description": "Succesfully created the Whiteflag authentication token verification data and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1215,7 +1219,7 @@
                                     "type": "object",
                                     "properties": {
                                         "VerificationData": {
-                                            "description": "The authentication token of an originator used as Verification Data in a Whiteflag authentication message",
+                                            "description": "The authentication token of an originator used as Verification Data in a Whiteflag `A2` authentication message",
                                             "type": "string"
                                         }
                                     }
@@ -1244,7 +1248,7 @@
                 }
             },
             "blockchainState": {
-                "description": "Successfully retrieved and returning the blockchain configuration and state",
+                "description": "Successfully retrieved and returning the blockchain configuration and status",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1381,7 +1385,7 @@
                 }
             },
             "pskAvailable": {
-                "description": "A pre-shared key for the Whiteflag originator is available",
+                "description": "A pre-shared encryption key for the Whiteflag originator is available",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1399,7 +1403,7 @@
                 }
             },
             "pskAccepted": {
-                "description": "Successfully accepted new or updated pre-shared key for the Whiteflag originator",
+                "description": "Successfully accepted new or updated pre-shared encryption key for the Whiteflag originator",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1417,7 +1421,7 @@
                 }
             },
             "pskDeleted": {
-                "description": "Successfully accepted the delete request for the pre-shared key for the Whiteflag originators",
+                "description": "Successfully accepted the delete request for the pre-shared encryption key for the Whiteflag originators",
                 "content": {
                     "application/json": {
                         "schema": {
