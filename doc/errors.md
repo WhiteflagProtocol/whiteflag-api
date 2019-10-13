@@ -56,7 +56,8 @@ http response codes *generally* correspond *if* used in combination.
 
 | Error Class       | Error Code               | Loglevel          | HTTP Status Code |
 |-------------------|--------------------------|-------------------|------------------|
-| `Error`           |(any)                     | level 2: `error`  | 500              |
+| `Error`           |`WF_API_INTERNAL_ERROR`   | level 2: `error`  | 500              |
+|                   |`WF_API_MIDDLEWARE_ERROR` | level 5: `debug`  | (any)            |
 | `ProcessingError` |`WF_API_PROCESSING_ERROR` | level 2: `error`  | 400              |
 |                   |`WF_API_BAD_REQUEST`      | level 5: `debug`  | 400              |
 |                   |`WF_API_NO_DATA`          | level 5: `debug`  | 404              |

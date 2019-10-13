@@ -28,10 +28,7 @@ const testVector = {
             prop1: {
                 subprop22: 'X'
             },
-            prop2: [
-                's21',
-                's22'
-            ],
+            prop2: [ 's21', 's22' ],
             prop3: 'Z',
             prop4: {
                 subprop41: 'Y'
@@ -42,22 +39,14 @@ const testVector = {
                 subprop12: 'A',
                 subprop22: 'B'
             },
-            prop2: [
-                't21',
-                't22'
-            ]
+            prop2: [ 't21', 't22', 's22' ]
         },
         newObject: {
             prop1: {
                 subprop12: 'A',
                 subprop22: 'X'
             },
-            prop2: [
-                't21',
-                't22',
-                's21',
-                's22'
-            ],
+            prop2: [ 't21', 't22', 's22', 's21' ],
             prop3: 'Z',
             prop4: {
                 subprop41: 'Y'

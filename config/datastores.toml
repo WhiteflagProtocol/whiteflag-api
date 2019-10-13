@@ -15,8 +15,8 @@ dbPort = "27017"
 username = ""
 password = ""
 database = "whiteflag"
-rxStoreEvent = ["messageProcessed"]
-txStoreEvent = ["messageProcessed"]
+rxStoreEvent = ["messageProcessed", "messageUpdated"]
+txStoreEvent = ["messageProcessed", "messageUpdated"]
 
 [[databases]]
 name = "rest-db"
@@ -29,5 +29,5 @@ dbPort = ""
 dbPath = "/whiteflag/services/wfapi.xsjs"
 username = ""
 password = ""
-rxStoreEvent = ["messageProcessed"]
-txStoreEvent = ["messageProcessed"]
+rxStoreEvent = ["messageProcessed", "messageUpdated"]
+txStoreEvent = ["messageProcessed", "messageUpdated"]

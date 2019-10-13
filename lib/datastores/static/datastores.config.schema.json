@@ -43,7 +43,7 @@
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": [ "metadataVerified", "messageDecoded", "originatorVerified", "referenceVerified", "messageProcessed" ]
+                            "enum": [ "metadataVerified", "messageDecoded", "originatorVerified", "referenceVerified", "messageProcessed", "messageUpdated" ]
                         }
                     },
                     "txStoreEvent": {
@@ -51,7 +51,7 @@
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": [ "metadataVerified", "referenceVerified", "messageEncoded", "messageSent", "messageProcessed" ]
+                            "enum": [ "metadataVerified", "referenceVerified", "messageEncoded", "messageSent", "messageProcessed", "messageUpdated" ]
                         }
                     },
                     "dbProtocol": {

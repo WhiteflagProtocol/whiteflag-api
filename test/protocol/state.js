@@ -49,7 +49,7 @@ const testVector = {
             '66902594f0b101287e9baede15d52192ed8b31dc03ff245fae9efa5dc9b27cb6',
             '094ac86d1990989c67d87337847d78078dac66cc99a5c30cf220a0a27aaa3780',
             'ca34fce22951269a153ee697c6a861a1a948207381f20af6bbf8f223c37883de',
-            '465afe4ad4af5a3f6c2df22c7e4cb292ad45a69e32402173e652df26f9290ac3',
+            '6c66f9813d07d732dfdfb2107603aab0f689b8e5970549b89c340e51f1022192',
             'd2a82d10d36493c87fd5f38a4e695bf43e4c39a198d7ca83f1cedb6ed86962db',
             '2ca92f02530411653db5011674e9b52d72871c19a705b4f61141d63aa1ba080d',
             'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c'
@@ -59,7 +59,7 @@ const testVector = {
         address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
         blockchain: 'blockchain-test',
         authenticationValid: false,
-        authenticationMessages: [ 'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c' ]
+        authenticationMessages: [ '465afe4ad4af5a3f6c2df22c7e4cb292ad45a69e32402173e652df26f9290ac3' ]
     },
     '6A': {
         name: 'Orange 2',
