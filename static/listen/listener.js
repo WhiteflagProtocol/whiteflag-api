@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * @script static/listen/listener
  * @summary Whiteflag client side message listener script

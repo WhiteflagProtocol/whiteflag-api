@@ -130,19 +130,19 @@ testCase('Common array module', function() {
             assert.deepStrictEqual(newArray, testVector['6'].newArray);
             return done();
         });
-        assertion(' 7. should return empty array if copmbining to non-arrays', function(done) {
+        assertion(' 7. should return empty array if combining to non-arrays', function(done) {
             let newArray = array.addArray(testVector['7'].array1, testVector['7'].array2);
             assert.deepStrictEqual(newArray, testVector['7'].newArray);
             return done();
         });
     });
     testCase('Pluck array of objects', function() {
-        assertion(' 8. should new with the requested property values', function(done) {
+        assertion(' 8. should return new array with the requested property values', function(done) {
             let newArray = array.pluck(testVector['8'].array, testVector['8'].property);
             assert.deepStrictEqual(newArray, testVector['8'].newArray);
             return done();
         });
-        assertion(' 9. should new with the requested subproperty values', function(done) {
+        assertion(' 9. should return new array with the requested subproperty values', function(done) {
             let newArray = array.plucksub(testVector['9'].array, testVector['9'].property, testVector['9'].subname);
             assert.deepStrictEqual(newArray, testVector['9'].newArray);
             return done();

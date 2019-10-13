@@ -1,12 +1,12 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.0-alpha.2",
+    "version": "1.0.0-alpha.3",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "license": "CC0-1.0",
     "dependencies": {
         "body-parser": "^1.19.0",
         "cors": "^2.8.5",
-        "ethereumjs-tx": "^2.0.0",
+        "ethereumjs-tx": "^2.1.1",
         "ethereumjs-util": "^6.1.0",
         "express": "^4.17.1",
         "express-basic-auth": "^1.2.0",
@@ -14,9 +14,9 @@
         "jsonwebtoken": "^8.5.1",
         "key-encoder": "^1.1.7",
         "mongodb": "^2.2.36",
-        "socket.io": "^2.2.0",
+        "socket.io": "^2.3.0",
         "toml": "^3.0.0",
-        "web3": "^1.0.0-beta.55"
+        "web3": "^2.0.0-alpha.1"
     },
     "devDependencies": {
         "eslint": "^6.0.1",

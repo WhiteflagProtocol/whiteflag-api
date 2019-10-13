@@ -28,20 +28,29 @@ const testVector = {
             prop1: {
                 subprop22: 'X'
             },
-            prop3: 'Z'
+            prop2: [ 's21', 's22' ],
+            prop3: 'Z',
+            prop4: {
+                subprop41: 'Y'
+            }
         },
         targetObject: {
             prop1: {
                 subprop12: 'A',
                 subprop22: 'B'
-            }
+            },
+            prop2: [ 't21', 't22', 's22' ]
         },
         newObject: {
             prop1: {
                 subprop12: 'A',
                 subprop22: 'X'
             },
-            prop3: 'Z'
+            prop2: [ 't21', 't22', 's22', 's21' ],
+            prop3: 'Z',
+            prop4: {
+                subprop41: 'Y'
+            }
         }
     }
 };
@@ -50,7 +59,7 @@ const testVector = {
 testCase('Common objects module', function() {
     testCase('Updating object with other object', function() {
         assertion(' 1. should correctly merge source object into target object', function(done) {
-            object.update(testVector['1'].sourceObject, testVector['1'].targetObject);
+            object.update(testVector['1'].sourceObject, testVector['1'].targetObject, true);
             assert.deepStrictEqual(testVector['1'].targetObject, testVector['1'].newObject);
             done();
         });
