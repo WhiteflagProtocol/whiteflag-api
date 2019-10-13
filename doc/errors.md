@@ -35,6 +35,7 @@ with the folloing arguments:
 * `WF_API_BAD_REQUEST`: the request was incomplete or incorrect syntax
 * `WF_API_NO_DATA`: the request did not return any (valid) data
 * `WF_API_NO_RESOURCE`: could not processess because resource does not exist
+* `WF_API_RESOURCE_CONFLICT`: could not process because resource alreasy exists
 * `WF_API_NOT_IMPLEMENTED`: the function is not supported
 * `WF_API_NOT_AVAILABLE`: the function is currently not available
 
@@ -55,11 +56,13 @@ http response codes *generally* correspond *if* used in combination.
 
 | Error Class       | Error Code               | Loglevel          | HTTP Status Code |
 |-------------------|--------------------------|-------------------|------------------|
-| `Error`           |(any)                     | level 2: `error`  | 500              |
+| `Error`           |`WF_API_INTERNAL_ERROR`   | level 2: `error`  | 500              |
+|                   |`WF_API_MIDDLEWARE_ERROR` | level 5: `debug`  | (any)            |
 | `ProcessingError` |`WF_API_PROCESSING_ERROR` | level 2: `error`  | 400              |
 |                   |`WF_API_BAD_REQUEST`      | level 5: `debug`  | 400              |
 |                   |`WF_API_NO_DATA`          | level 5: `debug`  | 404              |
 |                   |`WF_API_NO_RESOURCE`      | level 5: `debug`  | 404              |
+|                   |`WF_API_RESOURCE_CONFLICT`| level 5: `debug`  | 409              |
 |                   |`WF_API_NOT_IMPLEMENTED`  | level 5: `debug`  | 501              |
 |                   |`WF_API_NOT_AVAILABLE`    | level 3: `warn`   | 503              |
 | `ProtocolError`   |`WF_PROTOCOL_ERROR`       | level 5: `debug`  | 400              |

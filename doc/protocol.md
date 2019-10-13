@@ -82,7 +82,7 @@ Specifically, this inludes:
 
 * authentication of originators upon reception of authentication messages
 * automatically sending ECDH public keys after an own authentication message
-* processing received ECDH public keys to compute shared secr
+* processing received ECDH public keys to compute shared secret
 * automatically sending initialisation vectors with encrypted messages
 * processing received initialisation vectors
 
