@@ -22,6 +22,7 @@
         "eslint": "^6.0.1",
         "semver": "^6.2.0",
         "mocha": "^6.1.4",
+        "jsdoc": "~3.6.3",
         "cloc": "^2.5.0",
         "license-checker": "^25.0.1"
     },
@@ -41,6 +42,7 @@
     "scripts": {
         "start": "node whiteflag.js",
         "test": "mocha --recursive",
+        "doc:src": "jsdoc -c .jsdoc.json",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
         "count-all": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore .",
         "licenses": "license-checker --summary"
