@@ -2,6 +2,11 @@
 
 ## Introduction
 
+Whiteflag is a fully neutral and secure communciations means based on
+blockchain technology. It enables near real-time communication in armed
+conflicts and disasters to exchange early warning and status information
+to create shared situational awareness.
+
 This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
 software implementation of the API layer that provides an interface with the
 Whiteflag messaging network on one or more underlying blockchains. As such,
@@ -118,7 +123,7 @@ sudo service whiteflag-api start
 
 The detailed [OpenAPI](https://swagger.io/specification/) definition can be
 found in `static/openapi.json`. The API definition is provided in human
-readible format at the root endpoint by the running API; just got to
+readible format at the root endpoint by the running API; just go to
 `http://localhost:5746/` with a browser.
 
 Some of the endpoint functionalities

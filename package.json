@@ -43,7 +43,8 @@
     "directories": {
         "lib": "./lib",
         "test": "./test",
-        "doc": "./doc"
+        "doc": "./doc",
+        "man": "./doc/man"
     },
     "main": "main.js",
     "bin": {
