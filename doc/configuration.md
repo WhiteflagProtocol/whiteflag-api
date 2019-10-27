@@ -2,10 +2,11 @@
 
 ## Environment variables
 
-Two optional environment variables may be used, e.g. when using different
-configurations in development environments or when running the API in a
-container:
+The following optional environment variables may be used, e.g. when using
+different configurations in development environments or when running the API
+in a container:
 
+* `WFLOGLEVEL`: the logging level to be used; if set, it overrides the level set in the `api.toml` configuration file
 * `WFCONFDIR`: sets the directory containing the configuration files; if set it overrides the default `./config` directory.
 * `WFPORT`: sets the server port to be used; if set it overrides the port defined in the `api.toml` configuration file.
 

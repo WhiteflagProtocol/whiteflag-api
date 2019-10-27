@@ -45,8 +45,13 @@
         "test": "./test",
         "doc": "./doc"
     },
+    "main": "main.js",
+    "bin": {
+        "whiteflag-api": "./main.js",
+        "wfapi": "./main.js"
+    },
     "scripts": {
-        "start": "node whiteflag.js",
+        "start": "node main.js",
         "test": "mocha --recursive",
         "doc:src": "jsdoc -c .jsdoc.json",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
