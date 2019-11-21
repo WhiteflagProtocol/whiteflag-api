@@ -93,8 +93,8 @@ authentication messages. Incoming authentication messages are automatically
 processed by the `management.js` module, which passes the authentication
 information to the `authentication.js` module for validation.
 
-Currently, only authentication messages using authentication method 1 (digitial
-signatures) can be processesed, because other methods are not yet implemented.
+The API has an endpoint to provide pre-shared secret authentication token
+for authentication method 2.
 
 Validated originators are stored in the Whiteflag protocol state, through
 the `state.js` module.
@@ -118,10 +118,10 @@ The `management.js` module automatically sends ECDH public keys to negotiate
 a shared secret when an authentication message is sent. The module also handles
 incoming ECDH public keys.
 
-The API has endpoint to provide pre-sahred secret for each originator. Instead
-of specifing the recipient in the metaheader, the pre-shared key for method 2
-may also be provided with the `encryptionKeyInput` in the metaheader, or
-otherwise the default key in `config/whiteflag.toml` is used.
+The API has an endpoint to provide a pre-shared secret key for each originator.
+Instead of specifing the recipient in the metaheader, the pre-shared key for
+method 2 may also be provided with the `encryptionKeyInput` in the metaheader,
+or otherwise the default key in `config/whiteflag.toml` is used.
 
 The `management.js` module automatically sends initialisation vectors with
 encrypted messages and also manages incoming initialisation vectors.
