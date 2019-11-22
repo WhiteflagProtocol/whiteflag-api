@@ -16,7 +16,7 @@ that can be found under `lib/protocol`. These modules are:
 |`authentication.js`  | Whiteflag originator authentication functions                   |
 |`management.js`      | Whiteflag protocol management message handler functions         |
 
-Protocol specific configuration paramaters are in `whiteflag.toml` which can be
+Protocol specific configuration parameters are in `whiteflag.toml` which can be
 found in the `config/` directory. Static protocol data, such as json schemas
 can be found under `lib/protocol/static`.
 
@@ -93,7 +93,7 @@ authentication messages. Incoming authentication messages are automatically
 processed by the `management.js` module, which passes the authentication
 information to the `authentication.js` module for validation.
 
-The API has an endpoint to provide pre-shared secret authentication token
+The API has an endpoint to provide pre-shared secret authentication tokens
 for authentication method 2.
 
 Validated originators are stored in the Whiteflag protocol state, through

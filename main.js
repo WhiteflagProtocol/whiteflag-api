@@ -56,7 +56,7 @@ function main(callback) {
     * The configuration is retrieved from the configuration module,
     * and in its callback all other modules are initialised
     */
-    wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
+    wfApiConfig.getConfig(function apiGetConfigCb(err, apiConfig) {
         // Configuration errors are fatal
         if (err) {
             return callback(new Error(`Configuration error: ${err.message}`), 2);
@@ -136,6 +136,7 @@ function initModules() {
     });
 }
 
+// CALLBACK AND HANDLER FUNCTIONS //
 /**
  * Function to handle fatal errors
  * @function errorHandler
@@ -146,7 +147,6 @@ function errorHandler(err, exitcode = 2) {
     return process.exit(exitcode);
 }
 
-// CALLBACK AND HANDLER FUNCTIONS //
 /**
  * Callback to log uncaught exceptions
  * @callback shutdownCb

@@ -60,7 +60,7 @@ messages are emitted:
 
 * `enable`: if true, the web socket will be available, otherwise not
 
-The operationId parameters in the `[endpoints]` section are bolleans that
+The operationId parameters in the `[endpoints]` section are booleans that
 allow to enable or disable specific API operations. See the API documentation
 for a description of all operations. Note that the `receiveMessage` operationId
 only controls the injection of messages through the REST API, and has nothing
