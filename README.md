@@ -2,6 +2,11 @@
 
 ## Introduction
 
+Whiteflag is a fully neutral and secure communciations means based on
+blockchain technology. It enables near real-time communication in armed
+conflicts and disasters to exchange early warning and status information
+to create shared situational awareness.
+
 This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
 software implementation of the API layer that provides an interface with the
 Whiteflag messaging network on one or more underlying blockchains. As such,
@@ -52,28 +57,21 @@ not part of this distribution and may be licenced differently.
 To deploy the Whiteflag API, make sure the following prerequisite software
 is installed:
 
-* [Node.js](https://nodejs.org/en/about/) w/ dependecies as in `package.json`
-* At least one datastore for storage of messages, e.g. [MongoDB](https://www.mongodb.com/what-is-mongodb)
+* [Node.js](https://nodejs.org/en/about/) including [NPM](https://www.npmjs.com/get-npm)
+* [MongoDB](https://www.mongodb.com/what-is-mongodb)
 
 ### Deployment and Testing
 
 First, copy the repository to the deployment directory, such as
 `/opt/whiteflag-api`. Please use a version tagged commit for a stable version.
 
-After copying the repository, install the required Node.js modules of
-external software libraries by running the following command in the
-deployment directory:
+After copying the repository, install the required Node.js modules of external
+software libraries and then create a global link to the package by running the
+following commands in the deployment directory:
 
 ```shell
 npm install
-```
-
-It might be necessary to install other dependecnies, such as Python
-and `node-gyp`, first to process all packages correctly during install,
-e.g. on Linux:
-
-```shell
-sudo apt install node-gyp
+npm link
 ```
 
 To run an automated test of the software, use the following command in the
@@ -85,10 +83,11 @@ npm test
 
 ### Configuration
 
-The API uses two optional environment variables:
+The API uses three optional environment variables:
 
-* `WFCONFDIR`: the directory containing the configuration files; if set it overrides the default `./config` directory
-* `WFPORT`: the server port to be used; if set it overrides the port set in the `api.toml` configuration file
+* `WFLOGLEVEL`: the logging level to be used; if set, it overrides the level set in the `api.toml` configuration file
+* `WFCONFDIR`: the directory containing the configuration files; if set, it overrides the default `./config` directory
+* `WFPORT`: the server port to be used; if set, it overrides the port set in the `api.toml` configuration file
 
 Configurable parameters of the API can be found in the [TOML](https://github.com/toml-lang/toml)
 files in the `config/` directory:
@@ -102,12 +101,14 @@ Please see `doc/configuration.md` for more details.
 
 ## Running the API
 
-To run the Whitefag API from the command line, use npm with the following
+To start the Whitefag API server from the command line, use the `wfapi`
 command in the deployment directory:
 
 ```shell
-npm start
+wfapi
 ```
+
+Using the `npm start` command in the deployment directory should also work.
 
 Alternatively, a service may be created. An example `whiteflag-api.service`
 for linux systems using `systemctl` cound be found in `etc/`. Enable the
@@ -122,7 +123,7 @@ sudo service whiteflag-api start
 
 The detailed [OpenAPI](https://swagger.io/specification/) definition can be
 found in `static/openapi.json`. The API definition is provided in human
-readible format at the root endpoint by the running API; just got to
+readible format at the root endpoint by the running API; just go to
 `http://localhost:5746/` with a browser.
 
 Some of the endpoint functionalities

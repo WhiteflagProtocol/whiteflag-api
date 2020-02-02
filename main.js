@@ -1,9 +1,12 @@
+#!/usr/bin/env node
 'use strict';
  /**
  * @module whiteflag
  * @summary Whiteflag API main module
  * @description Module for initialising the transceive event chains, blockchains, datastores and starting the server
  */
+// Change working directory to process directory
+process.chdir(__dirname);
 
 // Whiteflag common functions and classes //
 const log = require('./lib/common/logger');
@@ -28,37 +31,54 @@ const MODULELOG = 'api';
 
 /*
  * Gracefully crash if an uncaught exception occurs and
- * ensure proper shutdonwn when process is stopped
+ * ensure proper shutdown when process is stopped
  */
 process.on('uncaughtException', uncaughtExceptionCb);
 process.on('SIGINT', shutdownCb);
 process.on('SIGTERM', shutdownCb);
 
-// START THE API
-/*
- * Display usage warning upon startup
- */
-log.info('WHITEFLAG', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
+// EXECUTE MAIN PROCESS FUNCTION //
+main(function mainCb(err, exitcode = 0) {
+    if (err) return errorHandler(err, exitcode);
+    return process.exit(exitcode);
+});
 
-/*
- * The configuration is retrieved from the configuration module,
- * and in its callback all other modules are initialised
+// MAIN FUNCTIONS //
+/**
+ * Main process function that reads the configuration and starts all functionality
+ * @function main
+ * @param {function} callback
  */
-wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
-    // Configuration errors are fatal
-    if (err) {
-        log.fatal(MODULELOG, `Configuration error: ${err.message}`);
-        return process.exit(1);
-    }
-    // Log version number
-    if (apiConfig.version) {
-        log.info(MODULELOG, `Running version ${apiConfig.version}`);
-    }
-    // Set set logging level
-    if (apiConfig.logger.loglevel) {
-        log.setLogLevel(apiConfig.logger.loglevel, loglevelCb);
-    }
+function main(callback) {
+    log.info('whiteflag', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
 
+    /*
+    * The configuration is retrieved from the configuration module,
+    * and in its callback all other modules are initialised
+    */
+    wfApiConfig.getConfig(function apiGetConfigCb(err, apiConfig) {
+        // Configuration errors are fatal
+        if (err) {
+            return callback(new Error(`Configuration error: ${err.message}`), 2);
+        }
+        // Log version number
+        if (apiConfig.version) {
+            log.info(MODULELOG, `Running version ${apiConfig.version}`);
+        }
+        // Set set logging level
+        const loglevel = process.env.WFLOGLEVEL || apiConfig.logger.loglevel;
+        if (loglevel) log.setLogLevel(loglevel, loglevelCb);
+
+        // Initialise all modules
+        initModules();
+    });
+}
+
+/**
+ * Initialises all API modules
+ * @function initModules
+ */
+function initModules() {
     /**
      * Initialises rx event chain after state has been initialised
      * @listens module:lib/protocol/state.event:initialised
@@ -68,7 +88,6 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
             transceiveInitCb(err, 'Whiteflag message receive (rx) event chain initialised');
         });
     });
-
     /**
      * Initialises handling of protocol management messages
      * @listens module:lib/protocol/transmit.txEvent:initialised
@@ -76,7 +95,6 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
     wfTxEvent.once('initialised', function apiTxInitManagementCb() {
         wfManagement.init(managementInitCb);
     });
-
     /**
      * Creates endpoints after tx chain has been initialised
      * @listens module:lib/protocol/transmit.txEvent:initialised
@@ -84,7 +102,6 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
     wfTxEvent.once('initialised', function apiTxInitEndpointsCb() {
         wfApiServer.createEndpoints(endpointEventCb, endpointsInitCb);
     });
-
     /**
      * Starts server and depended modules after rx chain has been initialised
      * @listens module:lib/protocol/receive.rxEvent:initialised
@@ -102,7 +119,6 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
             wfApiServer.monitorSocket(socketEventCb);
         });
     });
-
     /**
      * Initialises blockchains after rx chain has been initialised
      * @listens module:lib/protocol/receive.rxEvent:initialised
@@ -110,18 +126,27 @@ wfApiConfig.getConfig(function apiConfigInitAllCb(err, apiConfig) {
     wfRxEvent.once('initialised', function apiRxInitBlockchainsCb() {
         wfApiBlockchains.init(blockhainsInitCb);
     });
-
     /*
-     * Connects to datastores and initiliase state,
-     * which triggers all other initialisations
-     */
+    * Connects to datastores and initiliase state,
+    * which triggers all other initialisations
+    */
     wfApiDatastores.init(function apiDatastoresInitCb(err) {
         datastoresInitCb(err);
         wfState.init(stateInitCb);
     });
-});
+}
 
-// CALLBACK FUNCTIONS //
+// CALLBACK AND HANDLER FUNCTIONS //
+/**
+ * Function to handle fatal errors
+ * @function errorHandler
+ * @param {object} err error object if any error
+ */
+function errorHandler(err, exitcode = 2) {
+    log.fatal(MODULELOG, err.message);
+    return process.exit(exitcode);
+}
+
 /**
  * Callback to log uncaught exceptions
  * @callback shutdownCb

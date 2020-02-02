@@ -2,10 +2,11 @@
 
 ## Environment variables
 
-Two optional environment variables may be used, e.g. when using different
-configurations in development environments or when running the API in a
-container:
+The following optional environment variables may be used, e.g. when using
+different configurations in development environments or when running the API
+in a container:
 
+* `WFLOGLEVEL`: the logging level to be used; if set, it overrides the level set in the `api.toml` configuration file
 * `WFCONFDIR`: sets the directory containing the configuration files; if set it overrides the default `./config` directory.
 * `WFPORT`: sets the server port to be used; if set it overrides the port defined in the `api.toml` configuration file.
 
@@ -59,7 +60,7 @@ messages are emitted:
 
 * `enable`: if true, the web socket will be available, otherwise not
 
-The operationId parameters in the `[endpoints]` section are bolleans that
+The operationId parameters in the `[endpoints]` section are booleans that
 allow to enable or disable specific API operations. See the API documentation
 for a description of all operations. Note that the `receiveMessage` operationId
 only controls the injection of messages through the REST API, and has nothing

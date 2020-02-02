@@ -43,6 +43,7 @@ To keep track of Whiteflag message on the blockchain, the API should:
 * Whiteflag authentication method 1 (signature-based):
   * create a Whiteflag digital signature (v0.7)
   * check against internet resource for `A1` messages (v0.8)
+* Whiteflag authentication method 2 (token-based) (v1.0)
 * manage encryption keys for different originators:
   * pre-shared encryption keys (v0.9)
   * ECDH negotated encryption keys (v0.9)
@@ -57,7 +58,6 @@ To keep track of Whiteflag message on the blockchain, the API should:
 Protocol features for future development:
 
 * message and area concatination using reference code 3 (*planned after v1.0*)
-* Whiteflag authentication method 2 (token-based) (*planned after v1.0*)
 * processing of `T` messages (*planned after v1.0*)
 * checking for correct subject codes (*planned after v1.0*)
 * checking for correct object codes (*planned after v1.0*)
