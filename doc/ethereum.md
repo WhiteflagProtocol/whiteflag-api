@@ -21,8 +21,8 @@ For retrieving transactions containing Whiteflag messages, these parameters
 may be provided, otherwise default are used:
 
 * `blockRetrievalInterval`: the time in milliseconds between data retrioeval intervals
-* `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API starts with the current highest block
-* `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the current highest block
+* `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API resumes a number of blocks before the highest block as configured below
+* `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the highest block on the node
 * `blockRetrievalRestart`: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period
 * `blockMaxRetries`: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is `0`, which means unlimited retries
 * `transactionBatchSize`: how many transactions from a single block the API may process in parallel; default is `64`
