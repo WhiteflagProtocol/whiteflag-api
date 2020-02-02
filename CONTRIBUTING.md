@@ -12,8 +12,12 @@ Please report bugs and file requests by creating an issue in the [GitHub reposit
 
 [NPM](https://www.npmjs.com/) is used to manage the code and all external
 library packages. This is done with the [`package.json`](https://docs.npmjs.com/getting-started/using-a-package.json)
-file in the project root. The main program file is `whiteflag.js` in the
-project root. All other files are organised in the directory structure shown
+file in the project root. The main program file is `main.js` in the
+project root. The file `index.js` is reserved for later addition when creating
+an NPM package exposing Whiteflag functions to be integrated in larger
+Node.js projects.
+
+All other files are organised in the directory structure shown
 in the following table.
 
 | Directory       | Purpose                                      |
