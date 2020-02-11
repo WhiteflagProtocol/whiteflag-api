@@ -34,13 +34,16 @@ const MODULELOG = 'api';
  * ensure proper shutdown when process is stopped
  */
 process.on('uncaughtException', uncaughtExceptionCb);
-process.on('SIGINT', shutdownCb);
-process.on('SIGTERM', shutdownCb);
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 // EXECUTE MAIN PROCESS FUNCTION //
-main(function mainCb(err, exitcode = 0) {
-    if (err) return errorHandler(err, exitcode);
-    return process.exit(exitcode);
+main(function mainCb(err) {
+    if (err) {
+        log.fatal(MODULELOG, err.message);
+        return process.exit(1);
+    }
+    shutdown();
 });
 
 // MAIN FUNCTIONS //
@@ -58,17 +61,21 @@ function main(callback) {
     */
     wfApiConfig.getConfig(function apiGetConfigCb(err, apiConfig) {
         // Configuration errors are fatal
-        if (err) {
-            return callback(new Error(`Configuration error: ${err.message}`), 2);
-        }
+        if (err) return callback(new Error(`Configuration error: ${err.message}`));
+        log.info(MODULELOG, `Configuration read from ${apiConfig.CONFFILE}`);
+
         // Log version number
         if (apiConfig.version) {
             log.info(MODULELOG, `Running version ${apiConfig.version}`);
         }
         // Set set logging level
         const loglevel = process.env.WFLOGLEVEL || apiConfig.logger.loglevel;
-        if (loglevel) log.setLogLevel(loglevel, loglevelCb);
-
+        if (loglevel) {
+            log.setLogLevel(loglevel, function loglevelCb(err, loglevel) {
+                if (err) return callback(new Error(`Error setting logging level: ${err.message}`));
+                log.info(MODULELOG, `Logging level set to ${loglevel}`);
+            });
+        }
         // Initialise all modules
         initModules();
     });
@@ -79,14 +86,17 @@ function main(callback) {
  * @function initModules
  */
 function initModules() {
-    /**
-     * Initialises rx event chain after state has been initialised
-     * @listens module:lib/protocol/state.event:initialised
+    /* The functions below are defined in reverse order of execution,
+     * i.e. the top function is executed last and
+     * the bottom one, which triggers everything, first.
      */
-    wfStateEvent.once('initialised', function apiStateInitReceiveCb() {
-        wfReceive.init(function apiInitRxCb(err) {
-            transceiveInitCb(err, 'Whiteflag message receive (rx) event chain initialised');
-        });
+
+    /**
+     * Creates endpoints after tx chain has been initialised
+     * @listens module:lib/protocol/transmit.txEvent:initialised
+     */
+    wfTxEvent.once('initialised', function apiTxInitEndpointsCb() {
+        wfApiServer.createEndpoints(endpointEventCb, endpointsInitCb);
     });
     /**
      * Initialises handling of protocol management messages
@@ -96,19 +106,12 @@ function initModules() {
         wfManagement.init(managementInitCb);
     });
     /**
-     * Creates endpoints after tx chain has been initialised
-     * @listens module:lib/protocol/transmit.txEvent:initialised
-     */
-    wfTxEvent.once('initialised', function apiTxInitEndpointsCb() {
-        wfApiServer.createEndpoints(endpointEventCb, endpointsInitCb);
-    });
-    /**
      * Starts server and depended modules after rx chain has been initialised
      * @listens module:lib/protocol/receive.rxEvent:initialised
      */
     wfRxEvent.once('initialised', function apiRxInitServerCb() {
         // Start the server
-        wfApiServer.start(function apiServerInitTransmitCb(err, url) {
+        wfApiServer.start(function apiServerStartCb(err, url) {
             serverStartCb(err, url);
 
             // Create rest api endpoints after message transmission chain has been initialised
@@ -126,6 +129,15 @@ function initModules() {
     wfRxEvent.once('initialised', function apiRxInitBlockchainsCb() {
         wfApiBlockchains.init(blockhainsInitCb);
     });
+    /**
+     * Initialises rx event chain after state has been initialised
+     * @listens module:lib/protocol/state.event:initialised
+     */
+    wfStateEvent.once('initialised', function apiStateInitReceiveCb() {
+        wfReceive.init(function apiInitRxCb(err) {
+            transceiveInitCb(err, 'Whiteflag message receive (rx) event chain initialised');
+        });
+    });
     /*
     * Connects to datastores and initiliase state,
     * which triggers all other initialisations
@@ -136,33 +148,32 @@ function initModules() {
     });
 }
 
-// CALLBACK AND HANDLER FUNCTIONS //
 /**
- * Function to handle fatal errors
- * @function errorHandler
+ * Shuts down the API gracefully
+ * @function shutdown
  * @param {object} err error object if any error
  */
-function errorHandler(err, exitcode = 2) {
-    log.fatal(MODULELOG, err.message);
-    return process.exit(exitcode);
-}
-
-/**
- * Callback to log uncaught exceptions
- * @callback shutdownCb
- * @param {object} err error object if any error
- */
-function shutdownCb() {
+function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
-    wfState.close(function apiStateCloseCb(err) {
-        if (err) {
-            log.error(MODULELOG, err.message);
-            return process.exit(1);
-        }
-        return process.exit(0);
+
+    // Stop the server
+    wfApiServer.stop(function apiServerStopCb(err) {
+        if (err) log.warn(MODULELOG, err.message);
+        if (!err) log.info(MODULELOG, 'Server stopped listening');
+
+        // Close the state
+        wfState.close(function apiStateCloseCb(err) {
+            if (err) {
+                log.error(MODULELOG, err.message);
+                return process.exit(1);
+            }
+            log.info(MODULELOG, 'Whiteflag protocol state closed');
+            return process.exit(0);
+        });
     });
 }
 
+// CALLBACK AND HANDLER FUNCTIONS //
 /**
  * Callback to log uncaught exceptions
  * @callback uncaughtExceptionCb
@@ -175,20 +186,6 @@ function uncaughtExceptionCb(err) {
         log.fatal(MODULELOG, `UNCAUGHT EXCEPTION: ${err.toString()}`);
     }
     return process.exit(2);
-}
-
-/**
- * Callback to log loglevel upon startup
- * @callback loglevelCb
- * @param {object} err error object if any error
- * @param {number} loglevel logging level
- */
-function loglevelCb(err, loglevel) {
-    if (err) {
-        log.fatal(MODULELOG, `Error setting logging level: ${err.message}`);
-        return process.exit(1);
-    }
-    log.info(MODULELOG, `Logging level set to ${loglevel}`);
 }
 
 /**
@@ -319,5 +316,5 @@ function serverStartCb(err, url) {
         }
         return process.exit(1);
     }
-    log.info(MODULELOG, `Server started on ${url}`);
+    log.info(MODULELOG, `Server started listening on ${url}`);
 }
