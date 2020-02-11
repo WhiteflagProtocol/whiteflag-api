@@ -10,6 +10,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const wfCodec = require('../../lib/protocol/codec');
@@ -24,83 +25,7 @@ log.setLogLevel(1, ignore);
  * @constant {object} testVector
  * @description Defines the encoding and decoding test data
  */
-const testVector = {
-    '1': {
-        encodedMessage: '5746313020800000000000000000000000000000000000000000000000000000000000000000b43a3a38399d1797b7b933b0b734b9b0ba34b7b71734b73a17bbb434ba32b33630b380',
-        concatinatedMessage: 'WF110A000000000000000000000000000000000000000000000000000000000000000001https://organisation.int/whiteflag',
-        wfMessage: {
-            'MetaHeader': {
-                'test': true,
-                'originatorAddress': '1C8KSK68SJjfDSBx9BpSx3qB3bePf23r77'
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'A',
-                'ReferenceIndicator': '0',
-                'ReferencedMessage': '0000000000000000000000000000000000000000000000000000000000000000'
-            },
-            'MessageBody': {
-                'VerificationMethod': '1',
-                'VerificationData': 'https://organisation.int/whiteflag'
-            }
-        }
-    },
-    '2': {
-        encodedMessage: '57463130a6a1f7da7067d41891592131a12a60c9053b4eb0aefe6263385da9f5b789421e1d7401009841882148a800000114c1e596006f04c050eca6420084',
-        concatinatedMessage: 'WF101M43efb4e0cfa83122b242634254c1920a769d615dfcc4c670bb53eb6f12843c3ae802013-08-31T04:29:15ZP00D00H00M22+30.79658-037.8260287653210042',
-        wfMessage: {
-            'MetaHeader': {
-                'test': true,
-                'originatorAddress': '1C8KSK68SJjfDSBx9BpSx3qB3bePf23r77'
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '1',
-                'MessageCode': 'M',
-                'ReferenceIndicator': '4',
-                'ReferencedMessage': '3efb4e0cfa83122b242634254c1920a769d615dfcc4c670bb53eb6f12843c3ae'
-            },
-            'MessageBody': {
-                'SubjectCode': '80',
-                'DateTime': '2013-08-31T04:29:15Z',
-                'Duration': 'P00D00H00M',
-                'ObjectType': '22',
-                'ObjectLatitude': '+30.79658',
-                'ObjectLongitude': '-037.82602',
-                'ObjectSizeDim1': '8765',
-                'ObjectSizeDim2': '3210',
-                'ObjectOrientation': '042'
-            }
-        }
-    },
-    '3': {
-        encodedMessage: '57463130232fb60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908',
-        concatinatedMessage: 'WF100F5f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942dfWhiteflag test message!',
-        wfMessage: {
-            'MetaHeader': {
-                'test': true,
-                'originatorAddress': '1C8KSK68SJjfDSBx9BpSx3qB3bePf23r77'
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'F',
-                'ReferenceIndicator': '5',
-                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
-            },
-            'MessageBody': {
-                'Text': 'Whiteflag test message!'
-            }
-        }
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/codec.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag message encoding and decoding module', function() {

@@ -10,6 +10,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const wfTransmit = require('../../lib/protocol/transmit');
@@ -29,123 +30,7 @@ log.setLogLevel(6, ignore);
  * @constant {object} testVector
  * @description Defines the encoding and decoding test data
  */
-const testVector = {
-    '3': {
-        wfMessageEncoded: {
-            'MetaHeader': {
-                'test': true,
-                'blockchain': 'test',
-                'transactionHash': '0',
-                'originatorAddress': '0',
-                'originatorPubKey': '0',
-                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
-            }
-        },
-        wfMessageUnecoded: {
-            'MetaHeader': {
-                'test': true
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'F',
-                'ReferenceIndicator': '0',
-                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
-            },
-            'MessageBody': {
-                'Text': 'Whiteflag test message!'
-            }
-        }
-    },
-    '4': {
-        wfMessageEncoded: {
-            'MetaHeader': {
-                'test': true,
-                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
-            }
-        }
-    },
-    '5': {
-        wfMessageEncoded: {
-            'MetaHeader': {
-                'test': true,
-                'blockchain': 'test',
-                'transactionHash': '0',
-                'originatorAddress': '0',
-                'originatorPubKey': '0',
-                'encodedMessage': '574520191296a59e0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
-            }
-        }
-    },
-    '6': {
-        wfMessageEncoded: {
-            'MetaHeader': {
-                'encodedMessage': '574631302307b60f0f6c4a8589bddcf076e790ac9eb1601d3fd9ced67eaaa62c9fb9644a16fabb434ba32b33630b3903a32b9ba1036b2b9b9b0b3b2908'
-            }
-        },
-        wfMessageUnecoded: {
-            'MetaHeader': {
-                'test': true,
-                'blockchain': 'test',
-                'originatorAddress': '0'
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'F',
-                'ReferenceIndicator': '0',
-                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
-            },
-            'MessageBody': {
-                'Text': 'Whiteflag test message!'
-            }
-        }
-    },
-    '7': {
-        wfMessageUnecoded: {
-            'MetaHeader': {
-                'test': true
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'F',
-                'ReferenceIndicator': '0',
-                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
-            },
-            'MessageBody': {
-                'Text': 'Whiteflag test message!'
-            }
-        }
-    },
-    '8': {
-        wfMessageUnecoded: {
-            'MetaHeader': {
-                'test': true,
-                'blockchain': 'test',
-                'originatorAddress': '0'
-            },
-            'MessageHeader': {
-                'Prefix': 'WF',
-                'Version': '1',
-                'EncryptionIndicator': '0',
-                'DuressIndicator': '0',
-                'MessageCode': 'Z',
-                'ReferenceIndicator': '0',
-                'ReferencedMessage': 'f6c1e1ed8950b137bb9e0edcf21593d62c03a7fb39dacfd554c593f72c8942df'
-            },
-            'MessageBody': {
-                'Text': 'Whiteflag test message!'
-            }
-        }
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/transceive.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag message transceive modules', function() {

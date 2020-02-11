@@ -1,0 +1,108 @@
+{
+    "1-obsolete": {
+        "$description": "NIST SP 800-38A F.5.1 CTR-AES128.Encrypt",
+        "algorithm": "aes-128-ctr",
+        "key": "2b7e151628aed2a6abf7158809cf4f3c",
+        "initCounter": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "plaintext1": "6bc1bee22e409f96e93d7e117393172a",
+        "ciphertext1": "874d6191b620e3261bef6864990db6ce",
+        "plaintext2": "ae2d8a571e03ac9c9eb76fac45af8e51",
+        "ciphertext2": "9806f66b7970fdff8617187bb9fffdff",
+        "plaintext3": "30c81c46a35ce411e5fbc1191a0a52ef",
+        "ciphertext3": "5ae4df3edbd5d35e5b4f09020db03eab",
+        "plaintext4": "f69f2445df4f9b17ad2b417be66c3710",
+        "ciphertext4": "1e031dda2fbe03d1792170a0f3009cee"
+    },
+    "2-obsolete": {
+        "$description": "NIST SP 800-38A F.5.2 CTR-AES128.Decrypt",
+        "algorithm": "aes-128-ctr",
+        "key": "2b7e151628aed2a6abf7158809cf4f3c",
+        "initCounter": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "ciphertext1": "874d6191b620e3261bef6864990db6ce",
+        "plaintext1": "6bc1bee22e409f96e93d7e117393172a",
+        "ciphertext2": "9806f66b7970fdff8617187bb9fffdff",
+        "plaintext2": "ae2d8a571e03ac9c9eb76fac45af8e51",
+        "ciphertext3":"5ae4df3edbd5d35e5b4f09020db03eab",
+        "plaintext3": "30c81c46a35ce411e5fbc1191a0a52ef",
+        "ciphertext4": "1e031dda2fbe03d1792170a0f3009cee",
+        "plaintext4": "f69f2445df4f9b17ad2b417be66c3710"
+    },
+    "1": {
+        "$description": "NIST SP 800-38A F.5.5 CTR-AES256.Encrypt",
+        "algorithm": "aes-256-ctr",
+        "key": "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4",
+        "initCounter": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "plaintext1": "6bc1bee22e409f96e93d7e117393172a",
+        "ciphertext1": "601ec313775789a5b7a7f504bbf3d228",
+        "plaintext2": "ae2d8a571e03ac9c9eb76fac45af8e51",
+        "ciphertext2": "f443e3ca4d62b59aca84e990cacaf5c5",
+        "plaintext3": "30c81c46a35ce411e5fbc1191a0a52ef",
+        "ciphertext3": "2b0930daa23de94ce87017ba2d84988d",
+        "plaintext4": "f69f2445df4f9b17ad2b417be66c3710",
+        "ciphertext4": "dfc9c58db67aada613c2dd08457941a6"
+    },
+    "2": {
+        "$description": "NIST SP 800-38A F.5.6 CTR-AES256.Decrypt",
+        "algorithm": "aes-256-ctr",
+        "key": "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4",
+        "initCounter": "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "ciphertext1": "601ec313775789a5b7a7f504bbf3d228",
+        "plaintext1": "6bc1bee22e409f96e93d7e117393172a",
+        "ciphertext2": "f443e3ca4d62b59aca84e990cacaf5c5",
+        "plaintext2": "ae2d8a571e03ac9c9eb76fac45af8e51",
+        "ciphertext3": "2b0930daa23de94ce87017ba2d84988d",
+        "plaintext3": "30c81c46a35ce411e5fbc1191a0a52ef",
+        "ciphertext4": "dfc9c58db67aada613c2dd08457941a6",
+        "plaintext4": "f69f2445df4f9b17ad2b417be66c3710"
+    },
+    "3": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "unencryptedMessage": "574631302280000088891111999a2222aaab3333bbbc4444cccd5555ddde6666eeef7777fff8010000080800000000000284c80000006a0000002020020020",
+        "encryptionIndicator": "0",
+        "encryptionKeyInput": "",
+        "encryptionInitVector": ""
+    },
+    "4": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "recipientAddress": "00000000000000000000000000000000000000000000000000",
+        "unencryptedMessage": "5746313123000000000088888889111111119999999a22222222aaaaaaab33333333bbbbbbbb0983098309830983118b118b118b118b1993199319931993219b219b219b219b29a329a329a329a331ab31ab31ab31a9b1b9b1b9b1b9b1b9c1c9c1c9c1c9c1c8",
+        "encryptionIndicator": "1",
+        "encryptionKeyInput": "",
+        "encryptionInitVector": "487118c758922d50c2d4110550b68c43",
+        "encodedMessage": "574631311f8a71076475407e372e3d5ba7023d8f2774631e55424e07cbfbd41d3e14f61fc08c7194c1ba7d3d222f4344d91e930b02b3f3ed8959316a5db0d75344e6f68dabd1b0072725a8552aa499de90c2db24b60cb01cda10629198c1e8af4359e6874c1d"
+    },
+    "5": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "unencryptedMessage": "5746313123000000000088888889111111119999999a22222222aaaaaaab33333333bbbbbbbb0983098309830983118b118b118b118b1993199319931993219b219b219b219b29a329a329a329a331ab31ab31ab31a9b1b9b1b9b1b9b1b9c1c9c1c9c1c9c1c8",
+        "encryptionIndicator": "2",
+        "encryptionKeyInput": "32676187ba7badda85ea63a69870a7133909f1999774abb2eed251073616a6e7"
+    },
+    "6": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "unencryptedMessage": "5746313223000000000088888889111111119999999a22222222aaaaaaab33333333bbbbbbbb0983098309830983118b118b118b118b1993199319931993219b219b219b219b29a329a329a329a331ab31ab31ab31a9b1b9b1b9b1b9b1b9c1c9c1c9c1c9c1c8",
+        "encryptionIndicator": "2",
+        "encryptionKeyInput": "32676187ba7badda85ea63a69870a7133909f1999774abb2eed251073616a6e7"
+    },
+    "7": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "unencryptedMessage": "5746313223000000000088888889111111119999999a22222222aaaaaaab33333333bbbbbbbb0983098309830983118b118b118b118b1993199319931993219b219b219b219b29a329a329a329a331ab31ab31ab31a9b1b9b1b9b1b9b1b9c1c9c1c9c1c9c1c8",
+        "encryptionIndicator": "2",
+        "encryptionKeyInput": "32676187ba7badda85ea63a69870a7133909f1999774abb2eed251073616a6e7",
+        "encryptionInitVector": "40aa85015d24e4601448c1ba8d7bf1aa",
+        "encodedMessage": "574631326d7658e7d17479677a0de95076989fcd7825b709349b143f2b17644e5cb2c8ded5c7f18d77447cf9dc2115e0c1c81d717b57fadaeedf27bfef8926448ff666d3d9a65168827c94b393974ebbe6b7f0599e184bfd1ace3569117c23ae17c5640f2f2d"
+    },
+    "8": {
+        "blockchain": "test",
+        "originatorAddress": "007a0baf6f84f0fa7402ea972686e56d50b707c9b67b108866",
+        "unencryptedMessage": "5746313123000000000088888889111111119999999a22222222aaaaaaab33333333bbbbbbbb0983098309830983118b118b118b118b1993199319931993219b219b219b219b29a329a329a329a331ab31ab31ab31a9b1b9b1b9b1b9b1b9c1c9c1c9c1c9c1c8",
+        "encryptionIndicator": "2",
+        "encryptionKeyInput": "32676187ba7badda85ea63a69870a7133909f1999774abb2eed251073616a6e7",
+        "encryptionInitVector": "",
+        "encodedMessage": "574631311f8a71076475407e372e3d5ba7023d8f2774631e55424e07cbfbd41d3e14f61fc08c7194c1ba7d3d222f4344d91e930b02b3f3ed8959316a5db0d75344e6f68dabd1b0072725a8552aa499de90c2db24b60cb01cda10629198c1e8af4359e6874c1d"
+    }
+}

@@ -9,6 +9,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const wfState = require('../../lib/protocol/state');
@@ -25,106 +26,7 @@ log.setLogLevel(1, ignore);
  * @constant {object} testVector
  * @description Defines state test data
  */
-const testVector = {
-    '1': {
-        message: 'K(3)',
-        transactionHash: '3abeef169a98c82467404525397f56b3199fd4eeb8466cb6fdb359495590e01f',
-        referencedMessage: '4eeb1c7e45c4642fa2071bee9037324bb81424976dabf9c444a0ba33f51231ff',
-        initVector: 'd36ce641790f6901278c5aa84a317706'
-    },
-    '2': {
-        message: 'K(2)',
-        transactionHash: '6aa545a84974d6b0e4388b72a249eedd52335847360394cfe465d3c48fb6b2b6',
-        referencedMessage: '3abeef169a98c82467404525397f56b3199fd4eeb8466cb6fdb359495590e01f',
-        initVector: 'ff9d88900a45e66375a477dbfdfa09bb'
-    },
-    '5A': {
-        name: 'Orange 1',
-        url: 'https://organisation.int/signature.json',
-        blockchain: 'blockchain-test',
-        address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        originatorPubKey: '049eba9b08425ef10dda9fc6b3db7c77bbd490150038a26cf921e27af182799dcb8e7b5e866611cca661c61689f01da9f37eb01587c5a48cd4be22de3b5935a462',
-        authenticationValid: true,
-        authenticationMessages: [
-            '66902594f0b101287e9baede15d52192ed8b31dc03ff245fae9efa5dc9b27cb6',
-            '094ac86d1990989c67d87337847d78078dac66cc99a5c30cf220a0a27aaa3780',
-            'ca34fce22951269a153ee697c6a861a1a948207381f20af6bbf8f223c37883de',
-            '6c66f9813d07d732dfdfb2107603aab0f689b8e5970549b89c340e51f1022192',
-            'd2a82d10d36493c87fd5f38a4e695bf43e4c39a198d7ca83f1cedb6ed86962db',
-            '2ca92f02530411653db5011674e9b52d72871c19a705b4f61141d63aa1ba080d',
-            'ec7d47efb9c6ecd787d4110b724aa5cf667628ead147d7d00eb8d07acd28903c'
-        ]
-    },
-    '5B': {
-        address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        blockchain: 'blockchain-test',
-        authenticationValid: false,
-        authenticationMessages: [ '465afe4ad4af5a3f6c2df22c7e4cb292ad45a69e32402173e652df26f9290ac3' ]
-    },
-    '6A': {
-        name: 'Orange 2',
-        blockchain: 'blockchain-test',
-        authTokenId: 'a24af18f799ecb997b5e8666125ca642'
-    },
-    '6B': {
-        blockchain: 'blockchain-test',
-        address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        originatorPubKey: '049eba9b08425ef10dda9fc6b3db7c77bbd490150038a26cf921e27af182799dcb8e7b5e866611cca661c61689f01da9f37eb01587c5a48cd4be22de3b5935a462',
-        authTokenId: 'a24af18f799ecb997b5e8666125ca642',
-        authenticationValid: true,
-        authenticationMessages: [ '11257467e139c5006c9ad543aaed4c3feb52429ae64bf2651315173b2d8e4f6a' ]
-    },
-    '7': {
-        name: 'Black 1',
-        url: 'https://organisation.org/whiteflag/black1.json',
-        blockchain: 'blockchain-test',
-        address: '194f88933f00F9400b34d75E5987361302208770',
-        originatorPubKey: '044d142e0af89ff36b234a3d02a77eac6d8b17cea9c21936cf143f9cb3c0394f17bd5e44aa9e356901f1ccdd7aaccf0c02227265a56d1b0b90e3af0053937a9399',
-        authenticationValid: true,
-        authenticationMessages: [
-            'b6a332cdbcb32a2cde6bde55deddfb6bf0011addff26d66e35af78c06ee8e38d',
-            '6766f3b8d3e5322f3334b7ca2bc2eaf0e25acbfcd8554323e486917758b78ed5',
-            '7c362fd1036dc5d324411caf8bdd1f36707fcbc0b53bc9855f7c954fb24cd933'
-        ]
-    },
-    '9': {
-        blockchain: 'blockchain-test',
-        account: {
-            address: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-            publicKey: '049eba9b08425ef10dda9fc6b3db7c77bbd490150038a26cf921e27af182799dcb8e7b5e866611cca661c61689f01da9f37eb01587c5a48cd4be22de3b5935a462'
-        }
-    },
-    '10': {
-        category: 'blockchainKeys',
-        id: '17SiLwHvDQaJRxFqnSSZgHv7G59oWwfHT7',
-        key: 'C9F4F0536E56AF8AC868E8AE032D2EFEFBCDE9D0F8AD46E16C8AB8DCF1C07175'
-    },
-    '11': {
-        category: 'ecdhPrivateKeys',
-        id: '17SiLwHvDQaJRxFqnSSZgHv7G59oWwfHT7',
-        key: 'b2b4ea6ebca176560f430a330ff931d90950541a37f6b0c8802eb2a2370d7252'
-    },
-    '12': {
-        category: 'presharedKeys',
-        id: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        key: 'ab7c2f450d73db685d84551e05ffa0a73f8344f0ff96cadba68cabfe4b3f7597'
-    },
-    '13': {
-        category: 'negotiatedKeys',
-        id: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        key: '961632bf5091f4ec7a9fdec74a9b36ea19f3b1cc293c50b337618ee1c695f2af'
-    },
-    '14': {
-        category: 'authTokens',
-        id: '32f2df2820df8d04f602592bd3c8776f7f44c52c',
-        key: '85b8f3d22f17fd087e5cb5b99cb5b02fdc9a6f6f66e4957f3c89229190f2d088479fc21f877598319fb8129abbeb861f19368f6f1e773aa13b996f17a5ed3de1'
-    },
-    '16': {
-        blockchain: 'blockchain-test',
-        address: '194f88933f00F9400b34d75E5987361302208770',
-        privateKey: 'e9873d79c6d87dc0fb6a5778633389f4453213303da61f20bd67fc233aa33262'
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/state.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag protocol state management module', function() {
