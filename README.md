@@ -1,5 +1,8 @@
 # Whiteflag API
 
+![Ubuntu Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Ubuntu%20Test/badge.svg)
+![Windows Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Windows%20Test/badge.svg)
+
 ## Introduction
 
 Whiteflag is a fully neutral and secure communciations means based on
