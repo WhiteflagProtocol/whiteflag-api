@@ -1,12 +1,12 @@
-name: Node.js Test
+name: Ubuntu Test
 on: [push]
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        node-version: [10.x, 12.x]
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-latest]
+        node-version: [10.x]
     steps:
     - uses: actions/checkout@v2
     - name: Setup Node.js ${{ matrix.node-version }}
