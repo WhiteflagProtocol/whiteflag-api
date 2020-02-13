@@ -9,6 +9,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const wfApiServer = require('../lib/server');
@@ -18,6 +19,7 @@ const log = require('../lib/common/logger');
 log.setLogLevel(1, ignore);
 
 // Constants //
+const OPENAPIFILE = './static/openapi.json';
 
 // TEST SCRIPT //
 testCase('Whiteflag API server module', function() {
@@ -42,10 +44,34 @@ testCase('Whiteflag API server module', function() {
             });
         });
     });
+    testCase('Consistency with the OpenAPI definition', function() {
+        // Server endpoints data
+        const PATH = 0;
+        const endpoints = wfApiServer.test.getEndpoints();
+
+        // OpenAPI definition data
+        const openapi = JSON.parse(fs.readFileSync(OPENAPIFILE));
+        let paths = Object.keys(openapi.paths).map(path => {
+            return path.replace(/{/g, ':').replace(/}/g, '');
+        });
+        // Compare server endpoints with OpenAPI defintion
+        assertion(' 4. all server endpoints must be in the OpenAPI definition', function(done) {
+            let undefinedEnpoints = [];
+            endpoints.forEach(endpoint => {
+                if (paths.indexOf(endpoint[PATH]) === -1) {
+                    undefinedEnpoints.push(endpoint[PATH]);
+                }
+            });
+            if (undefinedEnpoints.length > 0) {
+                return done(new Error(`Endpoints not in OpenAPI defintion: ${JSON.stringify(undefinedEnpoints)}`));
+            }
+            return done();
+        });
+    });
 });
 
 /*
- * No server functions are currently unit tested here.
+ * No server operations are currently tested here.
  * Server functions are assumed to be online end-to-end tested
  */
 
@@ -55,4 +81,3 @@ testCase('Whiteflag API server module', function() {
  * @private
  */
 function ignore() {}
-
