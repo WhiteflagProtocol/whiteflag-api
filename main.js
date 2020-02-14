@@ -72,8 +72,8 @@ function main(callback) {
         const loglevel = process.env.WFLOGLEVEL || apiConfig.logger.loglevel;
         if (loglevel) {
             log.setLogLevel(loglevel, function loglevelCb(err, loglevel) {
-                if (err) return callback(new Error(`Error setting logging level: ${err.message}`));
-                log.info(MODULELOG, `Logging level set to ${loglevel}`);
+                if (err) log.error(MODULELOG, `Error setting logging level: ${err.message}`);
+                log.info(MODULELOG, `Logging level: ${loglevel}`);
             });
         }
         // Initialise all modules
@@ -236,7 +236,7 @@ function transceiveInitCb(err, info) {
 function datastoresInitCb(err) {
     if (err) {
         if (err.line) {
-            log.fatal(MODULELOG, `Error in datastores configuration file on line ${err.line}, position ${err.column}: ${err.message}`);
+            log.fatal(MODULELOG, `Error in datastores configuration file on line ${err.line}: ${err.message}`);
         } else {
             log.fatal(MODULELOG, `Datastore initialisation eror: ${err.message}`);
         }
@@ -253,7 +253,7 @@ function datastoresInitCb(err) {
 function blockhainsInitCb(err) {
     if (err) {
         if (err.line) {
-            log.fatal(MODULELOG, `Error in blockchains configuration file on line ${err.line}, position ${err.column}: ${err.message}`);
+            log.fatal(MODULELOG, `Error in blockchains configuration file on line ${err.line}: ${err.message}`);
         } else {
             log.fatal(MODULELOG, `Blockchains initialisation error: ${err.message}`);
         }
