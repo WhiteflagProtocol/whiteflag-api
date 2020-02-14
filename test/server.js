@@ -47,23 +47,54 @@ testCase('Whiteflag API server module', function() {
     testCase('Consistency with the OpenAPI definition', function() {
         // Server endpoints data
         const PATH = 0;
+        const METHOD = 1;
+        const OPERATIONID = 2;
         const endpoints = wfApiServer.test.getEndpoints();
 
         // OpenAPI definition data
-        const openapi = JSON.parse(fs.readFileSync(OPENAPIFILE));
-        let paths = Object.keys(openapi.paths).map(path => {
-            return path.replace(/{/g, ':').replace(/}/g, '');
-        });
+        const openapi = JSON.parse(fs.readFileSync(OPENAPIFILE)).paths;
+        const openapiPaths = Object.keys(openapi);
+
         // Compare server endpoints with OpenAPI defintion
-        assertion(' 4. all server endpoints must be in the OpenAPI definition', function(done) {
+        assertion(' 4. all server endpoints should be in the OpenAPI definition', function(done) {
             let undefinedEnpoints = [];
+            let paths = openapiPaths.map(path => {
+                return path.replace(/{/g, ':').replace(/}/g, '');
+            });
             endpoints.forEach(endpoint => {
                 if (paths.indexOf(endpoint[PATH]) === -1) {
-                    undefinedEnpoints.push(endpoint[PATH]);
+                    undefinedEnpoints.push(`${endpoint[OPERATIONID]}: ${endpoint[METHOD].toUpperCase()} ${endpoint[PATH]}`);
                 }
             });
             if (undefinedEnpoints.length > 0) {
-                return done(new Error(`Endpoints not in OpenAPI defintion: ${JSON.stringify(undefinedEnpoints)}`));
+                return done(new Error(`Endpoints not in OpenAPI defintion (${undefinedEnpoints.length}): ${JSON.stringify(undefinedEnpoints)}`));
+            }
+            return done();
+        });
+        assertion(' 5. all OpenAPI defined methods and operations should be implemented', function(done) {
+            let unimplementedMethods = [];
+
+            // Get path from openapi defintion
+            openapiPaths.forEach(path => {
+                // Get methods for this path from openapi
+                const openapiMethods = Object.keys(openapi[path]);
+                openapiMethods.forEach(method => {
+                    // OpenAPI defintion data for this endpoint
+                    const openapiEndpoint = [ path.replace(/{/g, ':').replace(/}/g, ''), method.toUpperCase(), openapi[path][method].operationId ];
+
+                    // Count how many times this endpoint is implemented
+                    let n = 0;
+                    endpoints.forEach(endpoint => {
+                        if (endpoint.slice(0, 3)[0] === openapiEndpoint[0] &&
+                            endpoint.slice(0, 3)[1] === openapiEndpoint[1] &&
+                            endpoint.slice(0, 3)[2] === openapiEndpoint[2]) n += 1;
+                    });
+                    // The endppoint and operation should only occur once
+                    if (n !== 1) unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
+                });
+            });
+            if (unimplementedMethods.length > 1) {
+                return done(new Error(`Not implemented endpoints in OpenAPI defintion (${unimplementedMethods.length}): ${JSON.stringify(unimplementedMethods)}`));
             }
             return done();
         });
