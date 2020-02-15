@@ -19,6 +19,7 @@ The API should provide all message handling i.a.w. the standard:
 * receiving/decoding of all message types (v0.1)
 * syntax (v0.1) and reference (v0.3) checks of all message types
 * encryption/decryption (v0.8)
+* processing of test messages (v1.0)
 
 ### Blockchain
 
@@ -58,7 +59,6 @@ To keep track of Whiteflag message on the blockchain, the API should:
 Protocol features for future development:
 
 * message and area concatination using reference code 3 (*planned after v1.0*)
-* processing of `T` messages (*planned after v1.0*)
 * checking for correct subject codes (*planned after v1.0*)
 * checking for correct object codes (*planned after v1.0*)
 
