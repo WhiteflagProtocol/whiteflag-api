@@ -28,6 +28,7 @@ const wfStateEvent = require('./lib/protocol/events').stateEvent;
 
 // Module constants //
 const MODULELOG = 'api';
+const SHUTDOWNTIMEOUT = 10000;
 
 /*
  * Gracefully crash if an uncaught exception occurs and
@@ -156,21 +157,39 @@ function initModules() {
 function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
 
-    // Stop the server
-    wfApiServer.stop(function apiServerStopCb(err) {
-        if (err) log.warn(MODULELOG, err.message);
-        if (!err) log.info(MODULELOG, 'Server stopped listening');
+    // Set timeout to ensure shutdown
+    let timer = setTimeout(timeoutCb, SHUTDOWNTIMEOUT);
+    /**
+     * Closes datastores after state has been closed
+     * @listens module:lib/protocol/state.event:closed
+     */
+    wfStateEvent.once('closed', function apiStateCloseCb() {
+        log.info(MODULELOG, 'Whiteflag protocol state closed');
+        wfApiDatastores.close(function apiDatastoresCloseCb(err) {
+            if (err) log.error(MODULELOG, err.message);
 
-        // Close the state
-        wfState.close(function apiStateCloseCb(err) {
-            if (err) {
-                log.error(MODULELOG, err.message);
-                return process.exit(1);
-            }
-            log.info(MODULELOG, 'Whiteflag protocol state closed');
+            // All done
+            clearTimeout(timer);
+            log.info(MODULELOG, 'All done. Goodbye.');
             return process.exit(0);
         });
     });
+    /* Stop the server and close the state
+     * whcih triggers all other closing actions
+     */
+    wfApiServer.stop(function apiServerStopCb(err) {
+        if (err) log.warn(MODULELOG, err.message);
+        if (!err) log.info(MODULELOG, 'Server stopped');
+        wfState.close();
+    });
+    /**
+     * Shuts down forcefully after timeout
+     * @callback timeout
+     */
+    function timeoutCb() {
+        log.warning(MODULELOG, 'Taking to much time to close down everything. Exiting.');
+        return process.exit(2);
+    }
 }
 
 // CALLBACK AND HANDLER FUNCTIONS //
@@ -197,7 +216,7 @@ function uncaughtExceptionCb(err) {
  * @param {string} info event information
  */
 function endpointEventCb(err, client, event, info) {
-    if (err) return log.error(MODULELOG, `Endpoint error occured: ${err.message}`);
+    if (err) return log.error(MODULELOG, `Endpoint error: ${err.message}`);
     return log.debug(MODULELOG, `Client ${client}: ${event}: ${info}`);
 }
 
@@ -211,7 +230,7 @@ function endpointEventCb(err, client, event, info) {
  */
 function socketEventCb(err, client, event, info) {
     // Logs socket event
-    if (err) return log.error(MODULELOG, `Socket error occured: ${err.message}`);
+    if (err) return log.error(MODULELOG, `Socket error: ${err.message}`);
     return log.debug(MODULELOG, `Socket client ${client}: ${event}: ${info}`);
 }
 
@@ -250,7 +269,7 @@ function datastoresInitCb(err) {
  * @callback blockhainsInitCb
  * @param {object} err error object if any error
  */
-function blockhainsInitCb(err) {
+function blockhainsInitCb(err, blockchains) {
     if (err) {
         if (err.line) {
             log.fatal(MODULELOG, `Error in blockchains configuration file on line ${err.line}: ${err.message}`);
@@ -259,7 +278,11 @@ function blockhainsInitCb(err) {
         }
         return process.exit(1);
     }
-    log.info(MODULELOG, 'Blockchains initialisation started');
+    if (blockchains) {
+        log.info(MODULELOG, `Started the initialisation of ${blockchains.length} blockchains: ${JSON.stringify(blockchains)}`);
+    } else {
+        log.info(MODULELOG, 'Started initialisation of blockchains');
+    }
 }
 
 /**
