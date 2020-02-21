@@ -55,6 +55,8 @@
         "start": "node main.js",
         "test": "mocha --recursive",
         "doc:src": "jsdoc -c .jsdoc.json",
+        "build:doc": "npm run doc:src",
+        "build": "npm run build:doc",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
         "count-all": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore .",
         "licenses": "license-checker --summary"
