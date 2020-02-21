@@ -81,6 +81,7 @@ The `[state]` section parameters control the storage of the Whiteflag state:
 The `[tx]` section contains message transmit behaviour parameters:
 
 * `verifyReference`: boolean indicating whether to verify reference before sending message
+* `testMessagesOnly`: boolean indicating whether only test messages may be sent (to prevent accidental live message transmission when testing on a main blockchain network)
 
 The `[rx]` message contains message receiving behaviour parameters:
 

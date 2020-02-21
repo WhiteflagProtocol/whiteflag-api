@@ -92,8 +92,18 @@ testCase('Whiteflag message transceive modules', function() {
             });
         });
         // Test 7
-        assertion(' 7. should return protocol error if incorrect metaheader', function(done) {
+        assertion(' 7. should prevent a message other than a test message to be sent to the blockchain', function(done) {
             wfTxEvent.emit('messageCommitted', testVector['7'].wfMessageUnecoded, function test7TransmitCb(err, wfMessage) {
+                if (err && !(err instanceof ProcessingError)) return done(err);
+                if (err) assert.strictEqual(err.code, 'WF_API_NOT_ALLOWED');
+                assert.strictEqual(wfMessage.MetaHeader.transceiveDirection, 'TX');
+                assert.strictEqual(wfMessage.MetaHeader.encodedMessage, testVector['7'].wfMessageEncoded.MetaHeader.encodedMessage);
+                return done();
+            });
+        });
+        // Test 8
+        assertion(' 8. should return protocol error if incorrect metaheader', function(done) {
+            wfTxEvent.emit('messageCommitted', testVector['8'].wfMessageUnecoded, function test8TransmitCb(err, wfMessage) {
                 ignore(wfMessage);
                 assert(err);
                 if (!(err instanceof ProtocolError)) return done(err);
@@ -101,9 +111,9 @@ testCase('Whiteflag message transceive modules', function() {
                 return done();
             });
         });
-        // Test 8
-        assertion(' 8. should return protocol error if invalid message format', function(done) {
-            wfTxEvent.emit('messageCommitted', testVector['8'].wfMessageUnecoded, function test8TransmitCb(err, wfMessage) {
+        // Test 9
+        assertion(' 9. should return protocol error if invalid message format', function(done) {
+            wfTxEvent.emit('messageCommitted', testVector['9'].wfMessageUnecoded, function test9TransmitCb(err, wfMessage) {
                 ignore(wfMessage);
                 assert(err);
                 if (!(err instanceof ProtocolError)) return done(err);

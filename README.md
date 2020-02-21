@@ -183,3 +183,7 @@ curl http://localhost:3000/messages/send -X POST -H "Content-Type:application/js
 The API also exposes a webpage with an embedded client side socket listener
 that is available on `http://localhost:5746/listen` (default URL) when the
 API is running.
+
+When testing on a main blockchain network, the `testMessagesOnly` in
+the `[tx]` section of the `whiteflag.toml` configuration file should be set
+to `true` to prevent the accidental transmission of real messages.
