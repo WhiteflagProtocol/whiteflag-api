@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.0-alpha.4",
+    "version": "1.0.0-alpha.5",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "keywords": [
         "whiteflag",
@@ -55,6 +55,8 @@
         "start": "node main.js",
         "test": "mocha --recursive",
         "doc:src": "jsdoc -c .jsdoc.json",
+        "build:doc": "npm run doc:src",
+        "build": "npm run build:doc",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
         "count-all": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore .",
         "licenses": "license-checker --summary"

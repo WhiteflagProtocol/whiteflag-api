@@ -33,6 +33,7 @@ with the folloing arguments:
 
 * `WF_API_PROCESSING_ERROR`: generic processing error (default)
 * `WF_API_BAD_REQUEST`: the request was incomplete or incorrect syntax
+* `WF_API_NOT_ALLOWED`: the request is not allowed
 * `WF_API_NO_DATA`: the request did not return any (valid) data
 * `WF_API_NO_RESOURCE`: could not processess because resource does not exist
 * `WF_API_RESOURCE_CONFLICT`: could not process because resource alreasy exists
@@ -60,6 +61,7 @@ http response codes *generally* correspond *if* used in combination.
 |                   |`WF_API_MIDDLEWARE_ERROR` | level 5: `debug`  | (any)            |
 | `ProcessingError` |`WF_API_PROCESSING_ERROR` | level 2: `error`  | 400              |
 |                   |`WF_API_BAD_REQUEST`      | level 5: `debug`  | 400              |
+|                   |`WF_API_NOT_ALLOWED`      | level 5: `debug`  | 403              |
 |                   |`WF_API_NO_DATA`          | level 5: `debug`  | 404              |
 |                   |`WF_API_NO_RESOURCE`      | level 5: `debug`  | 404              |
 |                   |`WF_API_RESOURCE_CONFLICT`| level 5: `debug`  | 409              |

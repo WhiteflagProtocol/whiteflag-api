@@ -28,6 +28,13 @@ by the `validation.js` module. To do this, the module uses the external
 protocol. If the message format is valid, the parameter `formatValid` in the
 metaheader is set to true, and otherwise to `false`.
 
+## Test Messages
+
+Test message are supported. When testing on a main blockchain network, the
+`testMessagesOnly` in the `[tx]` section of the `whiteflag.toml` configuration
+file should be set to `true` to prevent the accidental transmission of real
+messages.
+
 ## Message References
 
 The references of Whiteflag messages are verified against the protocol

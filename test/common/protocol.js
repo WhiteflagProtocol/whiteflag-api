@@ -9,6 +9,8 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
+
 
 // Project modules required for test //
 const { type } = require('../../lib/common/protocol');
@@ -20,92 +22,9 @@ log.setLogLevel(1, ignore);
 // Constants //
 /**
  * @constant {object} testVector
- * @description Defines the cryptographic test data
+ * @description Defines the common protocol functions test data
  */
-const testVector = {
-    '1': {
-        type: 'NULL'
-    },
-    '2': {
-        message: {
-            property: null
-        },
-        type: 'INVALID'
-    },
-    '3': {
-        message: {
-            MessageHeader: {
-                property: null
-            }
-        },
-        type: 'unknown'
-    },
-    '4': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'I'
-            }
-        },
-        type: 'I'
-    },
-    '5': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'S',
-                ReferenceIndicator: '1'
-            }
-        },
-        type: 'S(1)'
-    },
-    '6': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'P',
-                ReferenceIndicator: '6'
-            },
-            MessageBody: {
-                SubjectCode: '10'
-            }
-        },
-        type: 'P10(6)'
-    },
-    '7': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'K',
-                ReferenceIndicator: '3'
-            },
-            MessageBody: {
-                CryptoDataType: '11'
-            }
-        },
-        type: 'K11(3)'
-    },
-    '8': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'A',
-                ReferenceIndicator: '0'
-            },
-            MessageBody: {
-                VerificationMethod: '2'
-            }
-        },
-        type: 'A2(0)'
-    },
-    '9': {
-        message: {
-            MessageHeader: {
-                MessageCode: 'R',
-                ReferenceIndicator: '3'
-            },
-            MessageBody: {
-                SubjectCode: '1'
-            }
-        },
-        type: 'R1(3)'
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/common/protocol.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common protocol module', function() {

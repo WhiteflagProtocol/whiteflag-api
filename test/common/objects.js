@@ -9,6 +9,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const object = require('../../lib/common/objects');
@@ -20,40 +21,9 @@ log.setLogLevel(1, ignore);
 // Constants //
 /**
  * @constant {object} testVector
- * @description Defines the cryptographic test data
+ * @description Defines the common object functions test data
  */
-const testVector = {
-    '1': {
-        sourceObject: {
-            prop1: {
-                subprop22: 'X'
-            },
-            prop2: [ 's21', 's22' ],
-            prop3: 'Z',
-            prop4: {
-                subprop41: 'Y'
-            }
-        },
-        targetObject: {
-            prop1: {
-                subprop12: 'A',
-                subprop22: 'B'
-            },
-            prop2: [ 't21', 't22', 's22' ]
-        },
-        newObject: {
-            prop1: {
-                subprop12: 'A',
-                subprop22: 'X'
-            },
-            prop2: [ 't21', 't22', 's22', 's21' ],
-            prop3: 'Z',
-            prop4: {
-                subprop41: 'Y'
-            }
-        }
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/common/objects.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common objects module', function() {
