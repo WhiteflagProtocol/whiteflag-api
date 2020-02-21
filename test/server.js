@@ -56,7 +56,7 @@ testCase('Whiteflag API server module', function() {
         const openapiPaths = Object.keys(openapi);
 
         // Compare server endpoints with OpenAPI defintion
-        assertion(' 4. all server endpoints should be in the OpenAPI definition', function(done) {
+        assertion(' 4. should find all server endpoints in the OpenAPI definition', function(done) {
             let undefinedEnpoints = [];
             let paths = openapiPaths.map(path => {
                 return path.replace(/{/g, ':').replace(/}/g, '');
@@ -71,7 +71,7 @@ testCase('Whiteflag API server module', function() {
             }
             return done();
         });
-        assertion(' 5. all OpenAPI defined methods and operations should be implemented', function(done) {
+        assertion(' 5. should have all OpenAPI defined methods and operations implemented', function(done) {
             let unimplementedMethods = [];
 
             // Get path from openapi defintion
