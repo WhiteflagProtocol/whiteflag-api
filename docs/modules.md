@@ -39,7 +39,7 @@ the correct endpoint routes and methods.
 
 All Whiteflag protocol features and logic is implemented in the protocol
 modules in `lib/protocol`. The protocol implementation is described seperately
-in `doc/protocol.md`.
+in `docs/protocol.md`.
 
 ## Blockchain modules
 

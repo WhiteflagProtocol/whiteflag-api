@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: protocol/transmit.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: protocol/transmit.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/protocol/transmit
+ * @summary Whiteflag transmit module
+ * @description Module defining the message transmit and receive events chain
+ */
+module.exports = {
+    // Transmit functions
+    init: initTx
+};
+
+// Whiteflag common functions and classes //
+const log = require('../common/logger');
+const { type } = require('../common/protocol');
+const { ProcessingError, ProtocolError } = require('../common/errors');
+
+// Whiteflag modules //
+const wfApiBlockchain = require('../blockchains');
+const wfCodec = require('./codec');
+const wfReference = require('./references');
+
+// Whiteflag event emitters //
+const wfTxEvent = require('./events').txEvent;
+
+// Whiteflag configuration data //
+const wfConfigData = require('./config').getConfig();
+
+// Module constants //
+const MODULELOG = 'transmit';
+const TESTMESSAGECODE = 'T';
+
+// MAIN MODULE FUNCTIONS //
+/**
+ * Initialises message transmit event chain by binding events to listeners/handlers.
+ * This ensures the following TX events are executed in the right order:
+ *  1.  'messageCommitted'
+ *  2.  'metadataVerified'
+ *  3.  'referenceVerified' / 'referenceSkipped'
+ *  4.  'messageEncoded'
+ *  5.  'messageSent'
+ *  6.  'messageProcessed'
+ * When an error occurs, the 'error' event is emitted.
+ * @function init
+ * @alias module:lib/protocol/transmit.init
+ * @param {function} callback function to be called upon completion
+ * @emits module:lib/protocol/events.txEvent:initialised
+ */
+function initTx(callback) {
+    /**
+     * Listener for incoming data from originator to call tx metadata verifier
+     * @listens module:lib/protocol/events.txEvent:messageCommitted
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('messageCommitted', txVerifyMetadata);
+    /**
+     * Listener for checked tx originator data to call tx message reference verifier
+     * @listens module:lib/protocol/events.txEvent:metadataVerified
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('metadataVerified', txVerifyReference);
+    /**
+     * Listener for verified tx message references to call message encoder
+     * @listens module:lib/protocol/events.txEvent:referenceVerified
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('referenceVerified', txEncodeMessage);
+    /**
+     * Listener for skipped tx message reference verification to call message encoder
+     * @listens module:lib/protocol/events.txEvent:referenceSkipped
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('referenceSkipped', txEncodeMessage);
+    /**
+     * Listener for encoded tx messages to call message sender
+     * @listens module:lib/protocol/events.txEvent:messageEncoded
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+     wfTxEvent.on('messageEncoded', txSendMessage);
+    /**
+     * Listener for sent tx messages to call api response handler
+     * @listens module:lib/protocol/events.txEvent:messageSent
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('messageSent', txCompleted);
+    /**
+     * Listener for tx errors
+     * @listens module:lib/protocol/events.txEvent:error
+     * @param {object} err error
+     * @param {object} wfMessage a Whiteflag message
+     * @param {function} callback function passed to next event to call on completion
+     */
+    wfTxEvent.on('error', txError);
+
+    // Invoke callback after binding all events to listeners/handlers
+    wfTxEvent.emit('initialised');
+    if (callback) return callback(null);
+}
+
+// PRIVATE TX EVENT HANDLERS //
+/**
+ * Logs success and calls the callback passed through the tx event chain
+ * @private
+ * @param {object} err error
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function called with error
+ */
+function txCompleted(wfMessage, callback) {
+    log.debug(MODULELOG, `Successfully processed ${type(wfMessage)} message: ` + JSON.stringify(wfMessage));
+    wfTxEvent.emit('messageProcessed', wfMessage);
+    if (callback) return callback(null, wfMessage);
+}
+
+/**
+ * Logs errors and calls the callback passed through the tx event chain
+ * @private
+ * @param {object} err the error that occured in the event chain
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function called with error
+ */
+function txError(err, wfMessage, callback) {
+    if (!err) err = new Error('Unspecified error in tx event chain');
+
+    // Log the error based on the available information
+    let messageStr = '';
+    let messageType = '';
+    if (wfMessage &amp;&amp; wfMessage.MetaHeader) {
+        if (wfMessage.MessageHeader) {
+            messageType = type(wfMessage) + ' ';
+        }
+        messageStr = ' ' + JSON.stringify(wfMessage) + ':';
+    }
+    if (err instanceof ProtocolError || err instanceof ProcessingError) {
+        if (err.causes) {
+            log.debug(MODULELOG, `Cannot process ${messageType}message:` + `${messageStr} ${err.message}: ` + JSON.stringify(err.causes));
+        } else {
+            log.debug(MODULELOG, `Cannot process ${messageType}message:` + `${messageStr} ${err.message}`);
+        }
+    } else {
+        log.error(MODULELOG, `Error processing ${messageType}message:` + `${messageStr} ${err.message}`);
+    }
+    // Finally, call the callback function passing the error
+    if (callback) return callback(err, wfMessage);
+}
+
+/**
+ * Checks incoming tx data for critical metadata errors and emits positive result
+ * @private
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function passed to next event to call on completion
+ * @emits module:lib/protocol/events.txEvent:metadataVerified
+ */
+function txVerifyMetadata(wfMessage, callback) {
+    let messageErrors = checkTxMetaHeaderErrors(wfMessage);
+    if (messageErrors.length > 0) {
+        let err = new ProtocolError('Invalid message metaheader', messageErrors, 'WF_METAHEADER_ERROR');
+        return wfTxEvent.emit('error', err, wfMessage, callback);
+    }
+    // Set transceive direction and emit event upon completion
+    wfMessage.MetaHeader.transceiveDirection = 'TX';
+    return wfTxEvent.emit('metadataVerified', wfMessage, callback);
+}
+
+/**
+ * Calls reference validator and emits positive result
+ * @private
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function passed to next event to call on completion
+ * @emits module:lib/protocol/events.txEvent:referenceVerified
+ * @emits module:lib/protocol/events.txEvent:referenceSkipped
+ */
+function txVerifyReference(wfMessage, callback) {
+    // Skip reference check for outgoing message if configured
+    if (!wfConfigData.tx.verifyReference || wfMessage.MetaHeader.autoGenerated) {
+        return wfTxEvent.emit('referenceSkipped', wfMessage, callback);
+    }
+    // Check message reference
+    wfReference.verify(wfMessage, function txValidateReferenceCb(err, wfMessage) {
+        // Check reference errors
+        if (err &amp;&amp; err instanceof ProtocolError) {
+            return wfTxEvent.emit('error', err, wfMessage, callback);
+        }
+        if (err) log.debug(MODULELOG, `Reference of outgoing ${type(wfMessage)} message could not be verified: ${err.message}`);
+
+        // Emit event upon completion and pass data
+        return wfTxEvent.emit('referenceVerified', wfMessage, callback);
+    });
+}
+
+/**
+ * Calls message encoder and emits positive result
+ * @private
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function passed to next event to call on completion
+ * @emits module:lib/protocol/events.txEvent:messageEncoded
+ */
+function txEncodeMessage(wfMessage, callback) {
+    // Validate and encode the message; on error return unencoded message
+    wfCodec.encode(wfMessage, function txEncodeCb(err, wfMessage) {
+        if (err) {
+            return wfTxEvent.emit('error', err, wfMessage, callback);
+        }
+        return wfTxEvent.emit('messageEncoded', wfMessage, callback);
+    });
+}
+
+/**
+ * Calls blockchain connector and emits positive result
+ * @private
+ * @param {object} wfMessage a Whiteflag message
+ * @param {function} callback function passed to next event to call on completion
+ * @emits module:lib/protocol/events.txEvent: messageSent
+ */
+function txSendMessage(wfMessage, callback) {
+    // Check if only test message may be sent
+    if (wfMessage.MessageHeader.MessageCode !== TESTMESSAGECODE
+        &amp;&amp; wfConfigData.tx.testMessagesOnly) {
+        return wfTxEvent.emit('error', new ProcessingError('Configuration only allows test messages to be sent', null, 'WF_API_NOT_ALLOWED'), wfMessage, callback);
+    }
+    // Send message to blockchain
+    wfApiBlockchain.sendMessage(wfMessage, function txBlockchainSendCb(err, wfMessage) {
+        if (err) {
+            return wfTxEvent.emit('error', err, wfMessage, callback);
+        }
+        if (wfMessage.MetaHeader.transmissionSuccess === true) {
+            return wfTxEvent.emit('messageSent', wfMessage, callback);
+        }
+        return wfTxEvent.emit('error', new Error('Message has not been sent for unknown reason'), wfMessage, callback);
+    });
+}
+
+// PRIVATE MODULE FUNCTIONS //
+/**
+ * Checks message to transmit for critical metadata errors
+ * @private
+ * @param {*} wfMessage
+ * @returns {array} message metaheader errors
+ */
+function checkTxMetaHeaderErrors(wfMessage) {
+    let messageErrors = [];
+
+    // Check metaheader
+    if (!wfMessage.MetaHeader) {
+        messageErrors.push('Missing metaheader');
+        return messageErrors;
+    }
+    // Check blockchain and originator address
+    if (!wfMessage.MetaHeader.blockchain) messageErrors.push('Blockchain not specified in metaheader');
+    if (!wfMessage.MetaHeader.originatorAddress) messageErrors.push('Originator address not specified in metaheader');
+
+    // Return error array
+    return messageErrors;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sat Feb 22 2020 23:04:08 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

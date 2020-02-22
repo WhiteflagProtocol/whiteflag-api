@@ -18,7 +18,7 @@ more end-user applications.
 
 For interaction with an end-user application, two methods are used.
 A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
-is available for originators to provide Whiteflag message to be sent on the
+is available for originators to provide Whiteflag messages to be sent on the
 blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
 available for clients to listen for incoming Whiteflag messages from a
 blockchain.
@@ -30,7 +30,7 @@ Whiteflag protocol, but it is not designed and tested for secure usage
 and performance in a production environment.
 
 More detailed documentation of the API can be found in the markdown files in
-the `doc/` directory and at `http://localhost:5746/` (default URL) when the
+the `docs/` directory and at `http://localhost:5746/` (default URL) when the
 API is running.
 
 The repository structure and development guidelines for the source code are
@@ -100,7 +100,7 @@ files in the `config/` directory:
 * `datastores.toml`: for datastore specific configuration
 * `whiteflag.toml`: for Whiteflag protocol related parameters
 
-Please see `doc/configuration.md` for more details.
+Please see `docs/configuration.md` for more details.
 
 ## Running the API
 
