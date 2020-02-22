@@ -1,0 +1,265 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Whiteflag API State",
+    "description": "Internal state of the Whiteflag API",
+    "version": "1",
+    "type": "object",
+    "required": [ "blockchains", "originators", "queue" ],
+    "additionalProperties": false,
+    "properties": {
+        "blockchains": {
+            "title": "Blockchains state",
+            "description": "Parameters, status information and account data of all blockchains",
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/blockchainObject"
+            }
+        },
+        "originators": {
+            "title": "Originators state",
+            "description": "Currently known Whiteflag originators on all blockchains",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/originatorObject"
+            }
+        },
+        "crypto": {
+            "title": "Cryptographic state",
+            "description": "Private cryptographic materials, such as negotiated and pre-shared secrets and keys",
+            "type": "object",
+            "required": [ "blockchainKeys", "ecdhPrivateKeys", "presharedKeys", "negotiatedKeys", "authTokens" ],
+            "additionalProperties": false,
+            "properties": {
+                "blockchainKeys": {
+                    "description": "Array of private blockchain keys for each blockchain account",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cryptoKeyObject"
+                    }
+                },
+                "ecdhPrivateKeys": {
+                    "description": "Array of ECDH private keys for each blockchain account",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cryptoKeyObject"
+                    }
+                },
+                "negotiatedKeys": {
+                    "description": "Array of ECDH negotiated keys for each originator",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cryptoKeyObject"
+                    }
+                },
+                "presharedKeys": {
+                    "description": "Array of preshared keys for each originator",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cryptoKeyObject"
+                    }
+                },
+                "authTokens": {
+                    "description": "Array of authentication tokens for each originator",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cryptoKeyObject"
+                    }
+                }
+            }
+        },
+        "queue" : {
+            "title": "Queue",
+            "description": "Data for delayed action, such as unprocessed messages and block confirmations",
+            "type": "object",
+            "properties": {
+                "initVectors": {
+                    "title": "Initialisation vectors",
+                    "description": "Queue with initialisation vectors for unprocessed encrypted message",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [ "transactionHash", "referencedMessage", "initVector" ],
+                        "properties": {
+                            "transactionHash": {
+                                "description": "The transaction hash of crypto message with the initialisation vector",
+                                "type": "string"
+                            },
+                            "referencedMessage": {
+                                "description": "The transaction hash of the unprocessed encrypted message",
+                                "type": "string"
+                            },
+                            "initVector": {
+                                "description": "The initialisation vector required for decryption",
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "blockDepths": {
+                    "title": "Message confirmations",
+                    "description": "Queue with block depths of unconfirmed messages",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [ "transactionHash", "blockchain", "blockNumber", "blockDepth" ],
+                        "properties": {
+                            "transactionHash": {
+                                "description": "The transaction hash of message to be confirmed",
+                                "type": "string"
+                            },
+                            "blockchain": {
+                                "description": "The name of the underlying blockchain",
+                                "type": "string"
+                            },
+                            "blockNumber": {
+                                "description": "The number of the block the transaction is in",
+                                "type": "string"
+                            },
+                            "blockDepth": {
+                                "description": "The number of blocks from current block where transaction is in",
+                                "type": "string"
+                            },
+                            "confirmed": {
+                                "description": "Indication whether the message is confirmed, i.e. the minimal block depth has been reached",
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "blockchainObject": {
+            "title": "Blockchain state",
+            "description": "Blockchain parameters, status and account data",
+            "type": "object",
+            "properties": {
+                "parameters": {
+                    "description": "Blockchain specific parameters, such as name and node information",
+                    "additionalProperties": true
+                },
+                "status": {
+                    "description": "Blockchain status, such as current block height, block times, etc.",
+                    "additionalProperties": true,
+                    "properties": {
+                        "updated": {
+                            "description": "The date-time of the latest update to the status information",
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "currentBlock": {
+                            "description": "The latest processed block of the blockchain",
+                            "type": "integer"
+                        },
+                        "highestBlock": {
+                            "description": "The currently known block height of the blockchain",
+                            "type": "integer"
+                        }
+                    }
+                },
+                "accounts": {
+                    "description": "Account available on this blockchain",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/blockchainAccountObject"
+                    }
+                }
+            }
+        },
+        "blockchainAccountObject": {
+            "title": "Blockchain account",
+            "description": "Blockchain account details",
+            "type": "object",
+            "required": [ "address" ],
+            "additionalProperties": true,
+            "properties": {
+                "address": {
+                    "description": "The blockchain address that identifies the account",
+                    "type": "string" 
+                },
+                "publicKey": {
+                    "description": "The public key in raw hexadecimal format",
+                    "type": "string"
+                },
+                "privateKey": {
+                    "description": "The private key in raw hexadecimal format",
+                    "type": "string"
+                },
+                "transactionCount": {
+                    "description": "Number of transactions sent by blockchain address",
+                    "type": "integer"
+                },
+                "balance": {
+                    "description": "Balance available for this blockchain address",
+                    "type": "integer"
+                }
+            }
+        },
+        "originatorObject": {
+            "title": "Originator state",
+            "description": "Originator details and authentication status",
+            "type": "object",
+            "required": [ "name", "blockchain", "address" ],
+            "additionalProperties": true,
+            "properties": {
+                "name": {
+                    "description": "The name of the originator",
+                    "type": "string"
+                },
+                "blockchain": {
+                    "description": "The name of the blockchain used by the originator",
+                    "type": "string"
+                },
+                "address": {
+                    "description": "The blockchain address that identifies the originator",
+                    "type": "string"
+                },
+                "originatorPubKey": {
+                    "description": "The public key associated with the blockchain account of the originator",
+                    "type": "string"
+                },
+                "ecdhPublicKey": {
+                    "description": "The state crypto identifier of the ECDH public key of this originator",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The url of the authentication signature of the originator",
+                    "type": "string"
+                }, 
+                "authTokenId": {
+                    "description": "The state crypto identifier of the authentication token for this originator",
+                    "type": "string"
+                }, 
+                "authenticationValid": {
+                    "description": "Indication whether the originator has been authenticated at some point in time",
+                    "type": "boolean"
+                },
+                "authenticationMessages": {
+                    "description": "Transaction hashes of valid original authentication messages",
+                    "type": "array",
+                    "items": {
+                        "description": "Transaction hash of a valid original authentication message",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "cryptoKeyObject": {
+            "description": "Cryptographic data",
+            "type": "object",
+            "required": [ "id", "secret"],
+            "additionalProperties": true,
+            "properties": {
+                "id": {
+                    "description": "A unqiue identifier for the stored data",
+                    "type": "string"
+                },
+                "secret": {
+                    "description": "The encrypted data with encryption parameters",
+                    "type": "object"
+                }
+            }
+        }
+    }
+}
