@@ -54,18 +54,14 @@
             }
         }
     ],
-    "security": [
-        {
-            "description": "Basic HTTP authorization",
-            "type": "http",
-            "scheme": "basic"
-        }
+    "security": [ 
+        { "HTTP Authentication": [] }
     ],
     "paths": {
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with all incoming and outgoing messages from the primary datastore.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. This operation may be disabled in the configuration.",
                 "operationId": "getMessages",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" },
@@ -77,6 +73,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -98,6 +100,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -126,6 +134,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     },
@@ -138,7 +152,7 @@
         "/messages/encode": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages.",
+                "description": "Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages. This operation may be disabled in the configuration.",
                 "operationId": "encodeMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessage"
@@ -149,6 +163,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -162,7 +182,7 @@
         "/messages/decode": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages.",
+                "description": "Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.",
                 "operationId": "decodeMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessageEncoded"
@@ -173,6 +193,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -186,7 +212,7 @@
         "/messages/validate": {
             "post": {
                 "tags": [ "Messages" ],
-                "description": "Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages.",
+                "description": "Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages. This operation may be disabled in the configuration.",
                 "operationId": "validateMessage",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfMessage"
@@ -198,6 +224,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     }
@@ -207,7 +239,7 @@
         "/messages/references": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash.",
+                "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageReferences",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" }
@@ -218,6 +250,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -234,7 +272,7 @@
         "/messages/sequence": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash.",
+                "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageSequence",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHash" }
@@ -245,6 +283,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -261,11 +305,17 @@
         "/blockchains": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns an array with all blockchains, regardless of their current status.",
+                "description": "Returns an array with all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
                 "operationId": "getAllBlockchains",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/blockchainsState"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -276,11 +326,17 @@
         "/blockchains/{blockchain}": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns the configuration and status of the specified blockchain.",
+                "description": "Returns the configuration and status of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getBlockchainState",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/blockchainState"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -294,11 +350,17 @@
         "/blockchains/{blockchain}/accounts": {
             "get": {
                 "tags": [ "Blockchains", "Accounts", "State" ],
-                "description": "Returns the accounts of the specified blockchain.",
+                "description": "Returns the accounts of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getAccounts",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/blockchainAccounts"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -322,6 +384,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "409": {
                         "$ref": "#/components/responses/error409"
                     },
@@ -340,11 +408,17 @@
         "/blockchains/{blockchain}/accounts/{account}": {
             "get": {
                 "tags": [ "Blockchains", "Accounts", "State" ],
-                "description": "Returns the details of the specified blockchain account.",
+                "description": "Returns the details of the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "getAccount",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/blockchainAccount"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -368,6 +442,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     },
@@ -389,6 +469,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -416,6 +502,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -447,6 +539,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "404": {
                         "$ref": "#/components/responses/error404"
                     },
@@ -465,7 +563,7 @@
         "/signature/decode": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Decodes a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages.",
+                "description": "Decodes a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.",
                 "operationId": "decodeSignature",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfSignature"
@@ -477,6 +575,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     }
@@ -486,7 +590,7 @@
         "/signature/verify": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Verifies a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages.",
+                "description": "Verifies a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.",
                 "operationId": "verifySignature",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfExtSignature"
@@ -497,6 +601,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -519,6 +629,12 @@
                     "200": {
                         "$ref": "#/components/responses/originatorsState"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "500": {
                         "$ref": "#/components/responses/error500"
                     }
@@ -534,6 +650,12 @@
                     "200": {
                         "$ref": "#/components/responses/originatorState"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "404": {
                         "$ref": "#/components/responses/error404"
                     },
@@ -546,11 +668,17 @@
         "/originators/{address}/psk/{account}": {
             "get": {
                 "tags": [ "Encryption", "Originators", "State" ],
-                "description": "Checks for existence of a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account.",
+                "description": "Checks for existence of a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "getPreSharedKey",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/pskAvailable"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -571,6 +699,12 @@
                     "202": {
                         "$ref": "#/components/responses/pskAccepted"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "404": {
                         "$ref": "#/components/responses/error404"
                     },
@@ -586,6 +720,12 @@
                 "responses": {
                     "202": {
                         "$ref": "#/components/responses/pskDeleted"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -611,6 +751,12 @@
                     "400": {
                         "$ref": "#/components/responses/error400"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "409": {
                         "$ref": "#/components/responses/error409"
                     },
@@ -623,11 +769,17 @@
         "/originators/tokens/{authTokenId}": {
             "get": {
                 "tags": [ "Authentication", "Originators", "State" ],
-                "description": "Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2.",
+                "description": "Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. This operation may be disabled in the configuration.",
                 "operationId": "getAuthToken",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/authTokenAvailable"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -645,6 +797,12 @@
                     "202": {
                         "$ref": "#/components/responses/authTokenDeleted"
                     },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
                     "404": {
                         "$ref": "#/components/responses/error404"
                     },
@@ -657,7 +815,7 @@
         "/token/create": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an `A2` authentication message by the specified blockchain account.",
+                "description": "Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an `A2` authentication message by the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "createToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfAuthToken"
@@ -668,6 +826,12 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
@@ -684,11 +848,17 @@
         "/queues/{queue}": {
             "get": {
                 "tags": [ "State" ],
-                "description": "Returns the requested queue in the Whiteflag state. The queues used by the API are:\n * `initVectors`: stores the initialiation vectors received with `K` messages until the corresponding encrypted message is received\n * `blockDepths`: tracks the block depth of incoming and outgoing messages until their configured confirmation depth is reached",
+                "description": "Returns the requested queue in the Whiteflag state. The queues used by the API are:\n * `initVectors`: stores the initialiation vectors received with `K` messages until the corresponding encrypted message is received\n * `blockDepths`: tracks the block depth of incoming and outgoing messages until their configured confirmation depth is reached. This operation may be disabled in the configuration.",
                 "operationId": "getQueue",
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/queueState"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -701,6 +871,13 @@
         }
     },
     "components": {
+        "securitySchemes": {
+            "HTTP Authentication": {
+                "description": "The API may be configured to use basic HTTP authentication, as specified in [RFC 7617](https://tools.ietf.org/html/rfc7617). It uses the standard `Authorization` field in the HTTP header as follows: `Authorization: Basic <credentials>`, where the credentials are the base64 encoded username and password joined by a single colon: `<username>:<password>`",
+                "type": "http",
+                "scheme": "basic"
+            }
+        },
         "parameters": {
             "blockchainName": {
                 "description": "The name of a blockchain",
@@ -1071,6 +1248,16 @@
             },
             "error401": {
                 "description": "Authentication is required and was either not provided or has failed",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/responseBodyErrors"
+                        }
+                    }
+                }
+            },
+            "error403": {
+                "description": "Request is not allowed, typically because the operation is disabled in the configuration",
                 "content": {
                     "application/json": {
                         "schema": {
