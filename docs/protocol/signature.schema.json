@@ -1,0 +1,118 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Whiteflag Authentication Signature formats",
+    "version": "1",
+    "oneOf": [
+        { "$ref": "#/definitions/wfSignature" },
+        { "$ref": "#/definitions/wfSignaturePayload"},
+        { "$ref": "#/definitions/wfSignatureDecoded"},
+        { "$ref": "#/definitions/wfExtSignature"}
+    ],
+    "definitions": {
+        "wfSignature": {
+            "title": "Whiteflag Authentication Signature",
+            "description": "Flattened JWS JSON Serialization of a Whiteflag authentication signature",
+            "$comment": "Flattened JWS JSON Serialization objects are defined in RFC 7515",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "protected",
+                "payload",
+                "signature"
+            ],
+            "properties": {
+                "protected": {
+                    "description": "Encoded signature header to identify which algorithm is used to generate the signature",
+                    "type": "string"
+                },
+                "payload": {
+                    "description": "Encoded payload with the information as defined in the Whiteflag protocol specification",
+                    "type": "string"
+                },
+                "signature": {
+                    "description": "The digital signature validating the information contained in the payload",
+                    "type": "string"
+                }
+            }
+        },
+        "wfSignaturePayload": {
+            "title": "Whiteflag Authentication Signature payload",
+            "description": "Payload object of a Whiteflag authentication signature",
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+                "addr",
+                "orgname",
+                "url"
+            ],
+            "properties": {
+                "addr": {
+                    "title": "Blockchain address",
+                    "description": "The blockchain address used to send the corresponding `A1` message and of which the corresponding private key is used to create the signature",
+                    "type": "string"
+                },
+                "orgname": {
+                    "title": "Originator name",
+                    "description": "The name of the originator, which can be chosen freely",
+                    "type": "string"
+                },
+                "url": {
+                    "title": "Signature URL",
+                    "description": "The same URL as in the `VerificationData` field of the corresponding `A1` message",
+                    "type": "string"
+                },
+                "extpubkey": {
+                    "title": "Extended HD Public Key",
+                    "description": "The serialised extended parent public key from which the child public keys and addresses used by this originator can be derived (currently not supported)",
+                    "type": "string"
+                }
+            }
+        },
+        "wfSignatureDecoded": {
+            "title": "Decoded Whiteflag Authentication Signature",
+            "description": "Object with a decoded Whiteflag authentication signature",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "header",
+                "payload",
+                "sigfnature"
+            ],
+            "properties": {
+                "header": {
+                    "description": "Signature header to identify which algorithm is used to generate the signature",
+                    "type": "object"
+                },
+                "payload": {
+                    "$ref": "#/definitions/wfSignaturePayload"
+                },
+                "signature": {
+                    "description": "The digital signature validating the information contained in the payload",
+                    "type": "string"
+                }
+            }
+        },
+        "wfExtSignature": {
+            "title": "Extended Whiteflag Authentication Signature object",
+            "description": "Whiteflag authentication signature with additional information for verification",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "blockchain",
+                "originatorPubKey",
+                "wfSignature"
+            ],
+            "properties": {
+                "blockchain" : {
+                    "$ref": "metaheader.schema.json#/properties/blockchain"
+                },
+                "originatorPubKey": {
+                    "$ref": "metaheader.schema.json#/properties/originatorPubKey"
+                },
+                "wfSignature": {
+                    "$ref": "#/definitions/wfSignature"
+                }
+            }
+        }
+    }
+}
