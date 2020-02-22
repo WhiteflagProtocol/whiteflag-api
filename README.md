@@ -12,16 +12,17 @@ to create shared situational awareness.
 
 This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
 software implementation of the API layer that provides an interface with the
-Whiteflag messaging network on one or more underlying blockchains. As such,
-it acts as a message transceiver between one or more blockchains and one or
-more end-user applications.
+Whiteflag messaging network on one or more underlying blockchains. In other
+words, it acts as a message transceiver between one or more blockchains and
+one or more end-user applications.
 
-For interaction with an end-user application, two methods are used.
-A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
-is available for originators to provide Whiteflag messages to be sent on the
-blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
-available for clients to listen for incoming Whiteflag messages from a
-blockchain.
+For interaction with an end-user application, two methods are used:
+* a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
+  is available for originators to provide Whiteflag messages to be sent on the
+  blockchain and manage authentication, encryption keys, etc.
+* a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
+  available for clients to listen for incoming Whiteflag messages from a
+  blockchain.
 
 This Whiteflag API is a so called Minimum Viable Product (MVP). This means
 that it only supports the core features of the Whiteflag protocol and
@@ -31,7 +32,8 @@ and performance in a production environment.
 
 More detailed documentation of the API can be found in the markdown files in
 the `docs/` directory and at `http://localhost:5746/` (default URL) when the
-API is running.
+API is running. The documentation is also available on
+[Github Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
 
 The repository structure and development guidelines for the source code are
 described in `CONTRIBUTING.md`.

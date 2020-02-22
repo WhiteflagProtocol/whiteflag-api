@@ -19,26 +19,26 @@ when the API is running.
 
 ## Configuration
 
-* [Configuration](configuration.md)
-
-## REST API
-
-* [OpenAPI Definition](openapi.md)
+* [Configuration Files](configuration.md)
 
 ## Whiteflag Protocol
 
 * [Protocol Implementation](protocol.md)
 * [Protocol State](state.md)
 
-## Blockchains
+## Blockchain Implementations
 
 * [Ethereum](ethereum.md)
 
-## Source code
+## Source Code Description
 
 * [JavaScript Modules](modules.md)
 * [Logging](logging.md)
 * [Events](events.md)
 * [Error Handling](errors.md)
 * [Static Components](static.md)
-* [Detailed source code documentation](src/index.html)
+
+## Detailed API and Source Code References
+
+* External REST interface: [OpenAPI Definition](openapi.md)
+* Internal software interfaces: [JSDoc Documentation](src/index.html)
