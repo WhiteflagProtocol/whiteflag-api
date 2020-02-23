@@ -1,12 +1,16 @@
 name: Windows Test
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - develop
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest]
-        node-version: [10.x]
+        node-version: [10.x, 12.x, 13.x]
     steps:
     - uses: actions/checkout@v2
     - name: Setup Node.js ${{ matrix.node-version }}

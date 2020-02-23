@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.0-alpha.5",
+    "version": "1.0.0-alpha.6-dev",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "keywords": [
         "whiteflag",
@@ -56,7 +56,7 @@
         "start": "node main.js",
         "test": "mocha --recursive",
         "doc:src": "jsdoc -c .jsdoc.json",
-        "doc:openapi": "widdershins --shallowSchemas -c static/openapi.json -o docs/openapi.md && cp lib/protocol/static/* docs/protocol/",
+        "doc:openapi": "widdershins --shallowSchemas -c static/openapi.json -o docs/openapi.md && cp -p lib/protocol/static/* docs/protocol/",
         "build:doc": "npm run doc:openapi && npm run doc:src",
         "build": "npm run build:doc",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
@@ -64,6 +64,6 @@
         "licenses": "license-checker --summary"
     },
     "engines": {
-        "node": "10.x.x"
+        "node": ">= 10.x.x"
     }
 }
