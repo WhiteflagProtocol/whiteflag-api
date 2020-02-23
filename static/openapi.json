@@ -61,11 +61,15 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.",
                 "operationId": "getMessages",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/blockchainQuery" },
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/originatorAddressQuery" },
+                    { "$ref": "#/components/parameters/originatorPubKeyQuery" },
+                    { "$ref": "#/components/parameters/recipientAddressQuery" },
+                    { "$ref": "#/components/parameters/transceiveDirectionQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -242,7 +246,8 @@
                 "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageReferences",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" }
+                    { "$ref": "#/components/parameters/transactionHash" },
+                    { "$ref": "#/components/parameters/blockchain" }
                 ],
                 "responses": {
                     "200": {
@@ -275,7 +280,8 @@
                 "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageSequence",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" }
+                    { "$ref": "#/components/parameters/transactionHash" },
+                    { "$ref": "#/components/parameters/blockchain" }
                 ],
                 "responses": {
                     "200": {
@@ -928,7 +934,7 @@
                 "description": "The hash of a blockchain transaction",
                 "name": "transactionHash",
                 "in": "query",
-                "required": false,
+                "required": true,
                 "schema": {
                     "type": "string"
                 }
@@ -936,6 +942,60 @@
             "blockchain": {
                 "description": "The name of a blockchain",
                 "name": "blockchain",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "blockchainQuery": {
+                "description": "The name of a blockchain",
+                "name": "blockchain",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "transactionHashQuery": {
+                "description": "The hash of a blockchain transaction",
+                "name": "transactionHash",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "originatorAddressQuery": {
+                "description": "The blockchain address of an originator",
+                "name": "originatorAddress",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "originatorPubKeyQuery": {
+                "description": "The public key of an originator",
+                "name": "originatorPubKey",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "recipientAddressQuery": {
+                "description": "The blockchain address of the recipient (only known for decrypted messages)",
+                "name": "recipientAddress",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "transceiveDirectionQuery": {
+                "description": "The transceive direction indicating if a message has been sent (TX) or has been received (RX)",
+                "name": "transceiveDirection",
                 "in": "query",
                 "required": false,
                 "schema": {
