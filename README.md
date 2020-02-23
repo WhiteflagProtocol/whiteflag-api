@@ -2,7 +2,6 @@
 
 ![GitHub latest release](https://img.shields.io/github/v/release/whiteflagprotocol/whiteflag-api?label=latest&logo=github&sort=semver)
 ![GitHub dev version](https://img.shields.io/github/package-json/v/whiteflagprotocol/whiteflag-api/develop?label=development&logo=github)
-
 ![Ubuntu Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Ubuntu%20Test/badge.svg)
 ![Windows Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Windows%20Test/badge.svg)
 
