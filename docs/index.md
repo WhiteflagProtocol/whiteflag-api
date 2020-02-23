@@ -17,9 +17,10 @@ The following documetation is available. The Whiteflag Protocol and API
 specifications are also available at `http://localhost:5746/` (default URL)
 when the API is running.
 
-## Configuration
+## Installation and Configuration
 
-* [Configuration Files](configuration.md)
+* [Installation](installation.md)
+* [Configuration](configuration.md)
 
 ## Whiteflag Protocol
 
