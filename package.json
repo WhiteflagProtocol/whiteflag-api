@@ -19,7 +19,7 @@
         "jsonschema": "^1.2.5",
         "jsonwebtoken": "^8.5.1",
         "key-encoder": "^1.1.7",
-        "mongodb": "^2.2.36",
+        "mongodb": "^3.5.3",
         "socket.io": "^2.3.0",
         "toml": "^3.0.0",
         "web3": "^2.0.0-alpha.1"
