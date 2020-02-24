@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/blockchains/ethereum</title>
+    <title>JSDoc: Module: lib/operations/originators</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/blockchains/ethereum</h1>
+    <h1 class="page-title">Module: lib/operations/originators</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Module to use Ethereum as underlying blockchain for Whiteflag</p></div>
+            <div class="description"><p>Module with api originators endpoint handlers</p></div>
         
 
         
@@ -87,7 +87,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line2">line 2</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line2">line 2</a>
     </li></ul></dd>
     
 
@@ -144,7 +144,7 @@
     
 
     
-    <h4 class="name" id="~createAccount"><span class="type-signature">(inner) </span>createAccount<span class="signature">(privateKey<span class="signature-attributes">opt</span>, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~deleteAuthToken"><span class="type-signature">(inner) </span>deleteAuthToken<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -152,187 +152,7 @@
 
 
 <div class="description">
-    <p>Creates a new Ethereum blockchain account</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>privateKey</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>hexadecimal encoded private key</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainCreateAccountCb</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line396">line 396</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~deleteAccount"><span class="type-signature">(inner) </span>deleteAccount<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Deletes Ethereum blockchain account</p>
+    <p>Deletes an authentication token of an originator</p>
 </div>
 
 
@@ -368,624 +188,7 @@
 
         <tr>
             
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the address of the account to be deleted</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainDeleteAccountCb</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line470">line 470</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~getBinaryAddress"><span class="type-signature">(inner) </span>getBinaryAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Returns an Ethereum address in binary encoded form</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the blockchain address</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainBinaryAddressCb</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line373">line 373</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~getTransaction"><span class="type-signature">(inner) </span>getTransaction<span class="signature">(transactionHash, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Gets the Ethereum transaction in Whiteflag message structure</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>transactionHash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainDeleteAccountCb</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line260">line 260</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~initEthereum"><span class="type-signature">(inner) </span>initEthereum<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Initialises the Ethereum blockchain</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainInitCb</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called after intitialising Ethereum</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line76">line 76</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~lookupMessage"><span class="type-signature">(inner) </span>lookupMessage<span class="signature">(wfQuery, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Performs a simple query to find a message on Ethereum by transaction hash</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wfQuery</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1001,20 +204,20 @@
 
             
 
-            <td class="description last"><p>the property of the transaction to look up</p></td>
+            <td class="description last"><p>the http request</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>res</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">blockchainLookupMessageCb</span>
+<span class="param-type">object</span>
 
 
             
@@ -1024,128 +227,14 @@
 
             
 
-            <td class="description last"><p>function to be called after Whiteflag message lookup</p></td>
+            <td class="description last"><p>the http response</p></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line218">line 218</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~requestKeys"><span class="type-signature">(inner) </span>requestKeys<span class="signature">(originatorPubKey, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Requests the Ethereum address and correctly encoded pubic key of an originator</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>originatorPubKey</code></td>
+                <td class="name"><code>operationId</code></td>
             
 
             <td class="type">
@@ -1161,7 +250,7 @@
 
             
 
-            <td class="description last"><p>the raw hex public key of the originator</p></td>
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1174,7 +263,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainRequestKeysCb</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1184,7 +273,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1225,7 +314,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line337">line 337</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line367">line 367</a>
     </li></ul></dd>
     
 
@@ -1261,7 +350,7 @@
     
 
     
-    <h4 class="name" id="~requestSignature"><span class="type-signature">(inner) </span>requestSignature<span class="signature">(signPayload, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~deleteOriginator"><span class="type-signature">(inner) </span>deleteOriginator<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1269,7 +358,7 @@
 
 
 <div class="description">
-    <p>Requests a Whiteflag signature for a specific Ethereum address</p>
+    <p>Updates originator state data</p>
 </div>
 
 
@@ -1305,7 +394,7 @@
 
         <tr>
             
-                <td class="name"><code>signPayload</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1321,7 +410,53 @@
 
             
 
-            <td class="description last"><p>the JWS payload for the Whiteflag signature</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1334,7 +469,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainRequestSignatureCb</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1344,7 +479,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1385,7 +520,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line295">line 295</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -1421,7 +556,7 @@
     
 
     
-    <h4 class="name" id="~sendMessage"><span class="type-signature">(inner) </span>sendMessage<span class="signature">(wfMessage, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~deletePreSharedKey"><span class="type-signature">(inner) </span>deletePreSharedKey<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1429,7 +564,7 @@
 
 
 <div class="description">
-    <p>Sends an encoded message on the Ethereum blockchain</p>
+    <p>Deletes pre-shared key for an originator</p>
 </div>
 
 
@@ -1465,7 +600,7 @@
 
         <tr>
             
-                <td class="name"><code>wfMessage</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1481,7 +616,53 @@
 
             
 
-            <td class="description last"><p>the Whiteflag message to be sent on Ethereum</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1494,7 +675,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainSendMessageCb</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1504,7 +685,7 @@
 
             
 
-            <td class="description last"><p>function to be called after sending Whiteflag message</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1545,7 +726,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line197">line 197</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line247">line 247</a>
     </li></ul></dd>
     
 
@@ -1581,7 +762,7 @@
     
 
     
-    <h4 class="name" id="~transferValue"><span class="type-signature">(inner) </span>transferValue<span class="signature">(transfer, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getAuthToken"><span class="type-signature">(inner) </span>getAuthToken<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1589,7 +770,7 @@
 
 
 <div class="description">
-    <p>Transfers ether from one Ethereum address to an other address</p>
+    <p>Checks for an authentication token of an originator</p>
 </div>
 
 
@@ -1625,7 +806,7 @@
 
         <tr>
             
-                <td class="name"><code>transfer</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1641,7 +822,53 @@
 
             
 
-            <td class="description last"><p>the object with the transaction details to transfer value</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1654,7 +881,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainTransferValueCb</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1664,7 +891,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1705,7 +932,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line378">line 378</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line281">line 281</a>
     </li></ul></dd>
     
 
@@ -1741,7 +968,7 @@
     
 
     
-    <h4 class="name" id="~updateAccount"><span class="type-signature">(inner) </span>updateAccount<span class="signature">(account, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getOriginator"><span class="type-signature">(inner) </span>getOriginator<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1749,7 +976,7 @@
 
 
 <div class="description">
-    <p>Updates Ethereum blockchain account attributes</p>
+    <p>Provides current originator state from state module</p>
 </div>
 
 
@@ -1785,7 +1012,7 @@
 
         <tr>
             
-                <td class="name"><code>account</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1801,7 +1028,53 @@
 
             
 
-            <td class="description last"><p>the account information including address to be updated</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1814,7 +1087,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainUpdateAccountCb</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1824,7 +1097,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1865,7 +1138,1037 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_ethereum.js.html">blockchains/ethereum.js</a>, <a href="blockchains_ethereum.js.html#line443">line 443</a>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line55">line 55</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getOriginators"><span class="type-signature">(inner) </span>getOriginators<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Provides current state of all originators from state module</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line34">line 34</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getPreSharedKey"><span class="type-signature">(inner) </span>getPreSharedKey<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Checks for pre-shared key for an originator</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line153">line 153</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~storeAuthToken"><span class="type-signature">(inner) </span>storeAuthToken<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stores an authentication token for an originator</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line315">line 315</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~storePreSharedKey"><span class="type-signature">(inner) </span>storePreSharedKey<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stores or updates pre-shared key for an originator</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line197">line 197</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~updateOriginator"><span class="type-signature">(inner) </span>updateOriginator<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Updates originator state data</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_originators.js.html">operations/originators.js</a>, <a href="operations_originators.js.html#line80">line 80</a>
     </li></ul></dd>
     
 

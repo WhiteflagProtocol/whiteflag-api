@@ -87,13 +87,15 @@ testCase('Whiteflag API server module', function() {
                     endpoints.forEach(endpoint => {
                         if (endpoint.slice(0, 3)[0] === openapiEndpoint[0] &&
                             endpoint.slice(0, 3)[1] === openapiEndpoint[1] &&
-                            endpoint.slice(0, 3)[2] === openapiEndpoint[2]) n += 1;
+                            endpoint.slice(0, 3)[2] === openapiEndpoint[2]) {
+                                n += 1;
+                            }
                     });
                     // The endppoint and operation should only occur once
                     if (n !== 1) unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
                 });
             });
-            if (unimplementedMethods.length > 1) {
+            if (unimplementedMethods.length > 0) {
                 return done(new Error(`Not implemented endpoints in OpenAPI defintion (${unimplementedMethods.length}): ${JSON.stringify(unimplementedMethods)}`));
             }
             return done();

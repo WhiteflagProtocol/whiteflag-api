@@ -629,7 +629,7 @@
         "/originators": {
             "get": {
                 "tags": [ "Originators", "State" ],
-                "description": "Returns the details of all kwown Whiteflag originators.",
+                "description": "Returns the details of all known Whiteflag originators.",
                 "operationId": "getAllOriginators",
                 "responses": {
                     "200": {
@@ -661,6 +661,41 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [ "Originators", "State" ],
+                "description": "Updates the details of the specified Whiteflag originator. Only the provided properties will be updated. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
+                "operationId": "updateOriginator",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/originatorData"
+                },
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/originatorAccepted"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [ "Originators", "State" ],
+                "description": "Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
+                "operationId": "deleteOriginator",
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/originatorAccepted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -1141,7 +1176,7 @@
                 }
             },
             "wfExtSignature": {
-                "description": "Request to verify a Whiteflag Authentication Signature",
+                "description": "An extended Whiteflag Authentication Signature",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1178,7 +1213,7 @@
                 }
             },
             "transferValue": {
-                "description": "Request to transfer value to another blockchain account",
+                "description": "Data required to transfer value to another blockchain account",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1205,7 +1240,7 @@
                 }
             },
             "createAccount": {
-                "description": "Request to create blockchain account",
+                "description": "Blockchain account data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1223,7 +1258,7 @@
                 }
             },
             "updateAccount": {
-                "description": "Request to update blockchain account",
+                "description": "Blockchain account data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1232,21 +1267,18 @@
                     }
                 }
             },
-            "deleteAccount": {
-                "description": "Request to delete blockchain account",
+            "originatorData": {
+                "description": "Originator data as stored in Whiteflag protocol state; all properties are optional and only provided properties will be updated",
                 "content": {
                     "application/json": {
                         "schema": {
-                            "description": "Blockchain account deletion data object",
-                            "type": "object",
-                            "additionalProperties": true,
-                            "properties": {}
+                            "$ref": "protocol/state.schema.json#/definitions/originatorObject"
                         }
                     }
                 }
             },
             "storePreSharedKey": {
-                "description": "Request to store a pre-shared encryption key for an originator",
+                "description": "Pre-shared encryption key data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1265,7 +1297,7 @@
                 }
             },
             "storeAuthToken": {
-                "description": "Request to store a pre-shared secret authentication token for an originator",
+                "description": "Pre-shared secret authentication token data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1614,6 +1646,24 @@
                 }
             },
             "originatorState": {
+                "description": "Successfully retrieved and returning known Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorAccepted": {
                 "description": "Successfully retrieved and returning known Whiteflag originators",
                 "content": {
                     "application/json": {
