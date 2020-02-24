@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: endpoints/blockchains.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: endpoints/blockchains.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/endpoints/blockchains
+ * @summary Whiteflag API blockchains endpoints handler module
+ * @description Module with api blockchains endpoint handlers
+ */
+module.exports = {
+    // Endpoint handler functions
+    getBlockchains,
+    getBlockchain,
+    transferValue,
+    getAccounts,
+    getAccount,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    createSignature
+};
+
+// Whiteflag common functions and classes //
+const response = require('./common/response');
+const array = require('../common/arrays');
+const { ProcessingError } = require('../common/errors');
+
+// Whiteflag modules //
+const wfApiBlockchains = require('../blockchains');
+const wfAuthenticate = require('../protocol/authenticate');
+const wfState = require('../protocol/state');
+
+// MAIN MODULE FUNCTIONS //
+/**
+ * Provides current state of all blockchains from state module
+ * @function getBlockchains
+ * @alias module:lib/endpoints/blockchains.getBlockchains
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function getBlockchains(req, res, operationId, callback) {
+    wfState.getBlockchains(function endpointGetBlockchainsCb(err, blockchainsState = null) {
+        // Create response body and preserve information before responding
+        let resBody = response.createBody(req, operationId);
+        let blockchains = [];
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !blockchainsState) err = new Error('Could not retrieve blockchains');
+        if (blockchainsState) {
+            resBody.meta.info = array.addItem(resBody.meta.info, 'Current blockchains in state');
+            blockchains = Object.keys(blockchainsState);
+        }
+        return response.sendIndicative(res, err, resBody, blockchains, callback);
+    });
+}
+
+/**
+ * Provides current blockchain state from state module
+ * @function getBlockchain
+ * @alias module:lib/endpoints/blockchains.getBlockchain
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function getBlockchain(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    wfState.getBlockchainData(blockchain, function endpointGetBlockchainCb(err, blockchainState = null) {
+        // Create response body and preserve information before responding
+        let resBody = response.createBody(req, operationId);
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
+            resBody.meta.info = array.addItem(resBody.meta.info, `Current ${blockchain} state`);
+        }
+        return response.sendIndicative(res, err, resBody, blockchainState, callback);
+    });
+}
+
+/**
+ * Provides all blockchain accounts from state module
+ * @function getAccounts
+ * @alias module:lib/endpoints/blockchains.getAccounts
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function getAccounts(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    wfState.getBlockchainData(blockchain, function endpointGetBlockchainCb(err, blockchainState = null) {
+        // Create response body and preserve information before responding
+        let resData = [];
+        let resBody = response.createBody(req, operationId);
+
+        // Extract account data from blockchain state
+        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err) resBody.meta.blockchain = blockchain;
+        if (!err &amp;&amp; !blockchainState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
+        if (!err) {
+            resData = blockchainState.accounts || [];
+            resBody.meta.info = array.addItem(resBody.meta.info, `Blockchain accounts on ${blockchain}`);
+        }
+        // Send response using common endpoint response function
+        return response.sendIndicative(res, err, resBody, resData, callback);
+    });
+}
+
+/**
+ * Provides specific blockchain account from state module
+ * @function getAccount
+ * @alias module:lib/endpoints/blockchains.getAccount
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function getAccount(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    const address = req.params.account;
+    wfState.getBlockchainData(blockchain, function endpointGetBlockchainCb(err, blockchainState = null) {
+        // Create response body and preserve information before responding
+        let resData = {};
+        let resBody = response.createBody(req, operationId);
+
+        // Get the requested account object
+        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err) resBody.meta.blockchain = blockchain;
+        if (!err &amp;&amp; !blockchainState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
+        if (!err) {
+            const index = blockchainState.accounts.findIndex(item => item.address.toLowerCase() === address.toLowerCase());
+            if (index &lt; 0) {
+                err = new ProcessingError(`Blockchain account ${address} does not exist`, null, 'WF_API_NO_RESOURCE');
+            } else {
+                resBody.meta.account = address;
+                resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account details');
+                resData = blockchainState.accounts[index];
+            }
+        }
+        // Send response using common endpoint response function
+        return response.sendIndicative(res, err, resBody, resData, callback);
+    });
+}
+
+/**
+ * Creates account on specified blockchain
+ * @function createAccount
+ * @alias module:lib/endpoints/blockchains.createAccount
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function createAccount(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    let privateKey = req.body.privateKey || null;
+    wfApiBlockchains.createAccount(blockchain, privateKey, function endpointCreateAccountCb(err, result = {}) {
+        // Create response body and preserve information before responding
+        let resData = {};
+        let resBody = response.createBody(req, operationId);
+        resBody.meta.blockchain = blockchain;
+
+        // Check results
+        if (result.address) {
+            resBody.meta.resource = `/blockchains/${blockchain}/accounts/${result.address}`;
+        } else {
+            if (!err) err = new Error('Could not determine address of created blockchain account');
+        }
+        if (!err) {
+            resData = result;
+            resBody.meta.account = result.address;
+            resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account created');
+        }
+        // Send response using common endpoint response function
+        return response.sendImperative(res, err, resBody, resData, callback);
+   });
+   // Hopefully the garbage collector will do its work
+   privateKey = undefined;
+}
+
+/**
+ * Updates account on specified blockchain
+ * @function updateAccount
+ * @alias module:lib/endpoints/blockchains.updateAccount
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function updateAccount(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    const address = req.params.account;
+    const account = req.body;
+    wfApiBlockchains.updateAccount(account, address, blockchain, function endpointUpdateAccountCb(err, result) {
+         // Create response body and preserve information before responding
+        let resData = {};
+        let resBody = response.createBody(req, operationId);
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !result) resBody.meta.warnings = array.addItem(resBody.meta.warnings, 'No errors occured when updating blockchain account, but did not receive result');
+        if (!err) resBody.meta.blockchain = blockchain;
+        if (!err &amp;&amp; result) {
+            resData = result;
+            resBody.meta.account = address;
+            resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account updated');
+        }
+        return response.sendImperative(res, err, resBody, resData, callback);
+    });
+}
+
+/**
+ * Deletes account on specified blockchain
+ * @function deleteAccount
+ * @alias module:lib/endpoints/blockchains.deleteAccount
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function deleteAccount(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    const address = req.params.account;
+    wfApiBlockchains.deleteAccount(address, blockchain, function endpointDeleteAccountCb(err, result) {
+        // Create response body and preserve information before responding
+        let resData = {};
+        let resBody = response.createBody(req, operationId);
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !result) resBody.meta.warnings = array.addItem(resBody.meta.warnings, 'No errors occured when deleting blockchain account, but did not receive result');
+        if (!err) resBody.meta.blockchain = blockchain;
+        if (!err &amp;&amp; result) {
+            resData = result;
+            resBody.meta.account = address;
+            resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account deleted');
+        }
+        return response.sendImperative(res, err, resBody, resData, callback);
+    });
+}
+
+/**
+ * Requests a Whiteflag authentication signature
+ * @function createSignature
+ * @alias module:lib/endpoints/blockchains.createSignature
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function createSignature(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    const address = req.params.account;
+    const signPayload = req.body;
+    wfAuthenticate.sign(signPayload, address, blockchain, function endpointBlockchainsSignCb(err, wfSignature, wfSignatureDecoded) {
+        // Create response body and preserve information before responding
+        let resBody = response.createBody(req, operationId);
+
+        // Send response using common endpoint response function
+        if (!err) resBody.meta.blockchain = blockchain;
+        if (!err &amp;&amp; (!wfSignature || !wfSignatureDecoded)) err = new Error('Did not receive valid signature from blockchain');
+        if (wfSignatureDecoded) {
+            resBody.meta.account = address;
+            resBody.meta.decoded = wfSignatureDecoded;
+        }
+        return response.sendImperative(res, err, resBody, wfSignature, callback);
+    });
+}
+
+/**
+ * Transfers value from onse blockchain address to an other address
+ * @function transferValue
+ * @alias module:lib/endpoints/blockchains.transferValue
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function transferValue(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    const address = req.params.account;
+    const transfer = req.body;
+    wfApiBlockchains.transfer(transfer, address, blockchain, function endpointValueTransferCb(err, txHash) {
+        // Create response body and preserve information before responding
+        let resData = {};
+        let resBody = response.createBody(req, operationId);
+        resBody.meta.blockchain = blockchain;
+        resBody.meta.account = address;
+
+        // Send response using common endpoint response function
+        if (!err) resBody.meta.transfer = transfer;
+        if (!err &amp;&amp; !txHash) err = new Error('Could not determine transaction hash after value transfer');
+        if (txHash) {
+            resData = { transactionHash: txHash };
+            resBody.meta.info = array.addItem(resBody.meta.info, 'Value transfered');
+        }
+        return response.sendImperative(res, err, resBody, resData, callback);
+    });
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Feb 23 2020 01:01:50 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

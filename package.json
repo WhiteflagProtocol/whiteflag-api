@@ -29,6 +29,7 @@
         "semver": "^6.2.0",
         "mocha": "^6.1.4",
         "jsdoc": "~3.6.3",
+        "widdershins": "^3.6.7",
         "cloc": "^2.5.0",
         "license-checker": "^25.0.1"
     },
@@ -44,7 +45,7 @@
         "lib": "./lib",
         "test": "./test",
         "doc": "./doc",
-        "man": "./doc/man"
+        "man": "./docs/man"
     },
     "main": "main.js",
     "bin": {
@@ -55,11 +56,14 @@
         "start": "node main.js",
         "test": "mocha --recursive",
         "doc:src": "jsdoc -c .jsdoc.json",
+        "doc:openapi": "widdershins --shallowSchemas -c static/openapi.json -o docs/openapi.md && cp -p lib/protocol/static/* docs/protocol/",
+        "build:doc": "npm run doc:openapi && npm run doc:src",
+        "build": "npm run build:doc",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
         "count-all": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore .",
         "licenses": "license-checker --summary"
     },
     "engines": {
-        "node": "10.x.x"
+        "node": ">= 10.x.x"
     }
 }

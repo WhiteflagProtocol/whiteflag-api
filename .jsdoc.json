@@ -16,7 +16,7 @@
         "monospaceLinks": true
     },
     "opts": {
-        "destination": "doc/src",
+        "destination": "docs/src",
         "recurse": true,
         "readme": "README.md"
     }

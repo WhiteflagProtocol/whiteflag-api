@@ -1,5 +1,8 @@
 # Whiteflag API
 
+![GitHub latest release](https://img.shields.io/github/v/release/whiteflagprotocol/whiteflag-api?label=latest&logo=github&sort=semver)
+![GitHub dev version](https://img.shields.io/github/package-json/v/whiteflagprotocol/whiteflag-api/develop?label=development&logo=github)
+
 ![Ubuntu Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Ubuntu%20Test/badge.svg)
 ![Windows Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Windows%20Test/badge.svg)
 
@@ -12,37 +15,42 @@ to create shared situational awareness.
 
 This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
 software implementation of the API layer that provides an interface with the
-Whiteflag messaging network on one or more underlying blockchains. As such,
-it acts as a message transceiver between one or more blockchains and one or
-more end-user applications.
+Whiteflag messaging network on one or more underlying blockchains. In other
+words, it acts as a message transceiver between one or more blockchains and
+one or more end-user applications. For interaction with an end-user application,
+two methods are used:
 
-For interaction with an end-user application, two methods are used.
-A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
-is available for originators to provide Whiteflag message to be sent on the
-blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
-available for clients to listen for incoming Whiteflag messages from a
-blockchain.
+* the [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
+  is the main interface to send Whiteflag messages on the blockchain and manage
+  blockchain accounts, authentication, encryption keys, etc.;
+* a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
+  available for clients to listen for incoming Whiteflag messages from a
+  blockchain.
 
-This Whiteflag API is a so called Minimum Viable Product (MVP). This means
-that it only supports the core features of the Whiteflag protocol and
-nothing more. As such, it serves as the reference implementation of the
-Whiteflag protocol, but it is not designed and tested for secure usage
-and performance in a production environment.
+## Documentation
 
-More detailed documentation of the API can be found in the markdown files in
-the `doc/` directory and at `http://localhost:5746/` (default URL) when the
-API is running.
+More detailed documentation of the API is available at [Github Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
+
+This documentation is also found in the markdown files in the `docs/`
+directory. When the API is running, the server will also provide the OpenAPI
+definition at the URL root (e.g. `http://localhost:5746/`).
 
 The repository structure and development guidelines for the source code are
 described in `CONTRIBUTING.md`.
 
 ## Versions
 
-The current version is version **1.0.0-alpha.*x***.
+The currently released and development versions are all alpha versions:
+**v1.0.0-alpha.*x***.
 
-This version is based on **v1-draft.6** of the Whiteflag protocol. The
-supported functionality and Whiteflag protocol features are described
-in `SCOPE.md`.
+The current version is based on **v1-draft.6** of the Whiteflag protocol. The
+supported Whiteflag protocol features are described in `SCOPE.md`.
+
+Note that the Whiteflag API is a so called Minimum Viable Product (MVP).
+This means that it only supports the core features of the Whiteflag protocol
+and nothing more. As such, it serves as the reference implementation of the
+Whiteflag protocol, but it is not designed and tested for secure usage
+and performance in a production environment.
 
 ## License
 
@@ -100,7 +108,7 @@ files in the `config/` directory:
 * `datastores.toml`: for datastore specific configuration
 * `whiteflag.toml`: for Whiteflag protocol related parameters
 
-Please see `doc/configuration.md` for more details.
+Please see `docs/configuration.md` for more details.
 
 ## Running the API
 

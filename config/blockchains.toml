@@ -1,7 +1,7 @@
 # Whiteflag blockchains configuration file
 #
 # This configuration file contains blockchain related configuration parameters
-# Please see `./doc/configuration.md` for a description.
+# Please see `./docs/configuration.md` for a description.
 #
 
 [confirmation]

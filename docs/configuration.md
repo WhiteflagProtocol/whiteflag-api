@@ -25,7 +25,7 @@ An alternative directory for the configuration files may be set with the
 
 The configuration files are formatted in [TOML](https://github.com/toml-lang/toml).
 
-## General API configuration
+### General API configuration
 
 This configuration file provides global configuration parameters for the api.
 
@@ -66,7 +66,7 @@ for a description of all operations. Note that the `receiveMessage` operationId
 only controls the injection of messages through the REST API, and has nothing
 to do with receiving messages directly from a blockchain.
 
-## Whiteflag protocol configuration
+### Whiteflag protocol configuration
 
 This configuration file contains Whiteflag protocol related configuration
 parameters.
@@ -103,7 +103,7 @@ the `[encryption.X]` section:
 
 * `psk`: a pre-shared key, i.e. a secret from which the message encyption key is derived if no other input key material is available; should only be used for testing
 
-## Blockchain configuration
+### Blockchain configuration
 
 The blockchains configuration file contains both general and specific
 blockchain configuration parameters. The `./lib/blockchains/static/blockchains.config.schema.json`
@@ -133,7 +133,7 @@ the repsective `[[blockchains]]` section:
 Additional blockchain specific parameters may be required by the specific
 blockchain module, such as connection details to a full node.
 
-## Datastores configuration
+### Datastores configuration
 
 This datastores configuration file allows to define which datastores should be
 used to store data. Multiple stores may be defined with multiple

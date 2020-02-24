@@ -1,4 +1,4 @@
-# Whiteflag API State
+# Whiteflag API Protocol State
 
 The API has to keep its state of the Whiteflag protocol. This inludes keeping
 track of its blockchain status and accounts, known originators, encryption keys
