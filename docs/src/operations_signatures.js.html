@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/protocol/validation</title>
+    <title>JSDoc: Source: operations/signatures.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,296 +17,81 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/protocol/validation</h1>
+    <h1 class="page-title">Source: operations/signatures.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        
-            
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Module for message format, reference and originator verification functions</p></div>
-        
-
-        
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_references.js.html">protocol/references.js</a>, <a href="protocol_references.js.html#line2">line 2</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~verifyReference"><span class="type-signature">(inner) </span>verifyReference<span class="signature">(wfMessage, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Checks if message references antother message correclty and updates metaheader accordingly</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wfMessage</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>a Whiteflag message</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_references.js.html">protocol/references.js</a>, <a href="protocol_references.js.html#line29">line 29</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/operations/signatures
+ * @summary Whiteflag API signatures endpoints handler module
+ * @description Module with api signatures endpoint handlers
+ */
+module.exports = {
+    // Endpoint handler functions
+    decode: decodeSignature,
+    verify: verifySignature
+};
+
+// Whiteflag common functions and classes //
+const response = require('../common/httpres');
+
+// Whiteflag modules //
+const wfAuthenticate = require('../protocol/authenticate');
+
+// MAIN MODULE FUNCTIONS //
+/**
+ * Decodes a Whiteflag authentication signature
+ * @function decodeSignature
+ * @alias module:lib/operations/signatures.decode
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function decodeSignature(req, res, operationId, callback) {
+    const wfSignature = req.body;
+    wfAuthenticate.decodeSignature(wfSignature, function endpointSignatureDecodeCb(err, signatureDecoded) {
+        // Create response body and preserve information before responding
+        let resBody = response.createBody(req, operationId);
+        if (!err) resBody.meta.signature = wfSignature || {};
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !signatureDecoded) err = new Error('Decoded signature is empty');
+        return response.sendIndicative(res, err, resBody, signatureDecoded, callback);
+    });
+}
+
+/**
+ * Verifies a Whiteflag authentication signature
+ * @function verifySignature
+ * @alias module:lib/operations/signatures.verify
+ * @param {object} req the http request
+ * @param {object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function verifySignature(req, res, operationId, callback) {
+    const wfExtSignature = req.body;
+    wfAuthenticate.verifySignature(wfExtSignature, function endpointSignatureVerifyCb(err, signatureDecoded, originatorKeys) {
+        // Create response body and preserve information before responding
+        let resBody = response.createBody(req, operationId);
+        if (!err) resBody.meta.signature = wfExtSignature.wfSignature || {};
+        if (!err) resBody.meta.keys = originatorKeys || {};
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !signatureDecoded) err = new Error('Verified signature is empty');
+        return response.sendIndicative(res, err, resBody, signatureDecoded, callback);
+    });
+}
+</code></pre>
+        </article>
+    </section>
 
 
 

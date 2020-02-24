@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/protocol/authenticate</title>
+    <title>JSDoc: Module: lib/operations/messages</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/protocol/authenticate</h1>
+    <h1 class="page-title">Module: lib/operations/messages</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Module for Whiteflag authentication</p></div>
+            <div class="description"><p>Module with api messages endpoint handlers</p></div>
         
 
         
@@ -87,7 +87,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line2">line 2</a>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line2">line 2</a>
     </li></ul></dd>
     
 
@@ -95,13 +95,6 @@
 
     
 
-    
-    <dt class="tag-todo">To Do:</dt>
-    <dd class="tag-todo">
-        <ul>
-            <li>complete authentication methods</li>
-        </ul>
-    </dd>
     
 </dl>
 
@@ -151,7 +144,7 @@
     
 
     
-    <h4 class="name" id="~createSignature"><span class="type-signature">(inner) </span>createSignature<span class="signature">(signPayload, address, blockchain, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~decode"><span class="type-signature">(inner) </span>decode<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -159,7 +152,7 @@
 
 
 <div class="description">
-    <p>Requests a authentication signature for the appropriate blockchain</p>
+    <p>Decodes a Whiteflag message</p>
 </div>
 
 
@@ -195,7 +188,7 @@
 
         <tr>
             
-                <td class="name"><code>signPayload</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -211,197 +204,14 @@
 
             
 
-            <td class="description last"><p>the signature payload object to be signed</p></td>
+            <td class="description last"><p>the http request</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the address of the account for which the signature is requested</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>blockchain</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the blockchain for which the signature is requested</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line173">line 173</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~decodeSignature"><span class="type-signature">(inner) </span>decodeSignature<span class="signature">(wfSignature, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Decodes authentication signature</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wfSignature</code></td>
+                <td class="name"><code>res</code></td>
             
 
             <td class="type">
@@ -417,151 +227,14 @@
 
             
 
-            <td class="description last"><p>a Whiteflag authentication signature</p></td>
+            <td class="description last"><p>the http response</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line210">line 210</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~generateToken"><span class="type-signature">(inner) </span>generateToken<span class="signature">(authToken, address, blockchain, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Requests a authentication token for the specified blockchain address</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>authToken</code></td>
+                <td class="name"><code>operationId</code></td>
             
 
             <td class="type">
@@ -577,53 +250,7 @@
 
             
 
-            <td class="description last"><p>the secret authentication token in hexadecimal</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the address of the account for which the signature is requested</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>blockchain</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the name of the blockchain</p></td>
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -636,167 +263,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line148">line 148</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~removeAuthentication"><span class="type-signature">(inner) </span>removeAuthentication<span class="signature">(wfAuthMessage, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Removes the authentication information of the message originator</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wfAuthMessage</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>a Whiteflag authentication message</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -847,7 +314,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line98">line 98</a>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line127">line 127</a>
     </li></ul></dd>
     
 
@@ -883,7 +350,7 @@
     
 
     
-    <h4 class="name" id="~verifyAuthentication"><span class="type-signature">(inner) </span>verifyAuthentication<span class="signature">(wfAuthMessage, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~encode"><span class="type-signature">(inner) </span>encode<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -891,7 +358,7 @@
 
 
 <div class="description">
-    <p>Checks the authentication information of the message originator and updates metaheader accordingly</p>
+    <p>Encodes a Whiteflag message</p>
 </div>
 
 
@@ -927,7 +394,7 @@
 
         <tr>
             
-                <td class="name"><code>wfAuthMessage</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -943,7 +410,53 @@
 
             
 
-            <td class="description last"><p>a Whiteflag authentication message</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -956,7 +469,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -966,7 +479,7 @@
 
             
 
-            <td class="description last"><p>function called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1007,7 +520,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line70">line 70</a>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line107">line 107</a>
     </li></ul></dd>
     
 
@@ -1043,7 +556,7 @@
     
 
     
-    <h4 class="name" id="~verifyMessage"><span class="type-signature">(inner) </span>verifyMessage<span class="signature">(wfMessage, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getMessages"><span class="type-signature">(inner) </span>getMessages<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1051,7 +564,7 @@
 
 
 <div class="description">
-    <p>Checks if message can be authenticated and updates metaheader accordingly</p>
+    <p>Retrieves all messages from the database</p>
 </div>
 
 
@@ -1087,7 +600,7 @@
 
         <tr>
             
-                <td class="name"><code>wfMessage</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1103,7 +616,53 @@
 
             
 
-            <td class="description last"><p>a Whiteflag message</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1116,7 +675,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1126,7 +685,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1167,7 +726,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line44">line 44</a>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -1175,6 +734,13 @@
 
     
 
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>advanced querying of full MetaHeader</li>
+        </ul>
+    </dd>
     
 </dl>
 
@@ -1203,7 +769,7 @@
     
 
     
-    <h4 class="name" id="~verifySignature"><span class="type-signature">(inner) </span>verifySignature<span class="signature">(wfExtSignature, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getReferences"><span class="type-signature">(inner) </span>getReferences<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1211,7 +777,7 @@
 
 
 <div class="description">
-    <p>Verifies authentication signature</p>
+    <p>Retrieves message references from the database</p>
 </div>
 
 
@@ -1247,7 +813,7 @@
 
         <tr>
             
-                <td class="name"><code>wfExtSignature</code></td>
+                <td class="name"><code>req</code></td>
             
 
             <td class="type">
@@ -1263,7 +829,53 @@
 
             
 
-            <td class="description last"><p>an extended Whiteflag authentication signature</p></td>
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
         </tr>
 
     
@@ -1276,7 +888,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">logEndpointEventCb</span>
 
 
             
@@ -1286,7 +898,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -1327,7 +939,831 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line240">line 240</a>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line181">line 181</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getSequence"><span class="type-signature">(inner) </span>getSequence<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Retrieves message sequences from the database</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line215">line 215</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~receive"><span class="type-signature">(inner) </span>receive<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Receives messages by triggering the rx event chain</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line55">line 55</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~send"><span class="type-signature">(inner) </span>send<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Transmits messages to the blockchain through the tx event chain</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line34">line 34</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~validate"><span class="type-signature">(inner) </span>validate<span class="signature">(req, res, operationId, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Checks whether a Whiteflag message is valid</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the http response</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the operation id as defined in the openapi definition</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">logEndpointEventCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="operations_messages.js.html">operations/messages.js</a>, <a href="operations_messages.js.html#line75">line 75</a>
     </li></ul></dd>
     
 

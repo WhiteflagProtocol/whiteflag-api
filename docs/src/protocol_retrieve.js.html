@@ -38,7 +38,11 @@ module.exports = {
     getQuery,
     getReferences,
     getAuthMessages,
-    getSequence
+    getSequence,
+    test: {
+        refRef: removeSupersededMessages,
+        semRef: removeSemanticReferences
+    }
 };
 
 // Whiteflag common functions and classes //
@@ -69,13 +73,9 @@ const AUTHMESSAGECODE = 'A';
  */
 function getMessage(transactionHash = '0', blockchain = null, callback) {
     let wfQuery = {};
-
-    // Construct query to retrieve single message
     wfQuery['MetaHeader.transactionHash'] = transactionHash;
     if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
-
-    // Call function to retrieve single message and pass it to callback
-    return retrieveSingleMessage(wfQuery, blockchain, callback);
+    return retrieveMessages(wfQuery, blockchain, callback);
 }
 
 /**
@@ -86,8 +86,9 @@ function getMessage(transactionHash = '0', blockchain = null, callback) {
  * @param {function} callback function called upon completion
  */
 function getQuery(wfQuery = {}, callback) {
-    // Call function to retrieve single message and pass it to callback
-    return retrieveMultipleMessages(wfQuery, null, callback);
+    let blockchain = null;
+    if (wfQuery['MetaHeader.blockchain']) blockchain = wfQuery['MetaHeader.blockchain'];
+    return retrieveMessages(wfQuery, blockchain, callback);
 }
 
 /**
@@ -100,13 +101,9 @@ function getQuery(wfQuery = {}, callback) {
  */
 function getReferences(transactionHash = '0', blockchain = null, callback) {
     let wfQuery = {};
-
-    // Construct query to retrieve references
     wfQuery['MessageHeader.ReferencedMessage'] = transactionHash;
     if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
-
-    // Call function to retrieve referencing messages and pass them to callback
-    return retrieveMultipleMessages(wfQuery, blockchain, callback);
+    return retrieveMessages(wfQuery, blockchain, callback);
 }
 
 /**
@@ -126,15 +123,16 @@ function getAuthMessages(originatorAddress = '0', blockchain = null, callback) {
     if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
 
     // Retrieve and process messages
-    retrieveMultipleMessages(wfQuery, blockchain, function retrieveAuthMessagesCb(err, authMessageSequence) {
+    retrieveMessages(wfQuery, blockchain, function retrieveAuthMessagesCb(err, authMessageSequence) {
         // Check for errors and if any authentication message was found
-        if (err &amp;&amp; !authMessageSequence) {
+        if (err &amp;&amp; authMessageSequence.length === 0) {
             if (err) return callback(err);
-            return callback(new Error('Could not find transaction hash of first message in sequence'));
+            return callback(new ProcessingError('Could not find transaction hash of first message in sequence', null, 'WF_API_NO_DATA'));
         }
         // Return result, removing semantic refs and superseded messages from sequence
-        authMessageSequence = removeSemanticReferences(authMessageSequence);
-        return callback(null, removeSupersededMessages(authMessageSequence));
+        // TODO: authMessageSequence = removeSemanticReferences(authMessageSequence);
+        // TODO: return callback(null, removeSupersededMessages(authMessageSequence));
+        return callback(null, authMessageSequence);
     });
 }
 
@@ -154,11 +152,11 @@ function getSequence(transactionHash = '0', blockchain = null, callback) {
     if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
 
     // Call function to retrieve first message of sequence
-    retrieveSingleMessage(wfQuery, blockchain, function retrieveSequenceCb(err, wfMessageInitSequence) {
+    retrieveMessages(wfQuery, blockchain, function retrieveSequenceCb(err, wfMessageInitSequence) {
         // Check if transaction hash of message was found
         if (err) return callback(err);
-        if (!wfMessageInitSequence) {
-            return callback(new Error('Could not find transaction hash of first message in sequence'));
+        if (wfMessageInitSequence.length === 0) {
+            return callback(new ProcessingError('Could not find transaction hash of first message in sequence', null, 'WF_API_NO_DATA'));
         }
         // Variables needed to process sequence
         let sequenceBeginLength;
@@ -183,7 +181,7 @@ function getSequence(transactionHash = '0', blockchain = null, callback) {
                 if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
 
                 // Retrieve referencing messages
-                retrieveMultipleMessages(wfQuery, blockchain, function retrieveSequenceRefMessagesCb(err, refMessages) {
+                retrieveMessages(wfQuery, blockchain, function retrieveSequenceRefMessagesCb(err, refMessages) {
                     if (err) log.error(MODULELOG, `Error retrieving mesages in sequence: ${err.message}`);
                     wfMessageSequence = array.addArray(wfMessageSequence, refMessages);
 
@@ -195,10 +193,13 @@ function getSequence(transactionHash = '0', blockchain = null, callback) {
 
                     // If sequence has grown, remove semantic reference not processed by API, and look for more messages
                     if (wfMessageSequence.length > sequenceBeginLength) {
-                        return iterateSeqence(removeSemanticReferences(wfMessageSequence));
+                        // TODO: return iterateSeqence(removeSemanticReferences(wfMessageSequence));
+                        return iterateSeqence(wfMessageSequence);
                     }
                     // No more referencing messages; clean up sequence and return result
-                    return callback(null, removeSupersededMessages(wfMessageSequence));
+                    log.trace(MODULELOG, `Found sequence of ${wfMessageSequence.length} messages: removing superseded messages`);
+                    // TODO: return callback(null, removeSupersededMessages(wfMessageSequence));
+                    return callback(null, wfMessageSequence);
                 });
             }
             iterateMessages(sequenceRefLookups.length);
@@ -209,38 +210,34 @@ function getSequence(transactionHash = '0', blockchain = null, callback) {
 
 // PRIVATE MODULE FUNCTIONS //
 /**
- * Retrieves a single message from datastore or blockchain
+ * Retrieves an array of messages from datastore or blockchain
  * @private
  * @param {object} wfQuery the query to be performed
  * @param {string} blockchain the blockchain on which the transaction is stored
  * @param {function} callback function called upon completion
  */
-function retrieveSingleMessage(wfQuery = {}, blockchain = null, callback) {
-    // Lookup message in datastore first - returns an array
-    wfApiDatastores.getMessages(wfQuery, function retrieveSingleMessageDbCb(err, wfMessages, count) {
+function retrieveMessages(wfQuery = {}, blockchain = null, callback) {
+    // Lookup message in database first - returns an array
+    wfApiDatastores.getMessages(wfQuery, function retrieveMessagesDbCb(err, wfMessages, count) {
         if (err) return callback(err, wfMessages);
-
         if (count === 1) return callback(null, wfMessages);
         if (count > 1) return callback(null, wfMessages);
 
-        // If no blockchain specified, do not look further
-        if (!blockchain) return callback(null, wfMessages);
+        // Cannot look on blockchain if no blockchain and transaction hash specified
+        if (!blockchain &amp;&amp; !wfQuery['MetaHeader.blockchain']) return callback(null, wfMessages);
+        if (!wfQuery['MetaHeader.transactionHash']) return callback(null, wfMessages);
 
-        // Lookup message on blockchain - returns a single message, not an array
-        wfApiBlockchain.lookupMessage(wfQuery, function retrieveSingleMessageBcCb(err, wfMessage) {
+        // Lookup message on blockchain and decode - returns single message
+        if (blockchain) wfQuery['MetaHeader.blockchain'] = blockchain;
+        wfApiBlockchain.lookupMessage(wfQuery, function retrieveMessagesBcCb(err, wfMessage) {
             if (err) return callback(err, null);
-
-            // Found the transaction; try to decode
             wfCodec.decode(wfMessage, function retrieveDecodeCb(err, wfMessage, ivMissing) {
-                if (err) return callback(err, null);
-
-                wfMessages = [ wfMessage ];
+                let wfMessages = [ wfMessage ];
+                if (err) return callback(err, wfMessages);
                 if (ivMissing) return callback(new ProcessingError('Cannot decrypt message without initialisation vector', null, ''), wfMessages);
 
-                // If valid message, process further in rx chain to validate and store the message
-                if (wfMessage.MetaHeader.formatValid) {
-                    wfRxEvent.emit('messageDecoded', wfMessage);
-                }
+                // Valid message: process further and return result
+                if (wfMessage.MetaHeader.formatValid) wfRxEvent.emit('messageDecoded', wfMessage);
                 return callback(null, wfMessages);
             });
         });
@@ -248,33 +245,8 @@ function retrieveSingleMessage(wfQuery = {}, blockchain = null, callback) {
 }
 
 /**
- * Retrieves an array of messages from datastore or blockchain
- * @private
- * @param {object} wfQuery the query to be performed
- * @param {string} blockchain the blockchain on which the transaction is stored
- * @param {function} callback function called upon completion
- */
-function retrieveMultipleMessages(wfQuery = {}, blockchain = null, callback) {
-    // Lookup message in database first - returns an array
-    wfApiDatastores.getMessages(wfQuery, function retrieveMultiMessagesDbCb(err, wfMessages, count) {
-        // Check and return errors or messages found
-        if (err) return callback(err, wfMessages);
-        if (count > 0) return callback(null, wfMessages);
-
-        // If no blockchain specified, do not look further
-        if (!blockchain) return callback(null, wfMessages);
-
-        // Lookup message on blockchain - returns an array
-        wfApiBlockchain.queryTransactions(wfQuery, function retrieveMultiMessagesBcCb(err, wfMessages) {
-            // Return any error or result from blockchain lookup
-            if (err) return callback(err, wfMessages);
-            return callback(null, wfMessages);
-        });
-    });
-}
-
-/**
  * Removes superseded or unneeded messages from a message sequence array
+ * @todo This function needs to be evaluated and tested
  * @private
  * @param {array} wfMessageSequence array containing a message sequence
  * @returns {array} array with superseded messages removed
@@ -314,6 +286,7 @@ function removeSupersededMessages(wfMessageSequence) {
 
 /**
  * Removes semantic reference messages (reference code >= 5) from a message sequence array
+ * @todo This function needs to be evaluated and tested
  * @private
  * @param {array} wfMessageSequence array containing a message sequence
  * @returns {array} array with superseded messages removed
@@ -346,13 +319,13 @@ function removeSemanticReferences(wfMessageSequence) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Feb 23 2020 01:01:50 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Feb 25 2020 00:09:16 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
