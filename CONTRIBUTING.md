@@ -24,7 +24,7 @@ in the following table.
 |-----------------|----------------------------------------------|
 |`config/`        | Configuration files; must be [TOML](https://github.com/toml-lang/toml) formatted |
 |`etc/`           | OS-specific configuration files              |
-|`docs/`           | Documentation; must be [markdown](https://en.wikipedia.org/wiki/Markdown) formatted |
+|`docs/`          | Documentation; must be [markdown](https://en.wikipedia.org/wiki/Markdown) formatted |
 |`lib/`           | Source code modules                          |
 |`static/`        | Static content, such as json schemas         |
 |`test/`          | Scripts for automated testing                |

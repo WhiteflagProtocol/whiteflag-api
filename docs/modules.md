@@ -8,7 +8,7 @@ are structured in the following directory tree:
 | Directory       | Purpose               |
 |-----------------|-----------------------|
 |`lib`            | Main modules          |
-|`lib/endpoints`  | Endpoints modules     |
+|`lib/operations` | Operations modules    |
 |`lib/protocol`   | Protocol modules      |
 |`lib/blockchains`| Blockchain modules    |
 |`lib/datastores` | Datastore modules     |
@@ -30,10 +30,11 @@ other main modules in `lib/`:
 
 ## Endpoints modules
 
-The endpoint modules in `lib/endpoints` contain the API endpoint handlers that
-call the appropriate functions in the datastores, blockchain and protocol
-modules. The `server.js` binds the different endpoint handler functions to
-the correct endpoint routes and methods.
+The operations modules in `lib/operations` contain the API endpoint operations
+functions that handle all requests and call the appropriate functions in the
+datastores, blockchain and protocol modules. The `server.js` binds the
+different endpoint handler functions to the correct endpoint routes and
+methods.
 
 ## Protocol modules
 

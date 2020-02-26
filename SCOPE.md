@@ -20,6 +20,7 @@ The API should provide all message handling i.a.w. the standard:
 * syntax (v0.1) and reference (v0.3) checks of all message types
 * encryption/decryption (v0.8)
 * processing of test messages (v1.0)
+* checking for correct subject codes and object types (v1.0)
 
 ### Blockchain
 
@@ -27,7 +28,6 @@ The API should demonstrate blockchain agnosticy of the protocol by
 interfacing with at least two blockchains, namely:
 
 * ethereum (v0.8)
-* bitcoin (*planned after v1.0*)
 
 The API is able to read Whiteflag history from the blockchain into database.
 
@@ -56,25 +56,22 @@ To keep track of Whiteflag message on the blockchain, the API should:
 
 ## Postponed functionality
 
-Protocol features for future development:
+The following protool functionality and blockchain interfacing:
 
 * message and area concatination using reference code 3 (*planned after v1.0*)
-* checking for correct subject codes (*planned after v1.0*)
-* checking for correct object codes (*planned after v1.0*)
+* bitcoin (*planned after v1.0*)
 
 ## Outside scope
-
-The following functionality is outside the scope of the MVP API.
 
 ### Protocol functionality
 
 The following Whiteflag protocol features are not implemented:
 
-* hierarchical deterministic keys and addresses (*not planned*)
+* hierarchical deterministic keys and addresses
 
 ### API functionality
 
 The API is not capable of:
 
-* usage of the api by multiple users/originators (*not planned*)
-* advanced queries & filtering (*not planned*)
+* usage of the api by multiple users/originators
+* advanced queries & filtering

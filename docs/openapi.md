@@ -17,7 +17,7 @@ headingLevel: 2
 
 ---
 
-<h1 id="whiteflag-api">Whiteflag API v1.0.0-alpha.5</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.0.0-alpha.6</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -57,14 +57,18 @@ Endpoints for operations on Whiteflag messages, such as retrieval, sending, enco
 
 `GET /messages`
 
-Returns an array with all incoming and outgoing messages from the primary datastore. This operation may be disabled in the configuration.
+Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.
 
 <h3 id="getmessages-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|transactionHash|query|string|false|The hash of a blockchain transaction|
 |blockchain|query|string|false|The name of a blockchain|
+|transactionHash|query|string|false|The hash of a blockchain transaction|
+|originatorAddress|query|string|false|The blockchain address of an originator|
+|originatorPubKey|query|string|false|The public key of an originator|
+|recipientAddress|query|string|false|The blockchain address of the recipient (only known for decrypted messages)|
+|transceiveDirection|query|string|false|The transceive direction indicating if a message has been sent (TX) or has been received (RX)|
 
 > Example responses
 
@@ -497,7 +501,8 @@ Returns an array of all Whiteflag messages referencing the message with the give
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|transactionHash|query|string|false|The hash of a blockchain transaction|
+|transactionHash|query|string|true|The hash of a blockchain transaction|
+|blockchain|query|string|false|The name of a blockchain|
 
 > Example responses
 
@@ -564,7 +569,8 @@ Returns an array with the Whiteflag messages in a sequence starting with the mes
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|transactionHash|query|string|false|The hash of a blockchain transaction|
+|transactionHash|query|string|true|The hash of a blockchain transaction|
+|blockchain|query|string|false|The name of a blockchain|
 
 > Example responses
 
@@ -801,7 +807,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[createAccount](#schemacreateaccount)|false|Request to create blockchain account|
+|body|body|[createAccount](#schemacreateaccount)|false|Blockchain account data|
 |» privateKey|body|string|false|Optional private key in raw hexadecimal format to create account with|
 
 > Example responses
@@ -1105,7 +1111,7 @@ Transfers value to another blockchain account. This operation may be disabled in
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[transferValue](#schematransfervalue)|false|Request to transfer value to another blockchain account|
+|body|body|[transferValue](#schematransfervalue)|false|Data required to transfer value to another blockchain account|
 |» fromAddress|body|string|false|The address of the blockchain account to transfer value from|
 |» toAddress|body|string|true|The address of the blockchain account to transfer value to|
 |» value|body|string|true|Value to be transferred in the main currency of the blockchain|
@@ -1307,7 +1313,7 @@ Stores a unique pre-shared secret authentication token together with the provide
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[storeAuthToken](#schemastoreauthtoken)|false|Request to store a pre-shared secret authentication token for an originator|
+|body|body|[storeAuthToken](#schemastoreauthtoken)|false|Pre-shared secret authentication token data|
 |» name|body|string|true|The name of the orginator|
 |» blockchain|body|string|true|The name of the blockchain used by the originator|
 |» address|body|string|false|The blockchain address of the originator, if already known|
@@ -1618,7 +1624,7 @@ Stores or updates a pre-shared secret encryption key for the specified Whiteflag
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[storePreSharedKey](#schemastorepresharedkey)|false|Request to store a pre-shared encryption key for an originator|
+|body|body|[storePreSharedKey](#schemastorepresharedkey)|false|Pre-shared encryption key data|
 |» preSharedKey|body|string|true|A pre-shared secret encryption key in raw hexadecimal format|
 
 > Example responses
@@ -1729,7 +1735,7 @@ Endpoints for operations on Whiteflag originators, such as authentication and ma
 
 `GET /originators`
 
-Returns the details of all kwown Whiteflag originators.
+Returns the details of all known Whiteflag originators.
 
 > Example responses
 
@@ -1815,13 +1821,121 @@ Returns the details of the specified Whiteflag originator.
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully retrieved and returning known Whiteflag originator|Inline|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="getoriginator-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
+## updateOriginator
+
+<a id="opIdupdateOriginator"></a>
+
+`PATCH /originators/{address}`
+
+Updates the details of the specified Whiteflag originator. Only the provided properties will be updated. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.
+
+> Body parameter
+
+```json
+false
+```
+
+> Example responses
+
+> 202 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": null
+}
+```
+
+<h3 id="updateoriginator-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="updateoriginator-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
+## deleteOriginator
+
+<a id="opIddeleteOriginator"></a>
+
+`DELETE /originators/{address}`
+
+Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.
+
+> Example responses
+
+> 202 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": null
+}
+```
+
+<h3 id="deleteoriginator-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="deleteoriginator-responseschema">Response Schema</h3>
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:

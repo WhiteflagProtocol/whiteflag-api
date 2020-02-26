@@ -1,5 +1,7 @@
 # Whiteflag API
 
+![GitHub latest release](https://img.shields.io/github/v/release/whiteflagprotocol/whiteflag-api?label=latest&logo=github&sort=semver)
+![GitHub dev version](https://img.shields.io/github/package-json/v/whiteflagprotocol/whiteflag-api/develop?label=development&logo=github)
 ![Ubuntu Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Ubuntu%20Test/badge.svg)
 ![Windows Test](https://github.com/WhiteflagProtocol/whiteflag-api/workflows/Windows%20Test/badge.svg)
 
@@ -37,11 +39,11 @@ described in `CONTRIBUTING.md`.
 
 ## Versions
 
-The current version is version **1.0.0-alpha.*x***.
+The currently released and development versions are all alpha versions:
+**v1.0.0-alpha.*x***.
 
-This version is based on **v1-draft.6** of the Whiteflag protocol. The
-supported functionality and Whiteflag protocol features are described
-in `SCOPE.md`.
+The current version is based on **v1-draft.6** of the Whiteflag protocol. The
+supported Whiteflag protocol features are described in `SCOPE.md`.
 
 Note that the Whiteflag API is a so called Minimum Viable Product (MVP).
 This means that it only supports the core features of the Whiteflag protocol

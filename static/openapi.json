@@ -2,7 +2,7 @@
     "openapi": "3.0.1",
     "info": {
         "title": "Whiteflag API",
-        "version": "1.0.0-alpha.5",
+        "version": "1.0.0-alpha.6",
         "description": "This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/) software implementation of the API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains. It acts as a message transceiver between one or more blockchains and one or more end-user applications.\n\nThis API is a so called Minumum Viable Product (MVP), which means that it only supports the core features of the Whiteflag protocol for development and testing purposes. As such, it serves as the reference implementation of the Whiteflag protocol, but it is not designed and tested for secure usage and performance in a production environment.\n\nTwo methods are available for interaction with the API: 1. a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) for originators to provide Whiteflag message to be sent on the blockchain, and 2. a [socket.io](https://socket.io/) [web socket](https://en.wikipedia.org/wiki/WebSocket) variant available on `/socket` for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on [/listen](/listen).\n\nThis definition documents the API in [OpenAPI format](https://swagger.io/specification/). The following JSON schemas and specifications are used by this API definition and available with the links below:\n* [Whiteflag Protocol specification](protocol/whiteflag.standard.html)\n* [Whiteflag Protocol message schema](protocol/message.schema.json)\n* [Whiteflag API message metaheader schema](protocol/metaheader.schema.json)\n* [Whiteflag API state schema](protocol/state.schema.json)\n\nAll response bodies are structured as `{meta, data, errors}`, based on the [JSON API Specification](https://jsonapi.org/format/), which has been used as a guideline (and as a guideline only).",
         "x-logo": {
             "url": "wflogo.png",
@@ -61,11 +61,15 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.",
                 "operationId": "getMessages",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/blockchainQuery" },
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/originatorAddressQuery" },
+                    { "$ref": "#/components/parameters/originatorPubKeyQuery" },
+                    { "$ref": "#/components/parameters/recipientAddressQuery" },
+                    { "$ref": "#/components/parameters/transceiveDirectionQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -242,7 +246,8 @@
                 "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageReferences",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" }
+                    { "$ref": "#/components/parameters/transactionHash" },
+                    { "$ref": "#/components/parameters/blockchain" }
                 ],
                 "responses": {
                     "200": {
@@ -275,7 +280,8 @@
                 "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageSequence",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" }
+                    { "$ref": "#/components/parameters/transactionHash" },
+                    { "$ref": "#/components/parameters/blockchain" }
                 ],
                 "responses": {
                     "200": {
@@ -623,7 +629,7 @@
         "/originators": {
             "get": {
                 "tags": [ "Originators", "State" ],
-                "description": "Returns the details of all kwown Whiteflag originators.",
+                "description": "Returns the details of all known Whiteflag originators.",
                 "operationId": "getAllOriginators",
                 "responses": {
                     "200": {
@@ -655,6 +661,41 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [ "Originators", "State" ],
+                "description": "Updates the details of the specified Whiteflag originator. Only the provided properties will be updated. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
+                "operationId": "updateOriginator",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/originatorData"
+                },
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/originatorAccepted"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [ "Originators", "State" ],
+                "description": "Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
+                "operationId": "deleteOriginator",
+                "responses": {
+                    "202": {
+                        "$ref": "#/components/responses/originatorAccepted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -928,7 +969,7 @@
                 "description": "The hash of a blockchain transaction",
                 "name": "transactionHash",
                 "in": "query",
-                "required": false,
+                "required": true,
                 "schema": {
                     "type": "string"
                 }
@@ -936,6 +977,60 @@
             "blockchain": {
                 "description": "The name of a blockchain",
                 "name": "blockchain",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "blockchainQuery": {
+                "description": "The name of a blockchain",
+                "name": "blockchain",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "transactionHashQuery": {
+                "description": "The hash of a blockchain transaction",
+                "name": "transactionHash",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "originatorAddressQuery": {
+                "description": "The blockchain address of an originator",
+                "name": "originatorAddress",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "originatorPubKeyQuery": {
+                "description": "The public key of an originator",
+                "name": "originatorPubKey",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "recipientAddressQuery": {
+                "description": "The blockchain address of the recipient (only known for decrypted messages)",
+                "name": "recipientAddress",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "transceiveDirectionQuery": {
+                "description": "The transceive direction indicating if a message has been sent (TX) or has been received (RX)",
+                "name": "transceiveDirection",
                 "in": "query",
                 "required": false,
                 "schema": {
@@ -1081,7 +1176,7 @@
                 }
             },
             "wfExtSignature": {
-                "description": "Request to verify a Whiteflag Authentication Signature",
+                "description": "An extended Whiteflag Authentication Signature",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1118,7 +1213,7 @@
                 }
             },
             "transferValue": {
-                "description": "Request to transfer value to another blockchain account",
+                "description": "Data required to transfer value to another blockchain account",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1145,7 +1240,7 @@
                 }
             },
             "createAccount": {
-                "description": "Request to create blockchain account",
+                "description": "Blockchain account data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1163,7 +1258,7 @@
                 }
             },
             "updateAccount": {
-                "description": "Request to update blockchain account",
+                "description": "Blockchain account data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1172,21 +1267,18 @@
                     }
                 }
             },
-            "deleteAccount": {
-                "description": "Request to delete blockchain account",
+            "originatorData": {
+                "description": "Originator data as stored in Whiteflag protocol state; all properties are optional and only provided properties will be updated",
                 "content": {
                     "application/json": {
                         "schema": {
-                            "description": "Blockchain account deletion data object",
-                            "type": "object",
-                            "additionalProperties": true,
-                            "properties": {}
+                            "$ref": "protocol/state.schema.json#/definitions/originatorObject"
                         }
                     }
                 }
             },
             "storePreSharedKey": {
-                "description": "Request to store a pre-shared encryption key for an originator",
+                "description": "Pre-shared encryption key data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1205,7 +1297,7 @@
                 }
             },
             "storeAuthToken": {
-                "description": "Request to store a pre-shared secret authentication token for an originator",
+                "description": "Pre-shared secret authentication token data",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1554,6 +1646,24 @@
                 }
             },
             "originatorState": {
+                "description": "Successfully retrieved and returning known Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorAccepted": {
                 "description": "Successfully retrieved and returning known Whiteflag originators",
                 "content": {
                     "application/json": {

@@ -55,7 +55,7 @@ const STATECONTEXT = 'context=state';
 const HBCONTEXT = 'context=heartbeat';
 
 // Module variables //
-let _datastore = 'rest';
+let _dbName = 'rest';
 let _restURL = '';
 let _restAuthHeader = '';
 
@@ -69,19 +69,19 @@ let _restAuthHeader = '';
  */
 function initRest(dbConfig, callback) {
     // Preserve name of the datastore
-    _datastore = dbConfig.name;
+    _dbName = dbConfig.name;
 
     // Get rest URL parameters
     _restURL = getDatabaseURL(dbConfig);
     _restAuthHeader = getDatabaseAuthHeader(dbConfig);
 
     // Perform dummy call to assure config is correct
-    log.trace(_datastore, `Checking http connection with ${_restURL}`);
+    log.trace(_dbName, `Checking http connection with ${_restURL}`);
     request(createRequestOptions(HBCONTEXT, null), function restCheckConnectionCb(err, response, body) {
         ignore(response);
         ignore(body);
         if (err) return callback(err, null);
-        return callback(null, _datastore);
+        return callback(null, _dbName);
     });
 }
 
@@ -92,7 +92,7 @@ function initRest(dbConfig, callback) {
  * @param {datastoreCloseCb} callback function to be called after initialising the datastore
  */
 function closeRest(callback) {
-    log.trace(_datastore, 'Closing database connection');
+    log.trace(_dbName, 'Closing database connection');
     return callback();
 }
 
@@ -104,7 +104,7 @@ function closeRest(callback) {
  * @param {datastoreStoreMessageCb} callback function to be called after storing the Whiteflag message
  */
 function storeMessage(wfMessage, callback) {
-    log.trace(_datastore, `Storing message: ${wfMessage.MetaHeader.transactionHash}`);
+    log.trace(_dbName, `Storing message: ${wfMessage.MetaHeader.transactionHash}`);
 
     let requestOptions = createRequestOptions(MESSAGECONTEXT, null);
     requestOptions.body = JSON.stringify(wfMessage);
@@ -127,7 +127,7 @@ function storeMessage(wfMessage, callback) {
  * @param {datastoreGetMessagesCb} callback function to be called after retrieving Whiteflag messages
  */
 function getMessages(wfQuery, callback) {
-    log.trace(_datastore, 'Performing message query: ' + JSON.stringify(wfQuery));
+    log.trace(_dbName, 'Performing message query: ' + JSON.stringify(wfQuery));
 
     // Make http request to retrieve messages
     request(createRequestOptions(MESSAGECONTEXT, wfQuery), function restCreateRequestCb(err, response, body) {
@@ -148,7 +148,7 @@ function getMessages(wfQuery, callback) {
  * @param {datastoreStoreStateCb} callback function to be called after storing the Whiteflag state
  */
 function storeState(stateObject, callback) {
-    log.trace(_datastore, 'Storing state');
+    log.trace(_dbName, 'Storing state');
 
     let requestOptions = createRequestOptions(STATECONTEXT, null);
     requestOptions.body = JSON.stringify(stateObject);
@@ -171,7 +171,7 @@ function storeState(stateObject, callback) {
  * @param {datastoreGetStateCb} callback function to be called after getting the Whiteflag state
  */
 function getState(callback) {
-    log.trace(_datastore, 'Retrieving state');
+    log.trace(_dbName, 'Retrieving state');
 
     // Make http request to retrieve messages
     request(createRequestOptions(STATECONTEXT, null), function restGetStateCb(err, response, body) {
@@ -292,13 +292,13 @@ function processResponseBody(body, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Feb 23 2020 01:01:50 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Wed Feb 26 2020 21:25:10 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

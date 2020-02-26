@@ -392,9 +392,9 @@ function upsertOriginatorData(data) {
         return log.error(MODULELOG, 'Attempt to add originator to state without address or authentication token');
     }
     // Check if not existing originator with address
-    if (indexA &lt; 0 || indexA === null) {
+    if (indexA === null || indexA &lt; 0) {
         // No address; check if not also existing originator with token
-        if (indexT &lt; 0 || indexT === null) {
+        if (indexT === null || indexT &lt; 0) {
             // Insert if no originator with token or address
             _wfState.originators.push(data);
             if (indexT === null) wfStateEvent.emit('insertedOriginator', data.address);
@@ -416,7 +416,7 @@ function upsertOriginatorData(data) {
         }
     } else {
         // Originator with address
-        if (indexT &lt; 0 || indexT === null) {
+        if (indexT === null || indexT &lt; 0) {
             // Check if existing originator has different token
             if (_wfState.originators[indexA].authTokenId &amp;&amp; data.authTokenId &amp;&amp;
                 _wfState.originators[indexA].authTokenId !== data.authTokenId) {
@@ -608,6 +608,8 @@ function getKey(category, id, callback) {
  * @param {string} category the key category
  * @param {string} id unique identifier of the key
  * @param {string} key the key to be stored or updated in raw hexadecimal format
+ * @emits module:lib/protocol/events.stateEvent:insertedKey
+ * @emits module:lib/protocol/events.stateEvent:updatedKey
  */
 function upsertKey(category, id, key) {
     const index = _wfState.crypto[category].findIndex(item => item.id.toLowerCase() === id.toLowerCase());
@@ -622,11 +624,13 @@ function upsertKey(category, id, key) {
             id: id,
             secret: data
         });
+        wfStateEvent.emit('insertedKey', category, id);
     } else {
         _wfState.crypto[category][index] = {
             id: id,
             secret: data
         };
+        wfStateEvent.emit('updatedKey', category, id);
     }
     return saveState();
 }
@@ -637,11 +641,13 @@ function upsertKey(category, id, key) {
  * @alias module:lib/protocol/state.removeKey
  * @param {string} category the key category
  * @param {string} id unique identifier of the key
+ * @emits module:lib/protocol/events.stateEvent:removedKey
  */
 function removeKey(category, id) {
     const index = _wfState.crypto[category].findIndex(item => item.id.toLowerCase() === id.toLowerCase());
     if (index >= 0) {
         _wfState.crypto[category].splice(index, 1);
+        wfStateEvent.emit('removedKey', category, id);
         return saveState();
     }
 }
@@ -748,7 +754,7 @@ function checkState(stateData) {
             }
         }
     }
-    // Checks for unique values in aoriginator authentication messages
+    // Checks for unique values in originator authentication messages
     stateData.originators.forEach(originator => {
         if (Array.isArray(originator.authenticationMessages)) {
             originator.authenticationMessages = [...new Set(originator.authenticationMessages)];
@@ -924,13 +930,13 @@ function generateKEK(id) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Feb 23 2020 01:01:50 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Wed Feb 26 2020 21:25:10 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

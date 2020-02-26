@@ -48,6 +48,7 @@ const jsonValidate = require('jsonschema').validate;
 // Whiteflag common functions and classes //
 const array = require('../common/arrays');
 const object = require('../common/objects');
+const { type } = require('../common/protocol');
 const { ProcessingError, ProtocolError } = require('../common/errors');
 
 // Whiteflag modules //
@@ -72,12 +73,15 @@ function verifyFormat(wfMessage, callback) {
     if (!wfMessage.MetaHeader) {
         return callback(new ProtocolError('Missing metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
     }
-    // Validate message format against schema
+    // Validate message format
     let formatErrors = [];
     try {
+        // Check against schema
         formatErrors = formatErrors.concat(
             array.pluck(jsonValidate(wfMessage, wfMessageSchema).errors, 'stack')
         );
+        // Check field vaues
+        formatErrors = array.addArray(formatErrors, verifyValues(wfMessage));
     } catch(err) {
         return callback(err, wfMessage);
     }
@@ -269,7 +273,7 @@ function decodeMessage(wfMessage, callback) {
         let { MessageBody: body } = wfMessage;
         let decodingBody = {};
 
-        // Check if test message 
+        // Check if test message
         let p = 0;
         if (header.MessageCode === 'T') {
             body.PseudoMessageCode = decodeBinStr(messageBinStr, 301, 309, 'utf').toUpperCase();
@@ -356,6 +360,58 @@ function decodeMessage(wfMessage, callback) {
 }
 
 // PRIVATE MODULE FUNCTIONS //
+/**
+ * Checks if message content is compliant with the WF specification
+ * @private
+ * @param {object} wfMessage a Whiteflag message
+ * @returns {array} content errors
+ */
+function verifyValues(wfMessage) {
+    // Split message, get specification and prepare error array
+    const { MessageHeader: header, MessageBody: body } = wfMessage;
+    const wfSpec = wfMessageSchema.specifications;
+    let contentErrors = [];
+
+    // Find correct message type
+    const mesageTypeIndex = wfSpec.MessageCode.findIndex(
+        mesageCode => mesageCode.const === header.MessageCode
+    );
+    if (mesageTypeIndex &lt; 0) {
+        return contentErrors.push(`Cannot validate values for non-existing message type: ${header.MessageCode}`);
+    }
+    const messageType = wfSpec.MessageCode[mesageTypeIndex];
+
+    // CHECK 1A: is the object code valid?
+    let objectTypeIndex;
+    if (body.ObjectType) {
+        objectTypeIndex = wfSpec.ObjectType.findIndex(
+            ObjectType => ObjectType.const === body.ObjectType
+        );
+        if (objectTypeIndex &lt; 0) {
+            contentErrors.push(`Object code is not valid: ${body.ObjectType}`);
+        }
+    }
+    // CHECK 1B: is the subject code valid?
+    if (body.SubjectCode) {
+        const subjectCodeIndex = messageType.SubjectCode.findIndex(
+            SubjectCode => SubjectCode.const === body.SubjectCode
+        );
+        if (subjectCodeIndex &lt; 0) {
+            contentErrors.push(`Subject code is not defined for ${header.MessageCode} messages: ${body.SubjectCode}`);
+        } else {
+            // CHECK 1C: may subject code be used for this object type?
+            const allowedObjectIndex = messageType.SubjectCode[subjectCodeIndex].allowedObjectTypes.findIndex(
+                objectCat => objectCat === body.ObjectType.slice(0, -1) + '*'
+            );
+            if (allowedObjectIndex &lt; 0) {
+                contentErrors.push(`Object type ${body.ObjectType} cannot be used in ${type(wfMessage)} messages`);
+            }
+        }
+    }
+    // Evaluate and return result
+    return contentErrors;
+}
+
 /**
  * Converts a string with characters representing Binary, Decimal and Hexadecimal values
  * to a character string representing their the binary encoding
@@ -571,13 +627,13 @@ function decodeBinStr(binStr, beginBit, endBit, type) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_endpoints_blockchains.html">lib/endpoints/blockchains</a></li><li><a href="module-lib_endpoints_common_response.html">lib/endpoints/common/response</a></li><li><a href="module-lib_endpoints_messages.html">lib/endpoints/messages</a></li><li><a href="module-lib_endpoints_originators.html">lib/endpoints/originators</a></li><li><a href="module-lib_endpoints_queue.html">lib/endpoints/queue</a></li><li><a href="module-lib_endpoints_signatures.html">lib/endpoints/signatures</a></li><li><a href="module-lib_endpoints_tokens.html">lib/endpoints/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_protocol_validation.html">lib/protocol/validation</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Feb 23 2020 01:01:50 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Wed Feb 26 2020 21:25:10 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
