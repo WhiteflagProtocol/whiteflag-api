@@ -54,13 +54,6 @@ To keep track of Whiteflag message on the blockchain, the API should:
 * basic http authorization (v0.8)
 * native support for SSL (v0.9)
 
-## Postponed functionality
-
-The following protool functionality and blockchain interfacing:
-
-* message and area concatination using reference code 3 (*planned after v1.0*)
-* bitcoin (*planned after v1.0*)
-
 ## Outside scope
 
 ### Protocol functionality
