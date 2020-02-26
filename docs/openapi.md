@@ -17,7 +17,7 @@ headingLevel: 2
 
 ---
 
-<h1 id="whiteflag-api">Whiteflag API v1.0.0-alpha.6-dev</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.0.0-alpha.6</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
