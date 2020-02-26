@@ -12,13 +12,11 @@ file = "/var/lib/whiteflag/whiteflag.state"
 
 [tx]
 verifyReference = true
-verifyContent = true
 testMessagesOnly = true
 
 [rx]
 verifyOriginator = true
 verifyReference = true
-verifyContent = true
 
 [authentication]
 strict = false

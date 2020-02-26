@@ -188,6 +188,32 @@ testCase('Whiteflag message encoding and decoding module', function() {
                 return done();
             });
         });
+        assertion('11. should return protocol error for invalid object code', function(done) {
+            let wfMessage = testVector['2'].wfMessage;
+            wfMessage.MessageHeader.MessageCode = 'P';
+            wfMessage.MessageHeader.SubjectCode = '11';
+            wfMessage.MessageBody.ObjectType = '99';
+            wfCodec.verifyFormat(wfMessage, function test11VerifyFormatCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_FORMAT_ERROR');
+                return done();
+            });
+        });
+        assertion('12. should return protocol error for invalid combination of subject and object', function(done) {
+            let wfMessage = testVector['2'].wfMessage;
+            wfMessage.MessageHeader.MessageCode = 'S';
+            wfMessage.MessageBody.SubjectCode = '10';
+            wfMessage.MessageBody.ObjectType = '30';
+            wfCodec.verifyFormat(wfMessage, function test12VerifyFormatCb(err, wfMessage) {
+                ignore(wfMessage);
+                assert(err);
+                if (!(err instanceof ProtocolError)) return done(err);
+                assert.strictEqual(err.code, 'WF_FORMAT_ERROR');
+                return done();
+            });
+        });
     });
 });
 
