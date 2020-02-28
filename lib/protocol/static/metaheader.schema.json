@@ -34,11 +34,11 @@
         },
         "blockNumber": {
             "description": "The number of the block the transaction is in",
-            "type": "string"
+            "type": "integer"
         },
         "blockDepth": {
             "description": "The number of blocks from current block where transaction is in, until the confirmation maximum is reached",
-            "type": "string"
+            "type": "integer"
         },
         "confirmed": {
             "description": "Indication whether the message is confirmed, i.e. the minimal block depth has been reached",
