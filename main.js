@@ -241,7 +241,7 @@ function socketEventCb(err, client, event, info) {
  */
 function transceiveInitCb(err, info) {
     if (err) {
-        log.fatal(`Cannot initialise transceive chain: ${err.message}`);
+        log.fatal(`Could not initialise transceive chain: ${err.message}`);
         return process.exit(1);
     }
     if (info) log.info(MODULELOG, info);
@@ -305,7 +305,7 @@ function stateInitCb(err) {
  */
 function managementInitCb(err) {
     if (err) {
-        log.fatal(MODULELOG, `Cannot initialise protocol management: ${err.message}`);
+        log.fatal(MODULELOG, `Could not initialise protocol management: ${err.message}`);
         return process.exit(1);
     }
     log.info(MODULELOG, 'Whiteflag protocol management initialised');
@@ -318,7 +318,7 @@ function managementInitCb(err) {
  */
 function endpointsInitCb(err) {
     if (err) {
-        log.fatal(MODULELOG, `Cannot initialise endpoints: ${err.message}`);
+        log.fatal(MODULELOG, `Could not initialise endpoints: ${err.message}`);
         return process.exit(1);
     }
     log.info(MODULELOG, 'Server endpoints initialised');
@@ -333,9 +333,9 @@ function endpointsInitCb(err) {
 function serverStartCb(err, url) {
     if (err) {
         if (url) {
-            log.fatal(MODULELOG, `Cannot start server on ${url}: ${err.message}`);
+            log.fatal(MODULELOG, `Could not start server on ${url}: ${err.message}`);
         } else {
-            log.fatal(MODULELOG, `Cannot start server: ${err.message}`);
+            log.fatal(MODULELOG, `Could not start server: ${err.message}`);
         }
         return process.exit(1);
     }
