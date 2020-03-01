@@ -122,8 +122,9 @@ determine which encryption secret is to be used as input key material:
 * for encryption method `2` (pre-shared key), a pre-shared secret is used
 
 The `management.js` module automatically sends ECDH public keys to negotiate
-a shared secret when an authentication message is sent. The module also handles
-incoming ECDH public keys.
+a shared secret when an authentication message is sent, except when the
+authentication message is encrypted or sent under duress. The module also
+handles incoming ECDH public keys.
 
 The API has an endpoint to provide a pre-shared secret key for each originator.
 Instead of specifing the recipient in the metaheader, the pre-shared key for
