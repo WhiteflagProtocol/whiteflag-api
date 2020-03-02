@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: static</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: static</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>static</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Static Components</h1>
+<p>The directory <code>static/</code> contains static data provided by the API when running.
+This data consists of the Whiteflag API definition, a socket listener for
+Whiteflag messages and a Whiteflag signs and signals icon set. The server
+provides the static content on the <code>/</code> root endpoint, e.g. <code>http://localhost:5746/</code>.</p>
+<p>In addition, protocol specific static content, such as json schemas, are in
+<code>lib/protocol/static</code>. The server provides the static protocol data on the
+<code>/protocol</code> endpoint, e.g. <code>http://localhost:5746/protocol/</code>.</p>
+<p>Other static data in <code>static</code> subdirectories may also exists, but this data is
+not provided by the server to clients. For example, there is also a
+<code>test/static/</code> directory, which contains static data for testing, such as the
+JSON core schema meta-schema to validate the Whiteflag JSON schemas, which is
+done by the <code>test/static.js</code> test script.</p>
+<h2>Whitflag API Definition</h2>
+<p>The API definition is specified in <code>static/openapi.json</code> in accordance with the
+<a href="https://swagger.io/specification/">OpenAPI specification</a>. The <code>index.html</code>
+uses a standalone JavaScript version of <a href="https://github.com/Rebilly/ReDoc">Redoc</a>
+to render the API defintion into a human readible webpage.</p>
+<p>Redoc is not maintained as an NPM package and the following files must
+therefore be manually be updated from the source repository
+(see the <a href="https://github.com/Rebilly/ReDoc/blob/master/README.md">Redoc documentation</a>):</p>
+<ul>
+<li><code>static/js/redoc.standalone.js</code></li>
+<li><code>static/js/redoc.standalone.js.map</code></li>
+</ul>
+<h2>Whitflag API Message Listener</h2>
+<p>A simple web based message listener is available in <code>static/listen/</code>. The
+server provides the listener on the <code>/listen</code> endpoint,
+e.g. <code>http://localhost:5746/listen</code>. The listener uses the <a href="https://socket.io/">socket.io</a>
+socket that is provided by the API on the <code>/socket</code> endpoint.</p>
+<p>The <code>index.html</code> loads the client side scripts <code>/socket/socket.io.js</code> and
+<code>/listen/listener.js</code> to connect the browser to the API socket on the <code>/socket</code>
+endpoint, displaying incoming messages directly on the web page.</p>
+<h2>Whiteflag Icons</h2>
+<p>An icon set for Whiteflag signs and signals can be found in <code>static/icons/</code>.
+The server provides the icons under the <code>/icons</code> endpoint,
+e.g. <code>http://localhost:5746/icons</code>.</p>
+<p>The icons names have the following convention:
+<code>&lt;message code&gt;&lt;subject code&gt;.png</code>.</p>
+<p>The icons set does not currently cover all signs and signals from the Whiteflag
+protocol specification.</p>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 02 2020 21:35:12 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

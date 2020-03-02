@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: logging</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: logging</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>logging</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Logging</h1>
+<p>The common module <code>lib/common/logger.js</code> exposes functions to be used
+throughout the source code for logging messages from the running API.</p>
+<h2>Loglevel functions</h2>
+<p>The logging module exposes a logging function for each loglevel.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Name</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1</code></td>
+<td><code>fatal</code></td>
+<td>log an error that caused the process to abort</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td><code>error</code></td>
+<td>log an error that prevented a specific function to complete, but the process can continue</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td><code>warn</code></td>
+<td>log an encountered problem, but the specific function could continue</td>
+</tr>
+<tr>
+<td><code>4</code></td>
+<td><code>info</code></td>
+<td>log useful information, typically used for startup and configuration information</td>
+</tr>
+<tr>
+<td><code>5</code></td>
+<td><code>debug</code></td>
+<td>log detailed behaviour during development and for validation</td>
+</tr>
+<tr>
+<td><code>6</code></td>
+<td><code>trace</code></td>
+<td>log very detailed processing steps for fault isolation</td>
+</tr>
+</tbody>
+</table>
+<p>The loglevel is set in the <code>config/api.toml</code> configuration file. All logging
+functions will only process the provided logging message if the loglevel is
+equal to or higher than the loglevel corresponding with the function.
+For example, if the loglevel is set to 3, only the <code>fatal</code>, <code>error</code>, and <code>warn</code>
+functions will process the provided log message.</p>
+<h2>Logging functionality</h2>
+<p>Currently, the logging functions only pass the logging information to the
+global console, which is a special instance of the JavaScript <code>Console</code> class,
+whose output is sent to <code>process.stdout</code> and <code>process.stderr</code>.</p>
+<h2>Usage of the log functions</h2>
+<p>To use the logging function in a module, require the common logger module:</p>
+<pre class="prettyprint source lang-javascript"><code>const log = require('./common/errors.js');
+</code></pre>
+<p>Then use the functions to log messages at the different levels:</p>
+<pre class="prettyprint source lang-javascript"><code>const MODULELOG = 'someModule';
+log.info(MODULELOG, 'This message provides some useful information');
+log.debug(MODULELOG, 'This message provides debugging information');
+// etc.
+</code></pre>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 02 2020 21:35:12 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

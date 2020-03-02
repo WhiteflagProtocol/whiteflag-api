@@ -83,8 +83,8 @@ function ignore() {}
 /**
  * Validates a JSON specification against a JSON schema
  * @private
- * @param {object} specification the json specification to be validated
- * @param {object} [schema] the json schema to be validated against
+ * @param {Object} specification the json specification to be validated
+ * @param {Object} [schema] the json schema to be validated against
  * @returns {array} validation errors, empty if no errors
  */
 function validateJSON(specification, schema = _metaSchema) {

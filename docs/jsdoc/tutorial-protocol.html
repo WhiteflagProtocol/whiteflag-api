@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: protocol</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: protocol</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>protocol</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Protocol Implementation</h1>
+<p>The Whiteflag protocol is implemented with a series of interdependent modules
+that can be found under <code>lib/protocol</code>. These modules are:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config.js</code></td>
+<td>Whiteflag protocol configuration parameters</td>
+</tr>
+<tr>
+<td><code>state.js</code></td>
+<td>Whiteflag protocol state management</td>
+</tr>
+<tr>
+<td><code>transmit.js</code></td>
+<td>Message transmit events chain functions</td>
+</tr>
+<tr>
+<td><code>receive.js</code></td>
+<td>Message receive events chain functions</td>
+</tr>
+<tr>
+<td><code>retrieve.js</code></td>
+<td>Message retrieval from datastores and blockchains</td>
+</tr>
+<tr>
+<td><code>codec.js</code></td>
+<td>Message encoding and decoding functions</td>
+</tr>
+<tr>
+<td><code>crypto.js</code></td>
+<td>Whiteflag cryptographic functions</td>
+</tr>
+<tr>
+<td><code>validation.js</code></td>
+<td>Message format, reference and originator verification functions</td>
+</tr>
+<tr>
+<td><code>authentication.js</code></td>
+<td>Whiteflag originator authentication functions</td>
+</tr>
+<tr>
+<td><code>management.js</code></td>
+<td>Whiteflag protocol management message handler functions</td>
+</tr>
+</tbody>
+</table>
+<p>Protocol specific configuration parameters are in <code>whiteflag.toml</code> which can be
+found in the <code>config/</code> directory. Static protocol data, such as json schemas
+can be found under <code>lib/protocol/static</code>.</p>
+<h2>Message Format</h2>
+<p>The format of Whiteflag messages is verified against the protocol specification
+by the <code>validation.js</code> module. To do this, the module uses the external
+<code>jsonschema</code> library and the Whiteflag message schema provided with the
+protocol. If the message format is valid, the parameter <code>formatValid</code> in the
+metaheader is set to true, and otherwise to <code>false</code>.</p>
+<h2>Test Messages</h2>
+<p>Test message are supported. When testing on a main blockchain network, the
+<code>testMessagesOnly</code> in the <code>[tx]</code> section of the <code>whiteflag.toml</code> configuration
+file should be set to <code>true</code> to prevent the accidental transmission of real
+messages.</p>
+<h2>Message References</h2>
+<p>The references of Whiteflag messages are verified against the protocol
+specification by the <code>validation.js</code> module. To do this, the module first tries
+to retrieve the referenced message using the <code>retrieval.js</code> module, and then
+checks the refrenence against the Whiteflag message schema provided with the
+protocol. If the message reference is valid, the parameter <code>referenceValid</code> in
+the metaheader is set to true, and otherwise to <code>false</code>.</p>
+<p>The verification of references may be skipped for all incoming and/or outgoing
+messages by setting the <code>rx.verifyReference</code> and/or <code>tx.verifyReference</code>
+configuration parameters to <code>false</code>, respectively. This should not be done for
+operational use.</p>
+<p>The reference of certain message types cannot be verified, and reference
+verification of those message is therefore always skipped:</p>
+<ul>
+<li><code>K11</code> and <code>K12</code> messages referencing encrypted messages</li>
+<li>automatically generated outgoing messages</li>
+</ul>
+<h2>Message Originators</h2>
+<p>The originator of a Whiteflag message is verified against the list of known
+originators in the state by the <code>validation.js</code> module. It checks if the
+blockchain address of incoming messages is known and related to an
+authenticated originator. If the message originator is valid, the parameter
+<code>originatorValid</code> in the metaheader is set to true, and otherwise to <code>false</code>.</p>
+<p>If the originator cannot be verified and the <code>authentication.strict</code>
+configuration parameter is set to <code>true</code>, the message is dropped.</p>
+<p>The verification of the originator may be skipped for all incoming messages by
+setting the <code>rx.verifyOriginator</code> configuration parameter to <code>false</code>. This
+should not be done for operational use.</p>
+<p>The originator of certain message types cannot be verified, and originator
+verification of those message is therefore always skipped:</p>
+<ul>
+<li><code>A1</code> and <code>A2</code> messages, which are self-authenticing</li>
+</ul>
+<h2>Handling of Management Messages</h2>
+<p>The handling of management messages is done by <code>management.js</code>. This includes:</p>
+<ul>
+<li>further handling of authentication and cryptographic messages as required by
+the protocol specification after they have been processed in the rx event
+chain;</li>
+<li>automatic generation and transmission of messages as required by the
+protocol specification.</li>
+</ul>
+<p>Specifically, this inludes:</p>
+<ul>
+<li>authentication of originators upon reception of authentication messages</li>
+<li>automatically sending ECDH public keys after an own authentication message</li>
+<li>processing received ECDH public keys to compute shared secret</li>
+<li>automatically sending initialisation vectors with encrypted messages</li>
+<li>processing received initialisation vectors</li>
+</ul>
+<h2>Authentication</h2>
+<p>The authenticity of an originator is validated with the information from
+authentication messages. Incoming authentication messages are automatically
+processed by the <code>management.js</code> module, which passes the authentication
+information to the <code>authentication.js</code> module for validation.</p>
+<p>The API has an endpoint to provide pre-shared secret authentication tokens
+for authentication method 2.</p>
+<p>Validated originators are stored in the Whiteflag protocol state, through
+the <code>state.js</code> module.</p>
+<h2>Encryption</h2>
+<p>The <code>codec.js</code> module always passes outgoing and incoming message to the
+<code>crypto.js</code> module for encryption and decryption. If no encryption or
+decrytpion is required, i.e. when the <code>EncryptionIndicator</code> in the message
+header is set to <code>0</code>, the <code>crypto.js</code> just passes the message to the
+callback.</p>
+<p>If the encyrption indicator is set to a valid value, the crypto module encrypts
+or decrypts the message. The <code>recipientAddress</code> in the <code>MetaHeader</code> is used to
+determine which encryption secret is to be used as input key material:</p>
+<ul>
+<li>for encryption method <code>1</code> (negotiated key), the ECDH shared secret is used</li>
+<li>for encryption method <code>2</code> (pre-shared key), a pre-shared secret is used</li>
+</ul>
+<p>The <code>management.js</code> module automatically sends ECDH public keys to negotiate
+a shared secret when an authentication message is sent, except when the
+authentication message is encrypted or sent under duress. The module also
+handles incoming ECDH public keys.</p>
+<p>The API has an endpoint to provide a pre-shared secret key for each originator.
+Instead of specifing the recipient in the metaheader, the pre-shared key for
+method 2 may also be provided with the <code>encryptionKeyInput</code> in the metaheader,
+or otherwise the default key in <code>config/whiteflag.toml</code> is used.</p>
+<p>The <code>management.js</code> module automatically sends initialisation vectors with
+encrypted messages and also manages incoming initialisation vectors.</p>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 02 2020 21:35:12 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

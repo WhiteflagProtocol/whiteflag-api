@@ -20,6 +20,7 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 const OPENAPIFILE = './static/openapi.json';
+const STATICPATH = '/protocol';
 
 // TEST SCRIPT //
 testCase('Whiteflag API server module', function() {
@@ -92,7 +93,9 @@ testCase('Whiteflag API server module', function() {
                             }
                     });
                     // The endppoint and operation should only occur once
-                    if (n !== 1) unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
+                    if (n !== 1 && path.slice(0, 9) !== STATICPATH) {
+                        unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
+                    }
                 });
             });
             if (unimplementedMethods.length > 0) {

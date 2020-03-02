@@ -21,7 +21,7 @@ log.setLogLevel(1, ignore);
 // Constants //
 const BINENCODING = 'hex';
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines the common cryptographic functions test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/common/crypto.testvector.json'));

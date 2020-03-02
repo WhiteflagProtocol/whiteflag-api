@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: configuration</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: configuration</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>configuration</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Configuration</h1>
+<h2>Environment variables</h2>
+<p>The following optional environment variables may be used, e.g. when using
+different configurations in development environments or when running the API
+in a container:</p>
+<ul>
+<li><code>WFLOGLEVEL</code>: the logging level to be used; if set, it overrides the level set in the <code>api.toml</code> configuration file</li>
+<li><code>WFCONFDIR</code>: sets the directory containing the configuration files; if set it overrides the default <code>./config</code> directory.</li>
+<li><code>WFPORT</code>: sets the server port to be used; if set it overrides the port defined in the <code>api.toml</code> configuration file.</li>
+</ul>
+<h2>Configuration files</h2>
+<p>The API is configured with four configuration files in the <code>config/</code> directory.
+An alternative directory for the configuration files may be set with the
+<code>WFCONFDIR</code> environment variable.</p>
+<table>
+<thead>
+<tr>
+<th>Config file</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api.toml</code></td>
+<td>General API configuration parameters</td>
+</tr>
+<tr>
+<td><code>blockchains.toml</code></td>
+<td>Blockchain specific configuration parameters</td>
+</tr>
+<tr>
+<td><code>datastores.toml</code></td>
+<td>Datastore specific configuration parameters</td>
+</tr>
+<tr>
+<td><code>whiteflag.toml</code></td>
+<td>Protocol specific configuration parameters</td>
+</tr>
+</tbody>
+</table>
+<p>The configuration files are formatted in <a href="https://github.com/toml-lang/toml">TOML</a>.</p>
+<h3>General API configuration</h3>
+<p>This configuration file provides global configuration parameters for the api.</p>
+<p>The <code>[logger]</code> section parameters are:</p>
+<ul>
+<li><code>loglevel</code>: the log level of the api:
+1=fatal, 2=error, 3=warning, 4=info, 5=debug, 6=trace</li>
+</ul>
+<p>The following <code>[server]</code> section parameters may be defined:</p>
+<ul>
+<li><code>protocol</code>: either <code>http</code> or <code>https</code>, default is <code>http</code></li>
+<li><code>hostname</code>: the hostname used by the api, default is no hostname</li>
+<li><code>port</code>: the port on which the api is listening, default is <code>5746</code>; may be overriden by the <code>WFPORT</code> environment variable</li>
+</ul>
+<p>In the <code>[authorization]</code> section, basic http authorization can be enabled
+by setting a <code>username</code> and <code>password</code>. Levae empty to disable basic auth.
+Please do note that the API is not designed to be directly exposed externally.</p>
+<p>The following <code>[ssl]</code> parameters are required if the API server protocol
+is <code>https</code>:</p>
+<ul>
+<li><code>keyFile</code>: file name of the file with private key in PEM format</li>
+<li><code>certificateFile</code>: file name of the file with certificate in PEM format</li>
+</ul>
+<p>The following http(s) security options can be set in the <code>[http]</code> section:</p>
+<ul>
+<li><code>enableCors</code>: enables Cross-Origin Resource Sharing if the API is (allowed to be) used or embedded by other sites</li>
+<li><code>trustProxy</code>: must be set to true if the API runs behind a reverse proxy; this ensures that http headers are correctly interpreted</li>
+</ul>
+<p>The <code>[socket]</code> section options control the web socket on which incoming
+messages are emitted:</p>
+<ul>
+<li><code>enable</code>: if true, the web socket will be available, otherwise not</li>
+</ul>
+<p>The operationId parameters in the <code>[endpoints]</code> section are booleans that
+allow to enable or disable specific API operations. See the API documentation
+for a description of all operations. Note that the <code>receiveMessage</code> operationId
+only controls the injection of messages through the REST API, and has nothing
+to do with receiving messages directly from a blockchain.</p>
+<h3>Whiteflag protocol configuration</h3>
+<p>This configuration file contains Whiteflag protocol related configuration
+parameters.</p>
+<p>The <code>[state]</code> section parameters control the storage of the Whiteflag state:</p>
+<ul>
+<li><code>masterKey</code>: hex representation of the 256 bit key used for encrytpion of keys and state data</li>
+<li><code>encryption</code>: boolean indicating if the state needs to be encrypted</li>
+<li><code>saveToFile</code>: boolean indicating if the state needs to be saced to file</li>
+<li><code>file</code>: filename with path of the state file</li>
+</ul>
+<p>The <code>[tx]</code> section contains message transmit behaviour parameters:</p>
+<ul>
+<li><code>verifyReference</code>: boolean indicating whether to verify reference before sending message</li>
+<li><code>testMessagesOnly</code>: boolean indicating whether only test messages may be sent (to prevent accidental live message transmission when testing on a main blockchain network)</li>
+</ul>
+<p>The <code>[rx]</code> message contains message receiving behaviour parameters:</p>
+<ul>
+<li><code>verifyOriginator</code>: boolean indicating whether to verify originator of received message</li>
+<li><code>verifyReference</code>: boolean indicating whether to verify reference of received message</li>
+</ul>
+<p>The <code>[authentication]</code> section controls the behaviour for all authentication methods</p>
+<ul>
+<li><code>strict</code>: if <code>true</code>, then unauthenticated messages are rejected;
+if <code>false</code>, then unauthenticated messages are flagged in MetaHeader (default)</li>
+</ul>
+<p>The behaviour parameters for authentication method 1 are in
+the <code>[authentication.1]</code> section:</p>
+<ul>
+<li><code>validDomains</code>: array of domain names that are considered to hold valid authentication signatures; if empty, all domain names are accepted</li>
+</ul>
+<p>Encryption paramaters for encryption method X are in
+the <code>[encryption.X]</code> section:</p>
+<ul>
+<li><code>psk</code>: a pre-shared key, i.e. a secret from which the message encyption key is derived if no other input key material is available; should only be used for testing</li>
+</ul>
+<h3>Blockchain configuration</h3>
+<p>The blockchains configuration file contains both general and specific
+blockchain configuration parameters. The <code>./lib/blockchains/static/blockchains.config.schema.json</code>
+contains a validation schema for the blockchain configuration.</p>
+<p>The <code>[confirmation]</code> section contains the following parameters that affect
+all blockchains:</p>
+<ul>
+<li><code>enabled</code>: boolean whether to track block depth of message for confirmation</li>
+<li><code>interval</code>: interval in ms to check blockdepth of message</li>
+<li><code>maxBlockDepth</code>: maximum block depth after which a message is confirmed</li>
+<li><code>updateEachBlock</code>: if true, block depth is updated in data store for each block, otherwise only when confirmed</li>
+</ul>
+<p>Furthermore, the configuration file defines which blockchains are supported,
+and the specific parameters for each supported blockchain. Multiple blockchains
+with their configurations may be defined with multiple
+<code>[[blockchains]]</code> sections.</p>
+<p>At a minumum, the following parameters must be defined for each blockchain in
+the repsective <code>[[blockchains]]</code> section:</p>
+<ul>
+<li><code>name</code>: the name by which the blockchain is identified in the software and in loggings; naming convention: <code>{name}-{network}</code>, e.g. <code>bitcoin-testnet</code> or <code>ethereum-rinkeby</code></li>
+<li><code>module</code>: module that implements the specific logic of the blockchain; modules are located in <code>./lib/blockchains</code> and to minimally implement the module methods as described in <code>./lib/blockchains/static/blockchains-template.js</code>.</li>
+<li><code>active</code>: whether a blockchain is active or should be ignored</li>
+<li><code>createAccount</code>: true if an account should be created if none exists</li>
+</ul>
+<p>Additional blockchain specific parameters may be required by the specific
+blockchain module, such as connection details to a full node.</p>
+<h3>Datastores configuration</h3>
+<p>This datastores configuration file allows to define which datastores should be
+used to store data. Multiple stores may be defined with multiple
+<code>[[databases]]</code> sections. At a minumum, the following parameters must be defined
+for each datastore as detailed in <code>./lib/datastores/static/datastores.config.schema.json</code>.
+Additional parameters may be added depending on the database.</p>
+<ul>
+<li><code>name</code>: the name by which the datastore is identified in the software and in loggings</li>
+<li><code>module</code>: module that implements the specific logic of the datastore; modules are located in <code>./lib/datastores</code> and to minimally implement the module methods as described in <code>./lib/datastores/static/datastore-template.js</code></li>
+<li><code>active</code>: whether datastore is active or can be ignored</li>
+<li><code>primary</code>: indicates if this is the primary datastore for queries and state information; only one (1) datastore should be used to prevent duplicates</li>
+<li><code>rxStoreEvent</code>: array of rx events on which a message should be stored in datastore, normally <code>[&quot;messageProcessed&quot;]</code></li>
+<li><code>txStoreEvent</code>: array of tx events on which a message should be stored in datastore, normally <code>[&quot;messageProcessed&quot;]</code></li>
+</ul>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 02 2020 21:35:12 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

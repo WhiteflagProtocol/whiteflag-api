@@ -21,7 +21,7 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/codec.testvector.json'));

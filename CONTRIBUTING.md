@@ -74,7 +74,7 @@ naming conventions may be used:
 
 Automated testing is implemented with the [Mocha](https://mochajs.org/)
 test framework. The directory structure and files names of the test scripts
-in `test/` should correrspond with the module names and structure under `lib/`.
+in `test/` should correspond with the module names and structure under `lib/`.
 
 To do a full test and run all the test scripts in `test/`, use the following
 NPM command in the project root:

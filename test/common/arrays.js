@@ -20,7 +20,7 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/common/arrays.testvector.json'));

@@ -23,7 +23,7 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines state test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/state.testvector.json'));
