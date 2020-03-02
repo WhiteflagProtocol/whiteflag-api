@@ -3,7 +3,6 @@
  * @module test/protocol/codec
  * @summary Whiteflag message encoding and decoding test script
  * @description Script for testing all Whiteflag encoding and decoding functions
- * @todo test full message set covering all functionalities
  */
 
 // Node.js core and external modules //

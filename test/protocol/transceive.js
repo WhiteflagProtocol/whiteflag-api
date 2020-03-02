@@ -3,7 +3,6 @@
  * @module test/protocol/transceive
  * @summary Whiteflag message transmit and reveive test script
  * @description Script for testing Whiteflag message receive (rx) event chain
- * @todo test irregular tx and rx flows
  */
 
 // Node.js core and external modules //
