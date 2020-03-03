@@ -27,7 +27,7 @@ This API is a so called Minumum Viable Product (MVP), which means that it only s
 
 This definition documents the API in [OpenAPI format](https://swagger.io/specification/).
 
-Two methods are available for interaction with the API: 1. a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) for originators to provide Whiteflag message to be sent on the blockchain, and 2. a [socket.io](https://socket.io/) [web socket](https://en.wikipedia.org/wiki/WebSocket) variant available on `/socket` for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on [/listen](/listen).
+Two methods are available for interaction with the API: 1. a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) for originators to provide Whiteflag message to be sent on the blockchain, and 2. a [socket.io](https://socket.io/) [web socket](https://en.wikipedia.org/wiki/WebSocket) variant available on `/socket` for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on [/listen](/listen) and the documented source code at [/docs](/docs).
 
 All response bodies are structured as `{meta, data, errors}`, based on the [JSON API Specification](https://jsonapi.org/format/), which has been used as a guideline (and as a guideline only).
 
@@ -2080,6 +2080,26 @@ HTTP Authentication
 Returns the Whiteflag API state JSON schema.
 
 <h3 id="getwfstateschema-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
+<h1 id="whiteflag-api-icons">Icons</h1>
+
+## getIcon
+
+<a id="opIdgetIcon"></a>
+
+`GET /icons/{icon}`
+
+Returns the requested icon corresponding with a message type.
+
+<h3 id="geticon-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|

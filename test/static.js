@@ -54,10 +54,10 @@ testCase('Whiteflag API static data tests', function() {
             './test/static/json-schema.schema.json',
             './lib/blockchains/static/blockchains.config.schema.json',
             './lib/datastores/static/datastores.config.schema.json',
-            './lib/protocol/static/message.schema.json',
-            './lib/protocol/static/metaheader.schema.json',
-            './lib/protocol/static/signature.schema.json',
-            './lib/protocol/static/state.schema.json'
+            './static/protocol/message.schema.json',
+            './static/protocol/metaheader.schema.json',
+            './static/protocol/signature.schema.json',
+            './static/protocol/state.schema.json'
         ];
         // Validate each schema in the array
         let n = 0;

@@ -20,7 +20,6 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 const OPENAPIFILE = './static/openapi.json';
-const STATICPATH = '/protocol';
 
 // TEST SCRIPT //
 testCase('Whiteflag API server module', function() {
@@ -73,6 +72,7 @@ testCase('Whiteflag API server module', function() {
             return done();
         });
         assertion(' 5. should have all OpenAPI defined methods and operations implemented', function(done) {
+            const staticPaths = [ 'docs', 'protocol', 'icons', 'listen', 'js' ];
             let unimplementedMethods = [];
 
             // Get path from openapi defintion
@@ -93,7 +93,7 @@ testCase('Whiteflag API server module', function() {
                             }
                     });
                     // The endppoint and operation should only occur once
-                    if (n !== 1 && path.slice(0, 9) !== STATICPATH) {
+                    if (n !== 1 && !staticPaths.includes(path.split('/')[1])) {
                         unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
                     }
                 });

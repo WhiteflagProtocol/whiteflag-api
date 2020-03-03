@@ -5,6 +5,7 @@
  * @summary Whiteflag API main module
  * @description Module for initialising the transceive event chains, blockchains, datastores and starting the server
  * @tutorial installation
+ * @tutorial configuration
  * @tutorial modules
  */
 // Change working directory to process directory
