@@ -30,7 +30,7 @@ enable = true
 [endpoints]
 sendMessage = true
 receiveMessage = false
-transferValue = true
+transferValue = false
 createAccount = false
 updateAccount = false
 deleteAccount = false
