@@ -1,7 +1,7 @@
 # Whiteflag datastores configuration file
 #
 # This configuration file contains datastore related configuration parameters
-# Please see `./doc/configuration.md` for a description.
+# Please see `./docs/configuration.md` for a description.
 #
 
 [[databases]]

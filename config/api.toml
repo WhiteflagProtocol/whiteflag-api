@@ -1,7 +1,7 @@
 # Whiteflag API configuration file
 #
 # This configuration file provides global configuration parameters for the api.
-# Please see `./doc/configuration.md` for a description.
+# Please see `./docs/configuration.md` for a description.
 #
 
 [logger]
@@ -30,11 +30,13 @@ enable = true
 [endpoints]
 sendMessage = true
 receiveMessage = false
-transferValue = true
+transferValue = false
 createAccount = false
 updateAccount = false
 deleteAccount = false
 createSignature = true
+updateOriginator = false
+deleteOriginator = false
 storePreSharedKey = true
 deletePreSharedKey = true
 storeAuthToken = true

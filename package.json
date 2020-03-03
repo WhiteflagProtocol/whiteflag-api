@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.0-alpha.5-dev",
+    "version": "1.0.0-beta",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "keywords": [
         "whiteflag",
@@ -20,18 +20,19 @@
         "express-basic-auth": "^1.2.0",
         "jsonschema": "^1.2.5",
         "jsonwebtoken": "^8.5.1",
-        "key-encoder": "^1.1.7",
-        "mongodb": "^2.2.36",
+        "key-encoder": "^2.0.3",
+        "mongodb": "^3.5.4",
         "socket.io": "^2.3.0",
         "toml": "^3.0.0",
         "web3": "^2.0.0-alpha.1"
     },
     "devDependencies": {
-        "eslint": "^6.0.1",
-        "semver": "^6.2.0",
-        "mocha": "^6.1.4",
+        "eslint": "^6.8.0",
+        "semver": "^7.1.3",
+        "mocha": "^7.1.0",
         "jsdoc": "~3.6.3",
-        "cloc": "^2.5.0",
+        "widdershins": "^3.6.7",
+        "cloc": "^2.5.1",
         "license-checker": "^25.0.1"
     },
     "homepage": "https://github.com/WhiteflagProtocol/whiteflag-api#readme",
@@ -46,7 +47,7 @@
         "lib": "./lib",
         "test": "./test",
         "doc": "./doc",
-        "man": "./doc/man"
+        "man": "./docs/man"
     },
     "main": "main.js",
     "bin": {
@@ -56,12 +57,15 @@
     "scripts": {
         "start": "node main.js",
         "test": "mocha --recursive",
-        "doc:src": "jsdoc -c .jsdoc.json",
+        "doc:src": "rm -r docs/jsdoc/* && jsdoc -c .jsdoc.json",
+        "doc:openapi": "widdershins --shallowSchemas -c static/openapi.json -o docs/md/openapi.md",
+        "build:doc": "npm run doc:openapi && npm run doc:src",
+        "build": "npm run build:doc",
         "count": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore --by-file lib",
         "count-all": "cloc --exclude-dir=node_modules,.vscode --exclude-list-file=.clocignore .",
         "licenses": "license-checker --summary"
     },
     "engines": {
-        "node": "10.x.x"
+        "node": ">= 10.x.x"
     }
 }

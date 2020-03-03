@@ -9,6 +9,7 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
+const fs = require('fs');
 
 // Project modules required for test //
 const array = require('../../lib/common/arrays');
@@ -19,81 +20,10 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
- * @description Defines the cryptographic test data
+ * @constant {Object} testVector
+ * @description Defines the common array functions test data
  */
-const testVector = {
-    '1': {
-        orgArray: [ '1', '2' ],
-        item: '3',
-        newArray: [ '1', '2', '3' ]
-    },
-    '2': {
-        orgArray: null,
-        item: '3',
-        newArray: [ '3' ]
-    },
-    '3': {
-        orgArray: [ '1', '2' ],
-        item: { name: 'object' },
-        newArray: [ '1', '2', { name: 'object' } ]
-    },
-    '4': {
-        array1: [ '1', '2' ],
-        array2: [ '3', '4' ],
-        newArray: [ '1', '2', '3', '4' ]
-    },
-    '5': {
-        array1: null,
-        array2: [ '3', '4' ],
-        newArray: [ '3', '4' ]
-    },
-    '6': {
-        array1: [ '1', '2' ],
-        array2: null,
-        newArray: [ '1', '2' ]
-    },
-    '7': {
-        array1: null,
-        array2: null,
-        newArray: []
-    },
-    '8': {
-        array: [
-            {
-                name: 'A',
-                something: 'foo'
-            },
-            {
-                name: 'B',
-                something: 'bar'
-            }
-        ],
-        property: 'name',
-        newArray: [ 'A', 'B' ]
-    },
-    '9': {
-        array: [
-            {
-                name: {
-                    main: 'A',
-                    second: '1'
-                },
-                something: 'foo'
-            },
-            {
-                name: {
-                    main: 'B',
-                    second: '2'
-                },
-                something: 'bar'
-            }
-        ],
-        property: 'name',
-        subname: 'second',
-        newArray: [ '1', '2' ]
-    }
-};
+const testVector = JSON.parse(fs.readFileSync('./test/static/common/arrays.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common array module', function() {

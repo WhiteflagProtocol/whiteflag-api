@@ -1,7 +1,7 @@
 # Whiteflag protocol configuration file
 #
 # This configuration file contains Whiteflag protocol related configuration parameters
-# Please see `./doc/configuration.md` for a description.
+# Please see `./docs/configuration.md` for a description.
 #
 
 [state]
@@ -12,6 +12,7 @@ file = "/var/lib/whiteflag/whiteflag.state"
 
 [tx]
 verifyReference = true
+testMessagesOnly = true
 
 [rx]
 verifyOriginator = true

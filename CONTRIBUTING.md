@@ -24,7 +24,7 @@ in the following table.
 |-----------------|----------------------------------------------|
 |`config/`        | Configuration files; must be [TOML](https://github.com/toml-lang/toml) formatted |
 |`etc/`           | OS-specific configuration files              |
-|`doc/`           | Documentation; must be [markdown](https://en.wikipedia.org/wiki/Markdown) formatted |
+|`docs/`          | Documentation; must be [markdown](https://en.wikipedia.org/wiki/Markdown) formatted |
 |`lib/`           | Source code modules                          |
 |`static/`        | Static content, such as json schemas         |
 |`test/`          | Scripts for automated testing                |
@@ -74,7 +74,7 @@ naming conventions may be used:
 
 Automated testing is implemented with the [Mocha](https://mochajs.org/)
 test framework. The directory structure and files names of the test scripts
-in `test/` should correrspond with the module names and structure under `lib/`.
+in `test/` should correspond with the module names and structure under `lib/`.
 
 To do a full test and run all the test scripts in `test/`, use the following
 NPM command in the project root:
