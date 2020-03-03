@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: protocol/state.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: protocol/state.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/protocol/state
+ * @summary Whiteflag state module
+ * @description Module for Whiteflag protocol state management
+ * @tutorial modules
+ * @tutorial protocol
+ * @tutorial state
+ * @todo review blockchain account backup method
+ */
+module.exports = {
+    // State functions
+    init: initState,
+    close: closeState,
+    save: saveState,
+    // Blockchain state functions
+    backupAccount,
+    getBlockchains,
+    getBlockchainData,
+    updateBlockchainData,
+    // Originator state functions
+    getOriginators,
+    getOriginatorData,
+    upsertOriginatorData,
+    removeOriginatorData,
+    getOriginatorAuthToken,
+    removeOriginatorAuthToken,
+    // Queue function
+    getQueue,
+    getQueueData,
+    upsertQueueData,
+    removeQueueData,
+    // Cryptographic keys
+    getKeyIds,
+    getKey,
+    upsertKey,
+    removeKey,
+    // State functions for testing
+    test: {
+        validate: validateState,
+        enclose: encloseState,
+        extract: extractState
+    }
+};
+
+// Module objects //
+/**
+ * Whiteflag state
+ * @type {Object}
+ */
+let _wfState = {
+    blockchains: {},
+    originators: [],
+    queue: {
+        initVectors: [],
+        blockDepths: []
+    },
+    crypto: {
+        blockchainKeys: [],
+        ecdhPrivateKeys: [],
+        presharedKeys: [],
+        negotiatedKeys: [],
+        authTokens: []
+    }
+};
+
+// Node.js core and external modules //
+const fs = require('fs');
+const crypto = require('crypto');
+const jsonValidate = require('jsonschema').validate;
+
+// Whiteflag common functions and classes //
+const array = require('../common/arrays');
+const log = require('../common/logger');
+const object = require('../common/objects');
+const { hkdf, hash, zeroise } = require('../common/crypto');
+const { ProcessingError } = require('../common/errors');
+
+// Whiteflag modules //
+const wfApiDatastores = require('../datastores');
+
+// Whiteflag event emitters //
+const wfStateEvent = require('./events').stateEvent;
+
+// Whiteflag configuration data //
+const wfConfigData = require('./config').getConfig();
+
+// Module constants //
+const MODULELOG = 'state';
+const MEKLENGTH = 32;
+const DEKLENGTH = 32;
+const KEKLENGTH = 16;
+const DEKSALT = '5dbfb2cc6c0f8fa314fd12b662da1bb2f7bef77f8df7ae0c0fb9d15750cfe423';
+const KEKSALT = '22d79745768d144783ba6ce8e7b3047b47651e4729168e8d8741b7d094d46d92';
+const DATACIPHER = 'aes-256-gcm';
+const DATAIVLENGTH = 12;
+const KEYCIPHER = 'aes-128-gcm';
+const KEYIVLENGTH = 12;
+const KEYIDLENGTH = 12;
+const BINENCODING = 'hex';
+const STATEENCODING = 'base64';
+const wfStateSchema = JSON.parse(fs.readFileSync('./static/protocol/state.schema.json'));
+
+// Module variables //
+let _masterEncryptionKey = 'a15e6437e23fdaaed9b454d7d51bd69e6a9ffcdbcf0a7528538a2f3bfe2d54e4';
+let _encryption = true;
+let _saveToFile = false;
+let _stateFile = '/tmp/whiteflag.state';
+
+// MAIN MODULE FUNCTIONS //
+/**
+ * Restores previous state from file and binds event handlers to state changes
+ * @function initState
+ * @alias module:lib/protocol/state.init
+ * @param {function(Error)} callback function called after initialising/restoring state
+ * @emits module:lib/protocol/events.stateEvent:initialised
+ */
+function initState(callback) {
+    // Check state configuration parameters
+    if (!wfConfigData.state) {
+        return callback(new Error('State parameters missing in Whiteflag configuration file'));
+    }
+    if (wfConfigData.state.masterKey.length !== (MEKLENGTH * 2)) {
+        return callback(new Error(`Master key in Whiteflag configuration file is not ${(MEKLENGTH * 8)} bits`));
+    }
+    // Preserve state configuration
+    _masterEncryptionKey = wfConfigData.state.masterKey;
+    if (wfConfigData.state.encryption === false) _encryption = false;
+    if (wfConfigData.state.saveToFile === true) _saveToFile = true;
+    _stateFile = wfConfigData.state.saveToFile || _stateFile;
+
+    // Remove master key from memory
+    delete wfConfigData.state.masterKey;
+
+    // Check if state file exists
+    if (!fs.existsSync(_stateFile)) {
+        // Get the state from the datastore
+        log.trace(MODULELOG, 'Getting state from datastore');
+        wfApiDatastores.getState(function stateReadDatastoreCb(err, stateDbData) {
+            if (err) return callback(new Error(`Could not retrieve previous state from datastore: ${err.message}`));
+            if (!stateDbData) {
+                log.info(MODULELOG, 'State does not exist in datastore; starting with clean internal state');
+                wfStateEvent.emit('initialised');
+                return callback(null);
+            }
+            try {
+                // Extract and decrypt state
+                _wfState = extractState(stateDbData);
+            } catch(err) {
+                return callback(new Error(`Could not extract previous state from datastore: ${err.message}`));
+            }
+            // Done restoring state
+            log.info(MODULELOG, 'Restored previous state from datastore');
+            saveState();
+            wfStateEvent.emit('initialised');
+            return callback(null);
+        });
+    } else {
+        log.trace(MODULELOG, `State file ${_stateFile} exists; getting state from file`);
+
+        // Make a copy of the state file
+        let stateFileBak = _stateFile + '.' + 'bak';
+        fs.copyFile(_stateFile, stateFileBak, err => {
+            if (err) log.error(MODULELOG, `Could not backup state file ${_stateFile}: ${err.message}`);
+                else log.info(MODULELOG, `State file ${_stateFile} backed up to ${stateFileBak}`);
+        });
+        // Read saved state from file
+        fs.readFile(_stateFile, function stateReadFileCb(err, stateFileData) {
+            if (err) return callback(new Error(`Could not restore state from ${_stateFile}: ${err.message}`));
+
+            // Extract and decrypt state
+            try {
+                _wfState = extractState(JSON.parse(stateFileData));
+            } catch(err) {
+                return callback(new Error(`Could not restore previous state from ${_stateFile}: ${err.message}`));
+            }
+            log.info(MODULELOG, `Restored previous state from ${_stateFile}`);
+
+            // Remove file if it is not used anymore
+            if (!_saveToFile) {
+                log.trace(MODULELOG, `Removing ${_stateFile}`);
+                fs.unlink(_stateFile, function stateRemoveFileCb(err) {
+                    if (err) log(MODULELOG, `Could not remove ${_stateFile}: ${err.message}`);
+                });
+            }
+            // Done restoring state
+            log.info(MODULELOG, `Restored previous state from ${_stateFile}`);
+            saveState();
+            wfStateEvent.emit('initialised');
+            return callback(null);
+        });
+    }
+}
+
+/**
+ * Ensures a proper shutdown
+ * @function closeState
+ * @alias module:lib/protocol/state.closeState
+ * @param {function(Error)} [callback] function called after initialising/restoring state
+ * @emits module:lib/protocol/events.stateEvent:closed
+ */
+function closeState(callback) {
+    // Closing is triggered when state is saved
+    wfStateEvent.once('saved', function stateCloseCb() {
+        log.info(MODULELOG, 'Saved state before closing');
+        _masterEncryptionKey = undefined;
+        wfStateEvent.emit('closed');
+        if (callback) return callback(null);
+    });
+    // Save state to trigger closing
+    saveState();
+}
+
+/**
+ * Saves current state to file
+ * @function saveState
+ * @alias module:lib/protocol/state.save
+ * @emits module:lib/protocol/events.stateEvent:saved
+ */
+function saveState() {
+    // Enclose and encrypt state object
+    let stateObject = {};
+    try {
+        stateObject = encloseState(_wfState);
+    } catch(err) {
+        return log.error(MODULELOG, `Could not save current state: ${err.message}`);
+    }
+    // Save state in datastore
+    log.trace(MODULELOG, 'Saving current state to datastore');
+    wfApiDatastores.storeState(stateObject, function stateStoreDatastoreCb(err) {
+        if (err) return log.error(MODULELOG, `Could not store state in datastore: ${err.message}`);
+        return wfStateEvent.emit('saved');
+    });
+    // Save state to file if set in config
+    if (_saveToFile) {
+        log.trace(MODULELOG, `Saving current state to ${_stateFile}`);
+        fs.writeFile(_stateFile, JSON.stringify(stateObject, null, 2), function stateWriteFileCb(err) {
+            if (err) return log.error(MODULELOG, `Could not save current state to ${_stateFile}: ${err.message}`);
+            return wfStateEvent.emit('saved');
+        });
+    }
+}
+
+/**
+ * Returns blockchain state data to callback
+ * @function getBlockchains
+ * @alias module:lib/protocol/state.getBlockchains
+ * @param {function(Error, blockchainsData)} [callback] function to which data is passed
+ * @returns {blockchainsData}
+ * @typedef {Object} blockchainsData state data of all blockchains
+ */
+function getBlockchains(callback) {
+    if (callback) return callback(null, _wfState.blockchains);
+    return _wfState.blockchains;
+}
+
+/**
+ * Gets state of a specific blockchain
+ * @function getBlockchainData
+ * @alias module:lib/protocol/state.getBlockchainData
+ * @param {string} blockchain name of the blockchain
+ * @param {function(Error, blockchainData)} callback function to which data is passed
+ * @typedef {Object} blockchainData state data of a blockchain
+ */
+function getBlockchainData(blockchain, callback) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+        return callback(null, null);
+    }
+    return callback(null, _wfState.blockchains[blockchain]);
+}
+
+/**
+ * Updates state of a specific blockchain
+ * @function updateBlockchains
+ * @alias module:lib/protocol/state.updateBlockchains
+ * @param {string} blockchain name of the blockchain
+ * @param {Object} data parameters of the specific blockchain
+ * @emits module:lib/protocol/events.stateEvent:updatedBlockchain
+ */
+function updateBlockchainData(blockchain, data) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+        log.warn(MODULELOG, `Adding previously unknown blockchain to state: ${blockchain}`);
+    }
+    _wfState.blockchains[blockchain] = data;
+    wfStateEvent.emit('updatedBlockchain', blockchain);
+    return saveState();
+}
+
+/**
+ * Saves a specific blockchain account to file
+ * @function backupAccount
+ * @alias module:lib/protocol/state.backupAccount
+ * @param {string} blockchain the blockchain of the account to be saved
+ * @param {string} address the address of the account to be saved
+ */
+function backupAccount(blockchain, address) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+        return log.error(MODULELOG, `Cannot backup account because blockchain does not exist in state: ${blockchain}`);
+    }
+    const account = _wfState.blockchains[blockchain].accounts.find(account => account.address === address);
+    if (account) {
+        const accountFile = _stateFile + '.' + account.address.substring(0, 8);
+        fs.writeFile(accountFile, JSON.stringify(account, null, 2), function stateWriteAccountFileCb(err) {
+            if (err) return log.error(MODULELOG, `Could not save blockchain account to ${accountFile}: ${err.message}`);
+            return log.debug(MODULELOG, `Blockchain account saved to ${accountFile}`);
+        });
+    }
+}
+
+/**
+ * Returns originator state data to callback
+ * @function getOriginators
+ * @alias module:lib/protocol/state.getOriginators
+ * @param {function(Error, originatorsData)} callback function to which data is passed
+ * @typedef {Array} originatorsData state data of all originators
+ */
+function getOriginators(callback) {
+    if (callback) return callback(null, _wfState.originators);
+    return _wfState.originators;
+}
+
+/**
+ * Gets state of a specific originator
+ * @function getOriginatorData
+ * @alias module:lib/protocol/state.getOriginatorData
+ * @param {string} address the originator's blockchain address
+ * @param {function(Error, originatorData)} callback function to which data is passed
+ * @typedef {Object} originatorData state data of all originators
+ */
+function getOriginatorData(address, callback) {
+    const index = _wfState.originators.findIndex(
+        originator => originator.address.toLowerCase() === address.toLowerCase()
+    );
+    if (index &lt; 0) return callback(null, null);
+    return callback(null, _wfState.originators[index]);
+}
+
+/**
+ * Inserts or updates an originator
+ * @function upsertOriginatorData
+ * @alias module:lib/protocol/state.upsertOriginatorData
+ * @param {Object} data originator data
+ * @emits module:lib/protocol/events.stateEvent:insertedOriginator
+ * @emits module:lib/protocol/events.stateEvent:updatedOriginator
+ * @emits module:lib/protocol/events.stateEvent:insertedAuthenticationToken
+ * @emits module:lib/protocol/events.stateEvent:updatedAuthenticationToken
+ */
+function upsertOriginatorData(data) {
+    // Check if originator with the same address or authentication token already exists
+    let indexA = null;
+    if (Object.prototype.hasOwnProperty.call(data, 'address')) {
+        indexA = _wfState.originators.findIndex(
+            originator => originator.address.toLowerCase() === data.address.toLowerCase()
+        );
+    } else {
+        data.address = '';
+    }
+    let indexT = null;
+    if (Object.prototype.hasOwnProperty.call(data, 'authTokenId')) {
+        indexT = _wfState.originators.findIndex(
+            originator => originator.authTokenId === data.authTokenId
+        );
+    } else {
+        data.authTokenId = '';
+    }
+    // Error if no address and no authentication token
+    if (indexA === null &amp;&amp; indexT === null) {
+        return log.error(MODULELOG, 'Attempt to add originator to state without address or authentication token');
+    }
+    // Check if not existing originator with address
+    if (indexA === null || indexA &lt; 0) {
+        // No address; check if not also existing originator with token
+        if (indexT === null || indexT &lt; 0) {
+            // Insert if no originator with token or address
+            _wfState.originators.push(data);
+            if (indexT === null) wfStateEvent.emit('insertedOriginator', data.address);
+            if (indexA === null) wfStateEvent.emit('insertedOriginatorAuthToken', data.authTokenId);
+            return saveState();
+        } else {
+            // Update if existing originator with token but (different) address
+            if (!_wfState.originators[indexT].address) {
+                // No address, so update originator with same token
+                object.update(data, _wfState.originators[indexT]);
+                wfStateEvent.emit('updatedOriginatorAuthToken', data.authTokenId);
+                return saveState();
+            } else {
+                // Create new originator with same token but different address
+                _wfState.originators.push(data);
+                wfStateEvent.emit('insertedOriginator', data.address);
+                return saveState();
+            }
+        }
+    } else {
+        // Originator with address
+        if (indexT === null || indexT &lt; 0) {
+            // Check if existing originator has different token
+            if (_wfState.originators[indexA].authTokenId &amp;&amp; data.authTokenId &amp;&amp;
+                _wfState.originators[indexA].authTokenId !== data.authTokenId) {
+                // Token does not match; create new entry to preserve token
+                _wfState.originators.push({
+                    name: _wfState.originators[indexA].name,
+                    blockchain: _wfState.originators[indexA].blockchain,
+                    authTokenId: _wfState.originators[indexA].authTokenId
+                });
+            }
+            // Update if existing originator with address but no token or same token
+            object.update(data, _wfState.originators[indexA]);
+            wfStateEvent.emit('updatedOriginator', data.address);
+            return saveState();
+        }
+    }
+    // Remove same originator with no address
+    if (!_wfState.originators[indexT].address) {
+        _wfState.originators.splice(indexT, 1);
+    }
+    // Update existing originator
+    object.update(data, _wfState.originators[indexA]);
+    wfStateEvent.emit('updatedOriginator', data.address);
+    return saveState();
+}
+
+/**
+ * Removes state of a specific originator
+ * @function removeOriginatorData
+ * @alias module:lib/protocol/state.removeOriginatorData
+ * @param {string} address the originator's blockchain address
+ * @emits module:lib/protocol/events.stateEvent:removedOriginator
+ */
+function removeOriginatorData(address) {
+    const index = _wfState.originators.findIndex(
+        originator => originator.address.toLowerCase() === address.toLowerCase()
+    );
+    if (index >= 0) {
+        _wfState.originators.splice(index, 1);
+        wfStateEvent.emit('removedOriginator', address);
+        return saveState();
+    }
+}
+
+/**
+ * Returns originator authentication token
+ * @function getOriginatorAuthToken
+ * @alias module:lib/protocol/state.getOriginatorAuthToken
+ * @param {string} authTokenId the originator's authentication token
+ * @param {function(Error, originatorData)} callback function to which data is passed
+ */
+function getOriginatorAuthToken(authTokenId, callback) {
+    const index = _wfState.originators.findIndex(
+        originator => originator.authTokenId === authTokenId
+    );
+    if (index &lt; 0) return callback(null, null);
+    return callback(null, _wfState.originators[index]);
+}
+
+/**
+ * Removes originator authentication data
+ * @function removeOriginatorAuthToken
+ * @alias module:lib/protocol/state.removeOriginatorAuthToken
+ * @param {string} address the originator's blockchain address
+ * @emits module:lib/protocol/events.stateEvent:removedAuthenticationToken
+ * @emits module:lib/protocol/events.stateEvent:removedOriginatorAuthToken
+ */
+function removeOriginatorAuthToken(authTokenId) {
+    const index = _wfState.originators.findIndex(
+        originator => originator.authTokenId === authTokenId
+    );
+    if (index >= 0) {
+        if (!_wfState.originators[index].address) {
+            _wfState.originators.splice(index, 1);
+            wfStateEvent.emit('removedOriginator', authTokenId);
+        } else {
+            _wfState.originators[index].authTokenId = null;
+            wfStateEvent.emit('removedAuthenticationToken', _wfState.originators[index].address);
+        }
+    }
+    removeKey('authTokens', authTokenId);
+    return saveState();
+}
+
+/**
+ * Returns specific queue to callback
+ * @function getQueue
+ * @alias module:lib/protocol/state.getQueue
+ * @param {string} queue the name of the queue
+ * @param {function(Error, queueData)} callback function to which data is passed
+ * @typedef {Array} queueData state data from a specific queue
+ */
+function getQueue(queue, callback) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.queue, queue)) {
+        return callback(new ProcessingError(`Queue ${queue} does not exist`, null, 'WF_API_NO_RESOURCE'));
+    }
+    return callback(null, _wfState.queue[queue]);
+}
+
+/**
+ * Gets specific item from specific queue
+ * @function getQueueData
+ * @alias module:lib/protocol/state.getQueueData
+ * @param {string} queue the name of the queue
+ * @param {string} property the data object property name by which the item is identified
+ * @param {Object} value the value of the property by which the item is identified
+ * @param {function(Error, Object)} callback function to which data is passed
+ */
+function getQueueData(queue, property, value, callback) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.queue, queue)) {
+        return callback(new Error(`Queue ${queue} does not exist`));
+    }
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === value.toLowerCase()
+    );
+    if (index &lt; 0) return callback(null, null);
+    return callback(null, _wfState.queue[queue][index]);
+}
+
+/**
+ * Inserts or updates specific item in specific queue
+ * @function upsertQueueData
+ * @alias module:lib/protocol/state.upsertQueueData
+ * @param {string} queue the name of the queue
+ * @param {string} property the data object property name by which the item is identified
+ * @param {Object} data the data to be updated or put on queue
+ * @emits module:lib/protocol/events.stateEvent:insertedInQueue
+ * @emits module:lib/protocol/events.stateEvent:updatedQueue
+ */
+function upsertQueueData(queue, property, data) {
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === data[property].toLowerCase()
+    );
+    if (index &lt; 0) {
+        _wfState.queue[queue].push(data);
+        wfStateEvent.emit('insertedInQueue', queue, data);
+    } else {
+        _wfState.queue[queue][index] = data;
+        wfStateEvent.emit('updatedQueue', queue, data);
+    }
+    return saveState();
+}
+
+/**
+ * Removes specific item in specific queue
+ * @function removeQueueData
+ * @alias module:lib/protocol/state.removeQueueData
+ * @param {string} queue the name of the queue
+ * @param {string} property the data object property name by which the item is identified
+ * @param {Object} value the value of the property by which the item to be removed is identified
+ * @emits module:lib/protocol/events.stateEvent:removedFromQueue
+ */
+function removeQueueData(queue, property, value) {
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === value.toLowerCase()
+    );
+    if (index >= 0) {
+        const data = _wfState.queue[queue][index];
+        _wfState.queue[queue].splice(index, 1);
+        wfStateEvent.emit('removedFromQueue', queue, data);
+        return saveState();
+    }
+}
+
+/**
+ * Returns all key ids of a cryptographic key category
+ * @function getKeyIds
+ * @alias module:lib/protocol/state.getKeyIds
+ * @param {string} category the key category
+ * @param {function(Error, Array)} callback function to which the key is passed
+ */
+function getKeyIds(category, callback) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.crypto, category)) {
+        return callback(new Error(`Key category ${category} does not exist`));
+    }
+    return callback(null, array.pluck(_wfState.crypto[category], 'id'));
+}
+
+/**
+ * Gets a cryptographic key
+ * @function getKey
+ * @alias module:lib/protocol/state.getKey
+ * @param {string} category the key category
+ * @param {string} id unique identifier of the key
+ * @param {function(Error, key)} callback function to which the key is passed
+ * @typedef {string} key hexadecimal representation of a cryptographic key
+ */
+function getKey(category, id, callback) {
+    if (!Object.prototype.hasOwnProperty.call(_wfState.crypto, category)) {
+        return callback(new Error(`Key category ${category} does not exist`));
+    }
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
+    if (index &lt; 0) return callback(null, null);
+
+    let key = decryptKey(_wfState.crypto[category][index].secret, id);
+    return callback(null, key);
+}
+
+/**
+ * Inserts or updates a cryptographic key
+ * @function upsertKey
+ * @alias module:lib/protocol/state.upsertKey
+ * @param {string} category the key category
+ * @param {string} id unique identifier of the key
+ * @param {string} key the key to be stored or updated in raw hexadecimal format
+ * @emits module:lib/protocol/events.stateEvent:insertedKey
+ * @emits module:lib/protocol/events.stateEvent:updatedKey
+ */
+function upsertKey(category, id, key) {
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
+    const data = encryptKey(key, id);
+
+    // Hopefully the garbage collector will do its work
+    key = undefined;
+
+    // Upsert the encrypted key
+    if (index &lt; 0) {
+        _wfState.crypto[category].push({
+            id: id,
+            secret: data
+        });
+        wfStateEvent.emit('insertedKey', category, id);
+    } else {
+        _wfState.crypto[category][index] = {
+            id: id,
+            secret: data
+        };
+        wfStateEvent.emit('updatedKey', category, id);
+    }
+    return saveState();
+}
+
+/**
+ * Removes a cryptographic key
+ * @function removeKey
+ * @alias module:lib/protocol/state.removeKey
+ * @param {string} category the key category
+ * @param {string} id unique identifier of the key
+ * @emits module:lib/protocol/events.stateEvent:removedKey
+ */
+function removeKey(category, id) {
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
+    if (index >= 0) {
+        _wfState.crypto[category].splice(index, 1);
+        wfStateEvent.emit('removedKey', category, id);
+        return saveState();
+    }
+}
+
+// PRIVATE MODULE FUNCTIONS //
+/**
+ * Validates the state structure configuration against the state schema
+ * @private
+ * @param {Object} [stateData] the complete state
+ * @returns {array} validation errors, empty if no errors
+ */
+function validateState(stateData = _wfState) {
+    let stateErrors = [];
+    try {
+        stateErrors = array.pluck(jsonValidate(stateData, wfStateSchema).errors, 'stack');
+    } catch(err) {
+        stateErrors.push(err.message);
+    }
+    return stateErrors;
+}
+
+/**
+ * Encloses (and encrypts) state
+ * @private
+ * @param {Object} [stateData] the complete state
+ * @returns {Object} state data enclosed in a storage / encryption container
+ */
+function encloseState(stateData = _wfState) {
+    let stateObject = {};
+    if (_encryption) {
+        if (!_masterEncryptionKey) return log.debug(MODULELOG, 'No master encryption key');
+        const keyBuffer = Buffer.from(_masterEncryptionKey, BINENCODING);
+        stateObject = encryptState(JSON.stringify(stateData), keyBuffer);
+    } else {
+        stateObject = { state: JSON.stringify(stateData) };
+    }
+    return stateObject;
+}
+
+/**
+ * Extracts (and decrypts) state from file or datastore contents
+ * @private
+ * @param {Object} stateObject state data enclosed in a storage / encryption container
+ * @returns {Object} the complete state
+ */
+function extractState(stateObject) {
+    let stateDataStr;
+    if (!Object.prototype.hasOwnProperty.call(stateObject, 'state')) {
+        throw new Error('State object might be corrupted: state property is missing');
+    }
+    if (
+        Object.prototype.hasOwnProperty.call(stateObject, 'tag')
+        &amp;&amp; Object.prototype.hasOwnProperty.call(stateObject, 'iv')
+    ) {
+        stateDataStr = decryptState(stateObject);
+    } else {
+        stateDataStr = stateObject.state;
+    }
+    let stateData = checkState(JSON.parse(stateDataStr));
+
+    // Return state
+    return stateData;
+}
+
+/**
+ * Checks state and performs updates from old versions
+ * @param {Object} stateData
+ * @returns {Object} updated state
+ */
+function checkState(stateData) {
+    // Check for complete object structure and add new properties as required
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'blockchains')) stateData.blockchains = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'originators')) stateData.originators = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'queue')) stateData.queue = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'initVectors')) stateData.queue.initVectors = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'blockDepths')) stateData.queue.blockDepths = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'crypto')) stateData.crypto = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'blockchainKeys')) stateData.crypto.blockchainKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'ecdhPrivateKeys')) stateData.crypto.ecdhPrivateKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'negotiatedKeys')) stateData.crypto.negotiatedKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'presharedKeys')) stateData.crypto.presharedKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'authTokens')) stateData.crypto.authTokens = [];
+
+    // Put old private keys in keystore
+    const blockchains = Object.keys(stateData.blockchains);
+    for (let b = 0; b &lt; blockchains.length; b++) {
+        if (Object.prototype.hasOwnProperty.call(stateData.blockchains[blockchains[b]], 'accounts')) {
+            const accounts = stateData.blockchains[blockchains[b]].accounts;
+            for (let a = 0; a &lt; accounts.length; a++) {
+                if (Object.prototype.hasOwnProperty.call(accounts[a], 'privateKey')) {
+                    const id = hash(blockchains[b] + accounts[a].address, KEYIDLENGTH);
+                    const index = stateData.crypto.blockchainKeys.findIndex(
+                        item => item.id.toLowerCase() === id.toLowerCase()
+                    );
+                    const data = encryptKey(accounts[a].privateKey, id);
+                    if (index &lt; 0) {
+                        stateData.crypto.blockchainKeys.push({
+                            id: id,
+                            secret: data
+                        });
+                    } else {
+                        stateData.crypto.blockchainKeys[index] = {
+                            id: id,
+                            secret: data
+                        };
+                    }
+                    accounts[a].privateKey = undefined;
+                }
+            }
+        }
+    }
+    // Checks for unique values in originator authentication messages
+    stateData.originators.forEach(originator => {
+        if (Array.isArray(originator.authenticationMessages)) {
+            originator.authenticationMessages = [...new Set(originator.authenticationMessages)];
+        }
+    });
+    // Validate against schema
+    let stateErrors = validateState();
+    if (stateErrors.length > 0) throw new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));
+
+    // Return checked data
+    return stateData;
+}
+
+/**
+ * Encrypts state
+ * @private
+ * @param {string} stateDataStr stringified state data
+ * @returns {Object} encrypted state with authentication tag and initialisation vector
+ */
+function encryptState(stateDataStr) {
+    // Initialise encrypter object
+    const ivBuffer = crypto.randomBytes(DATAIVLENGTH);
+    const dekBuffer = generateDEK();
+    if (!dekBuffer) {
+        throw new Error('Could not generate DEK to encrypt state: Invalid master key?');
+    }
+    const encrypter = crypto.createCipheriv(DATACIPHER, dekBuffer, ivBuffer);
+
+    // Perform encrytption
+    const encryptedState = encrypter.update(stateDataStr, '', STATEENCODING) + encrypter.final(STATEENCODING);
+    const tag = encrypter.getAuthTag().toString(BINENCODING);
+    zeroise(dekBuffer);
+
+    // Return encryption result
+    return {
+        tag: tag,
+        iv: ivBuffer.toString(BINENCODING),
+        state: encryptedState
+    };
+}
+
+/**
+ * Decrypts state
+ * @private
+ * @param {Object} stateObject encrypted state with authentication tag and initialisation vector
+ * @returns {string} stringified state data
+ */
+function decryptState(stateObject) {
+    // Check data
+    if (!stateObject.iv || !stateObject.tag) {
+        throw new Error('Cannot decrypt: Missing tag and/or initialisation vector');
+    }
+    // Get information from data object
+    const ivBuffer = Buffer.from(stateObject.iv, BINENCODING);
+    const tagBuffer = Buffer.from(stateObject.tag, BINENCODING);
+    const stateBuffer = Buffer.from(stateObject.state, STATEENCODING);
+
+    // Initialise decrypter object
+    const dekBuffer = generateDEK();
+    if (!dekBuffer) {
+        throw new Error('Could not generate DEK to decrypt state: Invalid master key?');
+    }
+    const decrypter = crypto.createDecipheriv(DATACIPHER, dekBuffer, ivBuffer);
+
+    // Perform decryption and return result
+    decrypter.setAuthTag(tagBuffer);
+    const stateDataStr = Buffer.concat([decrypter.update(stateBuffer), decrypter.final()]);
+    zeroise(dekBuffer);
+
+    // Return decryption result
+    return stateDataStr;
+}
+
+/**
+ * Encrypts key data
+ * @private
+ * @param {string} keyStr key in hexadecimal string
+ * @param {string} id unique identifier for the key, usually a related blockchain address
+ * @returns {Object} encrypted key with authentication tag and initialisation vector
+ */
+function encryptKey(keyStr, id) {
+    // Initialise encrypter object
+    const ivBuffer = crypto.randomBytes(KEYIVLENGTH);
+    const kekBuffer = generateKEK(id);
+    if (!kekBuffer) {
+        throw new Error('Could not generate KEK to encrypt key: Invalid master key?');
+    }
+    const encrypter = crypto.createCipheriv(KEYCIPHER, kekBuffer, ivBuffer);
+
+    // Perform encrytption
+    const encryptedKey = encrypter.update(keyStr, '', BINENCODING) + encrypter.final(BINENCODING);
+    const tag = encrypter.getAuthTag().toString(BINENCODING);
+
+    // Hopefully the garbage collector will do its work
+    keyStr = undefined;
+    zeroise(kekBuffer);
+
+    // Return encryption result
+    return {
+        tag: tag,
+        iv: ivBuffer.toString(BINENCODING),
+        key: encryptedKey
+    };
+}
+
+/**
+ * Decrypts key data
+ * @private
+ * @param {Object} stateObject encrypted key with authentication tag and initialisation vector
+ * @param {string} id unique identifier for the key, usually a related blockchain address
+ * @returns {string} key in hexadecimal string
+ */
+function decryptKey(keyObject, id) {
+    // Check data
+    if (!keyObject.iv || !keyObject.tag) {
+        throw new Error('Cannot decrypt: Missing tag and/or initialisation vector');
+    }
+    // Get information from data object
+    const ivBuffer = Buffer.from(keyObject.iv, BINENCODING);
+    const tagBuffer = Buffer.from(keyObject.tag, BINENCODING);
+    const keyBuffer = Buffer.from(keyObject.key, BINENCODING);
+
+    // Initialise decrypter object
+    const kekBuffer = generateKEK(id);
+    if (!kekBuffer) {
+        throw new Error('Could not generate KEK to decrypt key: Invalid master key?');
+    }
+    const decrypter = crypto.createDecipheriv(KEYCIPHER, kekBuffer, ivBuffer);
+
+    // Perform decryption and return result
+    decrypter.setAuthTag(tagBuffer);
+    const keyStr = Buffer.concat([decrypter.update(keyBuffer), decrypter.final()]).toString();
+    zeroise(kekBuffer);
+
+    // Return decryption result
+    return keyStr;
+}
+
+/**
+ * Generates data encryption key from master key using HKDF
+ * @private
+ * @returns {buffer} the encryption key
+ */
+function generateDEK() {
+    const ikm = Buffer.from(_masterEncryptionKey, BINENCODING);
+    if (ikm.length === 0) return null;
+
+    const salt = Buffer.from(DEKSALT, BINENCODING);
+    const info = Buffer.from('DEK-00');
+    return hkdf(ikm, salt, info, DEKLENGTH);
+}
+
+/**
+ * Generates key encryption key from master key using HKDF
+ * @private
+ * @returns {buffer} the encryption key
+ */
+function generateKEK(id) {
+    const ikm = Buffer.from(_masterEncryptionKey, BINENCODING);
+    if (ikm.length === 0) return null;
+
+    const salt = Buffer.from(KEKSALT, BINENCODING);
+    const info = Buffer.from('KEK-' + id);
+    return hkdf(ikm, salt, info, KEKLENGTH);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:39 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

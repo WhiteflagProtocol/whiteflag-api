@@ -3,7 +3,6 @@
  * @module test/protocol/transceive
  * @summary Whiteflag message transmit and reveive test script
  * @description Script for testing Whiteflag message receive (rx) event chain
- * @todo test irregular tx and rx flows
  */
 
 // Node.js core and external modules //
@@ -27,7 +26,7 @@ log.setLogLevel(6, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/transceive.testvector.json'));

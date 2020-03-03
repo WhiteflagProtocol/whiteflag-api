@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: common/logger.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: common/logger.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/common/logger
+ * @summary Whiteflag API logging module
+ * @description Module for logging events of the Whiteflag API
+ * @tutorial modules
+ * @tutorial logging
+ */
+module.exports = {
+    // Loglevel functions
+    setLogLevel,
+    getLogLevel,
+    // Logging functions
+    fatal,
+    error,
+    warn,
+    info,
+    debug,
+    trace
+};
+
+// Module constants //
+/**
+ * @constant {Object} levels
+ * @description Defines the logging levels
+ */
+const levels = {
+    fatal: 1,
+    error: 2,
+    warn: 3,
+    info: 4,
+    debug: 5,
+    trace: 6
+};
+// Module variables //
+let _logLevel = 4;
+
+// MAIN MODULE FUNCTIONS //
+/**
+ * Sets new logging level
+ * @function setLogLevel
+ * @alias module:lib/common/logger.setLogLevel
+ * @param {loglevel} loglevel logging level to be set
+ * @param {function(Error, loglevel)} callback
+ * @typedef {number} loglevel logging level
+ */
+function setLogLevel(level, callback) {
+    if (level > 0 &amp;&amp; level &lt;= 6) {
+        _logLevel = level;
+    } else {
+        return callback(new Error(`Logging level ${level} does not exist`), _logLevel);
+    }
+    return callback(null, _logLevel);
+}
+
+/**
+ * Returns current loglevel
+ * @function getLogLevel
+ * @alias module:lib/common/logger.getLogLevel
+ * @param {function(Error, loglevel)} callback
+ */
+function getLogLevel(callback) {
+    return callback(null, _logLevel);
+}
+
+// MAIN LOGGER FUNCTIONS
+/**
+ * Logs fatal events (level 1)
+ * @function fatal
+ * @alias module:lib/common/logger.fatal
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function fatal(module, message) {
+    if (levels.fatal &lt;= _logLevel) {
+        return console.error(`[FATAL] ${module}: ${message}`);
+    }
+}
+
+/**
+ * Logs error events (level 2)
+ * @function error
+ * @alias module:lib/common/logger.error
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function error(module, message) {
+    if (levels.error &lt;= _logLevel) {
+        return console.error(`[ERROR] ${module}: ${message}`);
+    }
+}
+
+/**
+ * Logs warning events (level 3)
+ * @function warn
+ * @alias module:lib/common/logger.warn
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function warn(module, message) {
+    if (levels.warn &lt;= _logLevel) {
+        return console.warn(`[WARN ] ${module}: ${message}`);
+    }
+}
+
+/**
+ * Logs informational events (level 4)
+ * @function info
+ * @alias module:lib/common/logger.info
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function info(module, message) {
+    if (levels.info &lt;= _logLevel) {
+        return console.info(`[INFO ] ${module}: ${message}`);
+    }
+}
+
+/**
+ * Logs debug events (level 5)
+ * @function debug
+ * @alias module:lib/common/logger.debug
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function debug(module, message) {
+    if (levels.debug &lt;= _logLevel) {
+        return console.debug(`[DEBUG] ${module}: ${message}`);
+    }
+}
+
+/**
+ * Logs trace events (level 6)
+ * @function trace
+ * @alias module:lib/common/logger.trace
+ * @param {string} module name of the module that makes the log
+ * @param {string} message the message to log
+ */
+function trace(module, message) {
+    if (levels.trace &lt;= _logLevel) {
+        return console.debug(`[TRACE] ${module}: ${message}`);
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:39 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

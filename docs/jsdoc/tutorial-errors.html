@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: errors</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: errors</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>errors</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Error Handling</h1>
+<p>In addition to the standard Node.js JavaScript <code>Error</code> class, two additional
+classes are exposed by <code>lib/common/errors.js</code> to handle processing and protocol
+errors.  The <code>ProcessingError</code> class is to be used for processing errors,
+i.e. operational errors that can and must be expected, such as dealing with
+malformed data or bad client requests. The <code>ProtocolError</code> class is for the
+handling of Whiteflag message format and protocol errors.</p>
+<h2>Usage of error classes</h2>
+<p>The best way to define one or both Whiteflag API error classes within a specific
+module, is to require the errors module and use an object destructor as follows:</p>
+<pre class="prettyprint source lang-javascript"><code>const { ProcessingError, ProtocolError } = require('./common/errors.js');
+</code></pre>
+<p>Both classes use a similar constructor:</p>
+<pre class="prettyprint source lang-javascript"><code>err = new ProcessingError(message, causes, code);
+err = new ProtocolError(message, causes, code);
+</code></pre>
+<p>with the folloing arguments:</p>
+<ul>
+<li><code>message</code> is similar to the property of the generic Error class, i.e. a string with a human readable description of the error</li>
+<li><code>causes</code> is an additional property in the form of an array that may contain a human readable stack of underlying causes</li>
+<li><code>code</code> is a property of type string, identifying the type of error as described below for both classes</li>
+</ul>
+<h3><code>ProcessingError</code> class error codes</h3>
+<ul>
+<li><code>WF_API_PROCESSING_ERROR</code>: generic processing error (default)</li>
+<li><code>WF_API_BAD_REQUEST</code>: the request was incomplete or incorrect syntax</li>
+<li><code>WF_API_NOT_ALLOWED</code>: the request is not allowed</li>
+<li><code>WF_API_NO_DATA</code>: the request did not return any (valid) data</li>
+<li><code>WF_API_NO_RESOURCE</code>: could not processess because resource does not exist</li>
+<li><code>WF_API_RESOURCE_CONFLICT</code>: could not process because resource alreasy exists</li>
+<li><code>WF_API_NOT_IMPLEMENTED</code>: the function is not supported</li>
+<li><code>WF_API_NOT_AVAILABLE</code>: the function is currently not available</li>
+</ul>
+<h3><code>ProtocolError</code> class error codes</h3>
+<ul>
+<li><code>WF_PROTOCOL_ERROR</code>: generic Whiteflag protocol error (default)</li>
+<li><code>WF_METAHEADER_ERROR</code>: incorrect Whiteflag message metaheader</li>
+<li><code>WF_FORMAT_ERROR</code>: Whiteflag message format error</li>
+<li><code>WF_REFERENCE_ERROR</code>: Whiteflag message reference error</li>
+<li><code>WF_AUTH_ERROR</code>: Whiteflag message authentication error</li>
+<li><code>WF_SIGN_ERROR</code>: Whiteflag signature error</li>
+<li><code>WF_ENCRYPTION_ERROR</code>: Whiteflag encryption error</li>
+</ul>
+<h2>Guideline for errors, logging and responses</h2>
+<p>The following table is a guideline on how error codes, log levels and
+http response codes <em>generally</em> correspond <em>if</em> used in combination.</p>
+<table>
+<thead>
+<tr>
+<th>Error Class</th>
+<th>Error Code</th>
+<th>Loglevel</th>
+<th>HTTP Status Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Error</code></td>
+<td><code>WF_API_INTERNAL_ERROR</code></td>
+<td>level 2: <code>error</code></td>
+<td>500</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_MIDDLEWARE_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>(any)</td>
+</tr>
+<tr>
+<td><code>ProcessingError</code></td>
+<td><code>WF_API_PROCESSING_ERROR</code></td>
+<td>level 2: <code>error</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_BAD_REQUEST</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_NOT_ALLOWED</code></td>
+<td>level 5: <code>debug</code></td>
+<td>403</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_NO_DATA</code></td>
+<td>level 5: <code>debug</code></td>
+<td>404</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_NO_RESOURCE</code></td>
+<td>level 5: <code>debug</code></td>
+<td>404</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_RESOURCE_CONFLICT</code></td>
+<td>level 5: <code>debug</code></td>
+<td>409</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_NOT_IMPLEMENTED</code></td>
+<td>level 5: <code>debug</code></td>
+<td>501</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_API_NOT_AVAILABLE</code></td>
+<td>level 3: <code>warn</code></td>
+<td>503</td>
+</tr>
+<tr>
+<td><code>ProtocolError</code></td>
+<td><code>WF_PROTOCOL_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_METAHEADER_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_FORMAT_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_REFERENCE_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_AUTH_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_SIGN_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td></td>
+<td><code>WF_ENCRYPTION_ERROR</code></td>
+<td>level 5: <code>debug</code></td>
+<td>400</td>
+</tr>
+</tbody>
+</table>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:40 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

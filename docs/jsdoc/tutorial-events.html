@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: events</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: events</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>events</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Events</h1>
+<p>The Whiteflag API uses events internally for modules to know when protocol
+actions must be triggered. Three main event types are defined in the
+<code>protocol/events.js</code> module for usage by other modules.</p>
+<ul>
+<li><code>rxEvent</code></li>
+<li><code>txEvent</code></li>
+<li><code>stateEvent</code></li>
+</ul>
+<h2>Receive and Transmit Events</h2>
+<p>The rx and tx events are used by the blockchains, datastores and protocol
+modules to bind handlers to incoming and outgoing Whiteflag message processing
+steps. This is useful given the complex processing flows, especially for cases
+such as encryption, authentication, etc. that require different handling paths
+for each messages.</p>
+<p>Specifically, the <code>lib/protocol/receive.js</code> and <code>lib/protocol/transmit.js</code>
+modules chain the appropriate events to create the processing chains for
+incoming and outgoing messages. The <code>lib/datastores.js</code> module listens for
+these events to store messages as configured in the <code>config/datastores.toml</code>
+configuration file.</p>
+<p>Currently defined rx and tx events are:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Direction</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>error</code></td>
+<td>RX, TX</td>
+<td>An error occured when processing the message</td>
+</tr>
+<tr>
+<td><code>messageReceived</code></td>
+<td>RX</td>
+<td>A new incoming message has been received from the blockchain or from the REST interface</td>
+</tr>
+<tr>
+<td><code>messageCommitted</code></td>
+<td>TX</td>
+<td>A new outgoing message has been posted on the REST interface or is generated automatically</td>
+</tr>
+<tr>
+<td><code>metadataVerified</code></td>
+<td>RX, TX</td>
+<td>The message metadata has been verified and is valid</td>
+</tr>
+<tr>
+<td><code>messageEncrypted</code></td>
+<td>RX</td>
+<td>The received message has been encrypted and cannot be decoded immediately</td>
+</tr>
+<tr>
+<td><code>messageDecoded</code></td>
+<td>RX</td>
+<td>The incoming message has been succesfully decrypted/decoded</td>
+</tr>
+<tr>
+<td><code>messageEncoded</code></td>
+<td>TX</td>
+<td>The outgoing message has been succesfully encoded/encrypted</td>
+</tr>
+<tr>
+<td><code>originatorVerified</code></td>
+<td>RX</td>
+<td>The originator of the incoming message has been verified</td>
+</tr>
+<tr>
+<td><code>originatorSkipped</code></td>
+<td>RX</td>
+<td>Verification of the originator of the incoming message has been skipped</td>
+</tr>
+<tr>
+<td><code>referenceVerified</code></td>
+<td>RX, TX</td>
+<td>The message correctly references other messages</td>
+</tr>
+<tr>
+<td><code>referenceSkipped</code></td>
+<td>RX, TX</td>
+<td>The way the message references other messages has not been verified</td>
+</tr>
+<tr>
+<td><code>messageSent</code></td>
+<td>TX</td>
+<td>The outgoing message has been sucessfully transmitted on the blockchain</td>
+</tr>
+<tr>
+<td><code>messageProcessed</code></td>
+<td>RX, TX</td>
+<td>The processing of the message has been completed</td>
+</tr>
+<tr>
+<td><code>messageUpdated</code></td>
+<td>RX, TX</td>
+<td>The message metadata has been updated after initial processing</td>
+</tr>
+</tbody>
+</table>
+<h2>State Events</h2>
+<p>The state event allows to bind handlers to state changes using events; this
+is useful when a process does not only want to keep track of some data, but
+also wants to trigger required actions when the Whiteflag state changes.</p>
+<p>Currently, only the <code>initialised</code> and <code>saved</code> events are used on startup and
+closing respectively.</p>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:40 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -13,33 +13,32 @@ blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
 available for clients to listen for incoming Whiteflag messages from a
 blockchain.
 
-The following documetation is available. The Whiteflag Protocol and API
-specifications are also available at `http://localhost:5746/` (default URL)
-when the API is running.
-
-## Installation and Configuration
-
-* [Installation](installation.md)
-* [Configuration](configuration.md)
-
-## Whiteflag Protocol
-
-* [Protocol Implementation](protocol.md)
-* [Protocol State](state.md)
-
-## Blockchain Implementations
-
-* [Ethereum](ethereum.md)
-
-## Source Code Description
-
-* [JavaScript Modules](modules.md)
-* [Logging](logging.md)
-* [Events](events.md)
-* [Error Handling](errors.md)
-* [Static Components](static.md)
+The Whiteflag Protocol and API specifications are also available at
+`http://localhost:5746/` (default URL) when the API is running.
 
 ## Detailed API and Source Code References
 
-* External REST interface: [OpenAPI Definition](openapi.md)
-* Internal software interfaces: [JSDoc Documentation](src/index.html)
+* External REST interface: [OpenAPI Definition](md/openapi.md)
+* Internal software interfaces: [JSDoc Documentation](jsdoc/index.html)
+
+## Installation and Configuration
+
+* [Installation](md/installation.md)
+* [Configuration](md/configuration.md)
+
+## Whiteflag Protocol
+
+* [Protocol Implementation](md/protocol.md)
+* [Protocol State](md/state.md)
+
+## Blockchain Implementations
+
+* [Ethereum](md/ethereum.md)
+
+## Source Code Description
+
+* [JavaScript Modules](md/modules.md)
+* [Logging](md/logging.md)
+* [Events](md/events.md)
+* [Error Handling](md/errors.md)
+* [Static Components](md/static.md)

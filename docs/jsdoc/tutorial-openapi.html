@@ -1,0 +1,3569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: openapi</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: openapi</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>openapi</h2>
+</header>
+
+<article>
+    <hr>
+<p>title: Whiteflag API
+language_tabs:</p>
+<ul>
+<li>shell: Shell</li>
+<li>http: HTTP</li>
+<li>javascript: JavaScript</li>
+<li>javascript--nodejs: Node.JS</li>
+<li>ruby: Ruby</li>
+<li>python: Python</li>
+<li>java: Java</li>
+<li>go: Go
+toc_footers: []
+includes: []
+search: true
+highlight_theme: darkula
+headingLevel: 2</li>
+</ul>
+<hr>
+<h1 id="whiteflag-api">Whiteflag API v1.0.0-beta</h1>
+<blockquote>
+<p>Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.</p>
+</blockquote>
+<p>This Whiteflag Application Programming Interface (API) is a <a href="https://nodejs.org/en/about/">Node.js</a> software implementation of the API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains. It acts as a message transceiver between one or more blockchains and one or more end-user applications.</p>
+<p>This API is a so called Minumum Viable Product (MVP), which means that it only supports the core features of the Whiteflag protocol for development and testing purposes. As such, it serves as the reference implementation of the Whiteflag protocol, but it is not designed and tested for secure usage and performance in a production environment.</p>
+<p>This definition documents the API in <a href="https://swagger.io/specification/">OpenAPI format</a>.</p>
+<p>Two methods are available for interaction with the API: 1. a <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST API</a> for originators to provide Whiteflag message to be sent on the blockchain, and 2. a <a href="https://socket.io/">socket.io</a> <a href="https://en.wikipedia.org/wiki/WebSocket">web socket</a> variant available on <code>/socket</code> for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on <a href="/listen">/listen</a> and the documented source code at <a href="/docs">/docs</a>.</p>
+<p>All response bodies are structured as <code>{meta, data, errors}</code>, based on the <a href="https://jsonapi.org/format/">JSON API Specification</a>, which has been used as a guideline (and as a guideline only).</p>
+<p>Base URLs:</p>
+<ul>
+<li>
+<p><a href="http://{hostname}:{port}/">http://{hostname}:{port}/</a></p>
+<ul>
+<li>
+<p><strong>hostname</strong> - Configurable hostname Default: localhost</p>
+</li>
+<li>
+<p><strong>port</strong> - Configurable port number Default: 5746</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1>Authentication</h1>
+<ul>
+<li>HTTP Authentication, scheme: basic The API may be configured to use basic HTTP authentication, as specified in <a href="https://tools.ietf.org/html/rfc7617">RFC 7617</a>. It uses the standard <code>Authorization</code> field in the HTTP header as follows: <code>Authorization: Basic &lt;credentials&gt;</code>, where the credentials are the base64 encoded username and password joined by a single colon: <code>&lt;username&gt;:&lt;password&gt;</code></li>
+</ul>
+<h1 id="whiteflag-api-messages">Messages</h1>
+<p>Endpoints for operations on Whiteflag messages, such as retrieval, sending, encoding, decoding and validation.</p>
+<h2>getMessages</h2>
+<p><a id="opIdgetMessages"></a></p>
+<p><code>GET /messages</code></p>
+<p>Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.</p>
+<h3 id="getmessages-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>blockchain</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The name of a blockchain</td>
+</tr>
+<tr>
+<td>transactionHash</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The hash of a blockchain transaction</td>
+</tr>
+<tr>
+<td>originatorAddress</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The blockchain address of an originator</td>
+</tr>
+<tr>
+<td>originatorPubKey</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The public key of an originator</td>
+</tr>
+<tr>
+<td>recipientAddress</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The blockchain address of the recipient (only known for decrypted messages)</td>
+</tr>
+<tr>
+<td>transceiveDirection</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The transceive direction indicating if a message has been sent (TX) or has been received (RX)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: [
+    {
+      &quot;MetaHeader&quot;: null,
+      &quot;MessageHeader&quot;: null,
+      &quot;MessageBody&quot;: null
+    }
+  ]
+}
+</code></pre>
+<h3 id="getmessages-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully processed Whiteflag message query and returning an array of messages</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getmessages-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>sendMessage</h2>
+<p><a id="opIdsendMessage"></a></p>
+<p><code>POST /messages/send</code></p>
+<p>Transmits a Whiteflag message on a blockchain and returns the result. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null,
+  &quot;MessageHeader&quot;: null,
+  &quot;MessageBody&quot;: null
+}
+</code></pre>
+<h3 id="sendmessage-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfmessage">wfMessage</a></td>
+<td>false</td>
+<td>Whiteflag message to be send, encoded/ecrypted, or validated</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;MetaHeader&quot;: null,
+    &quot;MessageHeader&quot;: null,
+    &quot;MessageBody&quot;: null
+  }
+}
+</code></pre>
+<h3 id="sendmessage-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag message and returning the message with updated MetaHeader</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="sendmessage-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>receiveMessage</h2>
+<p><a id="opIdreceiveMessage"></a></p>
+<p><code>POST /messages/receive</code></p>
+<p>Accepts a Whiteflag message as if received from a blockchain. This may be done for simulation of incoming messages or if a direct connection with a blockchain node is not possible. Typically only used for testing. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null
+}
+</code></pre>
+<h3 id="receivemessage-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfmessageencoded">wfMessageEncoded</a></td>
+<td>false</td>
+<td>Whiteflag message to be decoded/decrypted</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;MetaHeader&quot;: null,
+    &quot;MessageHeader&quot;: null,
+    &quot;MessageBody&quot;: null
+  }
+}
+</code></pre>
+<h3 id="receivemessage-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag message and returning the message with updated MetaHeader</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="receivemessage-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>encodeMessage</h2>
+<p><a id="opIdencodeMessage"></a></p>
+<p><code>POST /messages/encode</code></p>
+<p>Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null,
+  &quot;MessageHeader&quot;: null,
+  &quot;MessageBody&quot;: null
+}
+</code></pre>
+<h3 id="encodemessage-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfmessage">wfMessage</a></td>
+<td>false</td>
+<td>Whiteflag message to be send, encoded/ecrypted, or validated</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;MetaHeader&quot;: null,
+    &quot;MessageHeader&quot;: null,
+    &quot;MessageBody&quot;: null
+  }
+}
+</code></pre>
+<h3 id="encodemessage-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag message and returning the message with updated MetaHeader</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="encodemessage-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>decodeMessage</h2>
+<p><a id="opIddecodeMessage"></a></p>
+<p><code>POST /messages/decode</code></p>
+<p>Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null
+}
+</code></pre>
+<h3 id="decodemessage-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfmessageencoded">wfMessageEncoded</a></td>
+<td>false</td>
+<td>Whiteflag message to be decoded/decrypted</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;MetaHeader&quot;: null,
+    &quot;MessageHeader&quot;: null,
+    &quot;MessageBody&quot;: null
+  }
+}
+</code></pre>
+<h3 id="decodemessage-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag message and returning the message with updated MetaHeader</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="decodemessage-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>validateMessage</h2>
+<p><a id="opIdvalidateMessage"></a></p>
+<p><code>POST /messages/validate</code></p>
+<p>Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null,
+  &quot;MessageHeader&quot;: null,
+  &quot;MessageBody&quot;: null
+}
+</code></pre>
+<h3 id="validatemessage-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfmessage">wfMessage</a></td>
+<td>false</td>
+<td>Whiteflag message to be send, encoded/ecrypted, or validated</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: [
+    {
+      &quot;MetaHeader&quot;: null,
+      &quot;MessageHeader&quot;: null,
+      &quot;MessageBody&quot;: null
+    }
+  ]
+}
+</code></pre>
+<h3 id="validatemessage-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully processed Whiteflag message query and returning an array of messages</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="validatemessage-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getMessageReferences</h2>
+<p><a id="opIdgetMessageReferences"></a></p>
+<p><code>GET /messages/references</code></p>
+<p>Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.</p>
+<h3 id="getmessagereferences-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>transactionHash</td>
+<td>query</td>
+<td>string</td>
+<td>true</td>
+<td>The hash of a blockchain transaction</td>
+</tr>
+<tr>
+<td>blockchain</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The name of a blockchain</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: [
+    {
+      &quot;MetaHeader&quot;: null,
+      &quot;MessageHeader&quot;: null,
+      &quot;MessageBody&quot;: null
+    }
+  ]
+}
+</code></pre>
+<h3 id="getmessagereferences-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully processed Whiteflag message query and returning an array of messages</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getmessagereferences-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getMessageSequence</h2>
+<p><a id="opIdgetMessageSequence"></a></p>
+<p><code>GET /messages/sequence</code></p>
+<p>Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.</p>
+<h3 id="getmessagesequence-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>transactionHash</td>
+<td>query</td>
+<td>string</td>
+<td>true</td>
+<td>The hash of a blockchain transaction</td>
+</tr>
+<tr>
+<td>blockchain</td>
+<td>query</td>
+<td>string</td>
+<td>false</td>
+<td>The name of a blockchain</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: [
+    {
+      &quot;MetaHeader&quot;: null,
+      &quot;MessageHeader&quot;: null,
+      &quot;MessageBody&quot;: null
+    }
+  ]
+}
+</code></pre>
+<h3 id="getmessagesequence-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully processed Whiteflag message query and returning an array of messages</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getmessagesequence-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-blockchains">Blockchains</h1>
+<p>Endpoints for operations related to a specific blockchain and blockchain accounts, such as blockchain information settings, account information and authentication signatures.</p>
+<h2>getAllBlockchains</h2>
+<p><a id="opIdgetAllBlockchains"></a></p>
+<p><code>GET /blockchains</code></p>
+<p>Returns an array with all blockchains, regardless of their current status. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getallblockchains-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning all blockchain configurations and states</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getallblockchains-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getBlockchainState</h2>
+<p><a id="opIdgetBlockchainState"></a></p>
+<p><code>GET /blockchains/{blockchain}</code></p>
+<p>Returns the configuration and status of the specified blockchain. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getblockchainstate-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning the blockchain configuration and status</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getblockchainstate-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getAccounts</h2>
+<p><a id="opIdgetAccounts"></a></p>
+<p><code>GET /blockchains/{blockchain}/accounts</code></p>
+<p>Returns the accounts of the specified blockchain. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: []
+}
+</code></pre>
+<h3 id="getaccounts-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning all blockchain accounts</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getaccounts-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>createAccount</h2>
+<p><a id="opIdcreateAccount"></a></p>
+<p><code>POST /blockchains/{blockchain}/accounts</code></p>
+<p>Creates a new account for the specified blockchain. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;privateKey&quot;: &quot;string&quot;
+}
+</code></pre>
+<h3 id="createaccount-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemacreateaccount">createAccount</a></td>
+<td>false</td>
+<td>Blockchain account data</td>
+</tr>
+<tr>
+<td>» privateKey</td>
+<td>body</td>
+<td>string</td>
+<td>false</td>
+<td>Optional private key in raw hexadecimal format to create account with</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>201 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="createaccount-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>201</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.2">Created</a></td>
+<td>Successfully created the blockchain account, and returning account data</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>409</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.8">Conflict</a></td>
+<td>The request conflicts with an already existing resource</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="createaccount-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getAccount</h2>
+<p><a id="opIdgetAccount"></a></p>
+<p><code>GET /blockchains/{blockchain}/accounts/{account}</code></p>
+<p>Returns the details of the specified blockchain account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getaccount-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved, updated or deleted the blockchain account, and returning account data</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getaccount-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>updateAccount</h2>
+<p><a id="opIdupdateAccount"></a></p>
+<p><code>PATCH /blockchains/{blockchain}/accounts/{account}</code></p>
+<p>Updates or adds custom properties of the specified blockchain account. Please BE CAREFUL as all attributes can be changed, which may result in an unusable account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>false
+</code></pre>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="updateaccount-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved, updated or deleted the blockchain account, and returning account data</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="updateaccount-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>deleteAccount</h2>
+<p><a id="opIddeleteAccount"></a></p>
+<p><code>DELETE /blockchains/{blockchain}/accounts/{account}</code></p>
+<p>Deletes the specified blockchain account. Please BE CAREFUL as all blockchain data will be unrecoverably deleted. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="deleteaccount-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved, updated or deleted the blockchain account, and returning account data</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleteaccount-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>createSignature</h2>
+<p><a id="opIdcreateSignature"></a></p>
+<p><code>POST /blockchains/{blockchain}/accounts/{account}/sign</code></p>
+<p>Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature to be used with authentication method 1. This signature should be made available on an internet resource to which an <code>A1</code> authentication message refers. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>false
+</code></pre>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="createsignature-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag authentication signature and returning the result</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="createsignature-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>transferValue</h2>
+<p><a id="opIdtransferValue"></a></p>
+<p><code>POST /blockchains/{blockchain}/accounts/{account}/transfer</code></p>
+<p>Transfers value to another blockchain account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;fromAddress&quot;: &quot;string&quot;,
+  &quot;toAddress&quot;: &quot;string&quot;,
+  &quot;value&quot;: &quot;string&quot;
+}
+</code></pre>
+<h3 id="transfervalue-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schematransfervalue">transferValue</a></td>
+<td>false</td>
+<td>Data required to transfer value to another blockchain account</td>
+</tr>
+<tr>
+<td>» fromAddress</td>
+<td>body</td>
+<td>string</td>
+<td>false</td>
+<td>The address of the blockchain account to transfer value from</td>
+</tr>
+<tr>
+<td>» toAddress</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>The address of the blockchain account to transfer value to</td>
+</tr>
+<tr>
+<td>» value</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>Value to be transferred in the main currency of the blockchain</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;transactionHash&quot;: &quot;string&quot;
+  }
+}
+</code></pre>
+<h3 id="transfervalue-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully transferred value to another blockchain account and returning the transaction hash</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="transfervalue-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-authentication">Authentication</h1>
+<p>Endpoints for operations on Whiteflag authentication, such as signature and token creation and validation.</p>
+<h2>decodeSignature</h2>
+<p><a id="opIddecodeSignature"></a></p>
+<p><code>POST /signature/decode</code></p>
+<p>Decodes a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>false
+</code></pre>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="decodesignature-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag authentication signature and returning the result</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="decodesignature-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>verifySignature</h2>
+<p><a id="opIdverifySignature"></a></p>
+<p><code>POST /signature/verify</code></p>
+<p>Verifies a Whiteflag authentication signature used for authentication method 1. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>false
+</code></pre>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="verifysignature-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully processed the Whiteflag authentication signature and returning the result</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="verifysignature-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>storeAuthToken</h2>
+<p><a id="opIdstoreAuthToken"></a></p>
+<p><code>POST /originators/tokens</code></p>
+<p>Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, both used for authentication method 2. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;name&quot;: &quot;string&quot;,
+  &quot;blockchain&quot;: &quot;string&quot;,
+  &quot;address&quot;: &quot;string&quot;,
+  &quot;authToken&quot;: &quot;string&quot;
+}
+</code></pre>
+<h3 id="storeauthtoken-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemastoreauthtoken">storeAuthToken</a></td>
+<td>false</td>
+<td>Pre-shared secret authentication token data</td>
+</tr>
+<tr>
+<td>» name</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>The name of the orginator</td>
+</tr>
+<tr>
+<td>» blockchain</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>The name of the blockchain used by the originator</td>
+</tr>
+<tr>
+<td>» address</td>
+<td>body</td>
+<td>string</td>
+<td>false</td>
+<td>The blockchain address of the originator, if already known</td>
+</tr>
+<tr>
+<td>» authToken</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>A pre-shared secret authentication token in raw hexadecimal format</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="storeauthtoken-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully accepted the new authentication token for the Whiteflag originator</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>409</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.8">Conflict</a></td>
+<td>The request conflicts with an already existing resource</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="storeauthtoken-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getAuthToken</h2>
+<p><a id="opIdgetAuthToken"></a></p>
+<p><code>GET /originators/tokens/{authTokenId}</code></p>
+<p>Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getauthtoken-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>An authentication token for the Whiteflag originator is available</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getauthtoken-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>deleteAuthToken</h2>
+<p><a id="opIddeleteAuthToken"></a></p>
+<p><code>DELETE /originators/tokens/{authTokenId}</code></p>
+<p>Deletes the pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. Please BE CAREFUL as the authentication token will be unrecoverably deleted. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="deleteauthtoken-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully accepted the delete request for the authentication token of the Whiteflag originator</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleteauthtoken-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>createToken</h2>
+<p><a id="opIdcreateToken"></a></p>
+<p><code>POST /token/create</code></p>
+<p>Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an <code>A2</code> authentication message by the specified blockchain account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;blockchain&quot;: &quot;string&quot;,
+  &quot;address&quot;: &quot;string&quot;,
+  &quot;authToken&quot;: &quot;string&quot;
+}
+</code></pre>
+<h3 id="createtoken-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemawfauthtoken">wfAuthToken</a></td>
+<td>false</td>
+<td>Whiteflag Authentication Token</td>
+</tr>
+<tr>
+<td>» blockchain</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>The name of the blockchain used by the originator</td>
+</tr>
+<tr>
+<td>» address</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>The address of the originator blockchain account with which the token is used</td>
+</tr>
+<tr>
+<td>» authToken</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>A pre-shared secret authentication token in raw hexadecimal format</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: {
+    &quot;VerificationData&quot;: &quot;string&quot;
+  }
+}
+</code></pre>
+<h3 id="createtoken-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Succesfully created the Whiteflag authentication token verification data and returning the result</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>400</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">Bad Request</a></td>
+<td>Invalid request, typically because of a malformed syntax or protocol error</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>501</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">Not Implemented</a></td>
+<td>Function not implemented, such as a missing protocol feature or not implemented blockchain</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>503</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">Service Unavailable</a></td>
+<td>Function currently not available, such as unavailable blockchain connection</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="createtoken-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-encryption">Encryption</h1>
+<p>Endpoints for operations on Whiteflag encryption, such as managing cryptographic keys.</p>
+<h2>getPreSharedKey</h2>
+<p><a id="opIdgetPreSharedKey"></a></p>
+<p><code>GET /originators/{address}/psk/{account}</code></p>
+<p>Checks for existence of a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getpresharedkey-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>A pre-shared encryption key for the Whiteflag originator is available</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getpresharedkey-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>storePreSharedKey</h2>
+<p><a id="opIdstorePreSharedKey"></a></p>
+<p><code>PUT /originators/{address}/psk/{account}</code></p>
+<p>Stores or updates a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;preSharedKey&quot;: &quot;string&quot;
+}
+</code></pre>
+<h3 id="storepresharedkey-parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>body</td>
+<td>body</td>
+<td><a href="#schemastorepresharedkey">storePreSharedKey</a></td>
+<td>false</td>
+<td>Pre-shared encryption key data</td>
+</tr>
+<tr>
+<td>» preSharedKey</td>
+<td>body</td>
+<td>string</td>
+<td>true</td>
+<td>A pre-shared secret encryption key in raw hexadecimal format</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="storepresharedkey-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully accepted new or updated pre-shared encryption key for the Whiteflag originator</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="storepresharedkey-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>deletePreSharedKey</h2>
+<p><a id="opIddeletePreSharedKey"></a></p>
+<p><code>DELETE /originators/{address}/psk/{account}</code></p>
+<p>Deletes a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. Please BE CAREFUL as the encryption key will be unrecoverably deleted. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="deletepresharedkey-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully accepted the delete request for the pre-shared encryption key for the Whiteflag originators</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="deletepresharedkey-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-originators">Originators</h1>
+<p>Endpoints for operations on Whiteflag originators, such as authentication and management of shared secrets.</p>
+<h2>getAllOriginators</h2>
+<p><a id="opIdgetAllOriginators"></a></p>
+<p><code>GET /originators</code></p>
+<p>Returns the details of all known Whiteflag originators.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getalloriginators-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning known Whiteflag originators</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getalloriginators-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getOriginator</h2>
+<p><a id="opIdgetOriginator"></a></p>
+<p><code>GET /originators/{address}</code></p>
+<p>Returns the details of the specified Whiteflag originator.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getoriginator-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning known Whiteflag originator</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getoriginator-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>updateOriginator</h2>
+<p><a id="opIdupdateOriginator"></a></p>
+<p><code>PATCH /originators/{address}</code></p>
+<p>Updates the details of the specified Whiteflag originator. Only the provided properties will be updated. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Body parameter</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>false
+</code></pre>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="updateoriginator-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully retrieved and returning known Whiteflag originators</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="updateoriginator-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>deleteOriginator</h2>
+<p><a id="opIddeleteOriginator"></a></p>
+<p><code>DELETE /originators/{address}</code></p>
+<p>Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.</p>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>202 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="deleteoriginator-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">Accepted</a></td>
+<td>Successfully retrieved and returning known Whiteflag originators</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleteoriginator-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-state">State</h1>
+<p>Endpoints for operations on the Whiteflag state of a running API instance.</p>
+<h2>getQueue</h2>
+<p><a id="opIdgetQueue"></a></p>
+<p><code>GET /queues/{queue}</code></p>
+<p>Returns the requested queue in the Whiteflag state. The queues used by the API are:</p>
+<ul>
+<li><code>initVectors</code>: stores the initialiation vectors received with <code>K</code> messages until the corresponding encrypted message is received</li>
+<li><code>blockDepths</code>: tracks the block depth of incoming and outgoing messages until their configured confirmation depth is reached. This operation may be disabled in the configuration.</li>
+</ul>
+<blockquote>
+<p>Example responses</p>
+</blockquote>
+<blockquote>
+<p>200 Response</p>
+</blockquote>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;data&quot;: null
+}
+</code></pre>
+<h3 id="getqueue-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>200</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">OK</a></td>
+<td>Successfully retrieved and returning the queue of the running API instance</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>401</td>
+<td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">Unauthorized</a></td>
+<td>Authentication is required and was either not provided or has failed</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>403</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">Forbidden</a></td>
+<td>Request is not allowed, typically because the operation is disabled in the configuration</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>404</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">Not Found</a></td>
+<td>Requested resource not found or no data available</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+<tr>
+<td>500</td>
+<td><a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">Internal Server Error</a></td>
+<td>Internal error preventing the running API instance to process the request</td>
+<td><a href="#schemaresponsebodyerrors">responseBodyErrors</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="getqueue-responseschema">Response Schema</h3>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-protocol">Protocol</h1>
+<h2>getWFStandard</h2>
+<p><a id="opIdgetWFStandard"></a></p>
+<p><code>GET /protocol/whiteflag.standard.html</code></p>
+<p>Returns the human readible Whiteflag protocol specification in HTML format.</p>
+<h3 id="getwfstandard-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getWFMessageSchema</h2>
+<p><a id="opIdgetWFMessageSchema"></a></p>
+<p><code>GET /protocol/message.schema.json</code></p>
+<p>Returns the Whiteflag message JSON schema.</p>
+<h3 id="getwfmessageschema-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getWFMetaheaderSchema</h2>
+<p><a id="opIdgetWFMetaheaderSchema"></a></p>
+<p><code>GET /protocol/metaheader.schema.json</code></p>
+<p>Returns the Whiteflag message metaheader JSON schema.</p>
+<h3 id="getwfmetaheaderschema-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getWFSignatureSchema</h2>
+<p><a id="opIdgetWFSignatureSchema"></a></p>
+<p><code>GET /protocol/signature.schema.json</code></p>
+<p>Returns Whiteflag authentication signature JSON schema.</p>
+<h3 id="getwfsignatureschema-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h2>getWFStateSchema</h2>
+<p><a id="opIdgetWFStateSchema"></a></p>
+<p><code>GET /protocol/state.schema.json</code></p>
+<p>Returns the Whiteflag API state JSON schema.</p>
+<h3 id="getwfstateschema-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1 id="whiteflag-api-icons">Icons</h1>
+<h2>getIcon</h2>
+<p><a id="opIdgetIcon"></a></p>
+<p><code>GET /icons/{icon}</code></p>
+<p>Returns the requested icon corresponding with a message type.</p>
+<h3 id="geticon-responses">Responses</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+<th>Description</th>
+<th>Schema</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+<h1>Schemas</h1>
+<h2 id="tocSwfmessage">wfMessage</h2>
+<p><a id="schemawfmessage"></a></p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;MetaHeader&quot;: null,
+  &quot;MessageHeader&quot;: null,
+  &quot;MessageBody&quot;: null
+}
+
+</code></pre>
+<p><em>Whiteflag Message</em></p>
+<h3>Properties</h3>
+<p><em>None</em></p>
+<h2 id="tocSresponsebodymetaobject">responseBodyMetaObject</h2>
+<p><a id="schemaresponsebodymetaobject"></a></p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;additionalProperties&quot;: null,
+  &quot;operationId&quot;: &quot;string&quot;,
+  &quot;request&quot;: {
+    &quot;client&quot;: &quot;string&quot;,
+    &quot;method&quot;: &quot;string&quot;,
+    &quot;endpoint&quot;: &quot;string&quot;
+  },
+  &quot;info&quot;: [
+    &quot;string&quot;
+  ],
+  &quot;warnings&quot;: [
+    &quot;string&quot;
+  ],
+  &quot;errors&quot;: [
+    &quot;string&quot;
+  ]
+}
+
+</code></pre>
+<p><em>API response metadata</em></p>
+<h3>Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Required</th>
+<th>Restrictions</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>additionalProperties</td>
+<td>any</td>
+<td>false</td>
+<td>none</td>
+<td>none</td>
+</tr>
+<tr>
+<td>operationId</td>
+<td>string</td>
+<td>false</td>
+<td>none</td>
+<td>Unique string defined by the OpenAPI defintion used to identify the operation</td>
+</tr>
+<tr>
+<td>request</td>
+<td>object</td>
+<td>false</td>
+<td>none</td>
+<td>Details of the request on the endpoint</td>
+</tr>
+<tr>
+<td>» client</td>
+<td>string</td>
+<td>false</td>
+<td>none</td>
+<td>The ip address of the client that made the request</td>
+</tr>
+<tr>
+<td>» method</td>
+<td>string</td>
+<td>false</td>
+<td>none</td>
+<td>The HTTP method used to make the request</td>
+</tr>
+<tr>
+<td>» endpoint</td>
+<td>string</td>
+<td>false</td>
+<td>none</td>
+<td>The endpoint on which the request has been made</td>
+</tr>
+<tr>
+<td>info</td>
+<td>[string]</td>
+<td>false</td>
+<td>none</td>
+<td>Information about how the data was processed</td>
+</tr>
+<tr>
+<td>warnings</td>
+<td>[string]</td>
+<td>false</td>
+<td>none</td>
+<td>Warnings generated when processing the request</td>
+</tr>
+<tr>
+<td>errors</td>
+<td>[string]</td>
+<td>false</td>
+<td>none</td>
+<td>Errors generated when processing the request</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tocSresponsebodyerrorobject">responseBodyErrorObject</h2>
+<p><a id="schemaresponsebodyerrorobject"></a></p>
+<pre class="prettyprint source lang-json"><code>[
+  &quot;string&quot;
+]
+
+</code></pre>
+<p><em>API response errors</em></p>
+<h3>Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Required</th>
+<th>Restrictions</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API response errors</td>
+<td>[string]</td>
+<td>false</td>
+<td>none</td>
+<td>Errors describing why the request could not succesfully be fulfilled</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tocSresponsebodyerrors">responseBodyErrors</h2>
+<p><a id="schemaresponsebodyerrors"></a></p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;meta&quot;: {
+    &quot;additionalProperties&quot;: null,
+    &quot;operationId&quot;: &quot;string&quot;,
+    &quot;request&quot;: {
+      &quot;client&quot;: &quot;string&quot;,
+      &quot;method&quot;: &quot;string&quot;,
+      &quot;endpoint&quot;: &quot;string&quot;
+    },
+    &quot;info&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;warnings&quot;: [
+      &quot;string&quot;
+    ],
+    &quot;errors&quot;: [
+      &quot;string&quot;
+    ]
+  },
+  &quot;errors&quot;: [
+    &quot;string&quot;
+  ]
+}
+
+</code></pre>
+<h3>Properties</h3>
+<p><em>None</em></p>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:40 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

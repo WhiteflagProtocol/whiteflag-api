@@ -72,6 +72,7 @@ testCase('Whiteflag API server module', function() {
             return done();
         });
         assertion(' 5. should have all OpenAPI defined methods and operations implemented', function(done) {
+            const staticPaths = [ 'docs', 'protocol', 'icons', 'listen', 'js' ];
             let unimplementedMethods = [];
 
             // Get path from openapi defintion
@@ -92,7 +93,9 @@ testCase('Whiteflag API server module', function() {
                             }
                     });
                     // The endppoint and operation should only occur once
-                    if (n !== 1) unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
+                    if (n !== 1 && !staticPaths.includes(path.split('/')[1])) {
+                        unimplementedMethods.push(`${openapi[path][method].operationId}: ${method.toUpperCase()} ${path}`);
+                    }
                 });
             });
             if (unimplementedMethods.length > 0) {

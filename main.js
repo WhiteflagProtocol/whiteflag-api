@@ -4,6 +4,9 @@
  * @module whiteflag
  * @summary Whiteflag API main module
  * @description Module for initialising the transceive event chains, blockchains, datastores and starting the server
+ * @tutorial installation
+ * @tutorial configuration
+ * @tutorial modules
  */
 // Change working directory to process directory
 process.chdir(__dirname);
@@ -51,7 +54,7 @@ main(function mainCb(err) {
 /**
  * Main process function that reads the configuration and starts all functionality
  * @function main
- * @param {function} callback
+ * @param {function(Error)} callback
  */
 function main(callback) {
     log.info('whiteflag', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
@@ -152,7 +155,7 @@ function initModules() {
 /**
  * Shuts down the API gracefully
  * @function shutdown
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
@@ -196,7 +199,7 @@ function shutdown() {
 /**
  * Callback to log uncaught exceptions
  * @callback uncaughtExceptionCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function uncaughtExceptionCb(err) {
     if (err.stack) {
@@ -210,7 +213,7 @@ function uncaughtExceptionCb(err) {
 /**
  * Callback to log endpoint events
  * @callback endpointEventCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  * @param {string} client client information
  * @param {string} event event name
  * @param {string} info event information
@@ -223,7 +226,7 @@ function endpointEventCb(err, client, event, info) {
 /**
  * Callback to log socket events
  * @callback socketEventCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  * @param {string} client client information
  * @param {string} event event name
  * @param {string} info event information
@@ -241,7 +244,7 @@ function socketEventCb(err, client, event, info) {
  */
 function transceiveInitCb(err, info) {
     if (err) {
-        log.fatal(`Cannot initialise transceive chain: ${err.message}`);
+        log.fatal(`Could not initialise transceive chain: ${err.message}`);
         return process.exit(1);
     }
     if (info) log.info(MODULELOG, info);
@@ -250,7 +253,7 @@ function transceiveInitCb(err, info) {
 /**
  * Callback to log datatstore initialisation
  * @callback datastoresInitCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function datastoresInitCb(err) {
     if (err) {
@@ -267,7 +270,7 @@ function datastoresInitCb(err) {
 /**
  * Callback to log blockchain initialisation
  * @callback blockhainsInitCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function blockhainsInitCb(err, blockchains) {
     if (err) {
@@ -288,7 +291,7 @@ function blockhainsInitCb(err, blockchains) {
 /**
  * Callback to log Whiteflag protocol state initialisation
  * @callback stateInitCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function stateInitCb(err) {
     if (err) {
@@ -301,11 +304,11 @@ function stateInitCb(err) {
 /**
  * Callback to log Whiteflag protocol management messages handler initialisation
  * @callback managementInitCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function managementInitCb(err) {
     if (err) {
-        log.fatal(MODULELOG, `Cannot initialise protocol management: ${err.message}`);
+        log.fatal(MODULELOG, `Could not initialise protocol management: ${err.message}`);
         return process.exit(1);
     }
     log.info(MODULELOG, 'Whiteflag protocol management initialised');
@@ -314,11 +317,11 @@ function managementInitCb(err) {
 /**
  * Callback to log endpoints initialisation
  * @callback endpointsInitCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  */
 function endpointsInitCb(err) {
     if (err) {
-        log.fatal(MODULELOG, `Cannot initialise endpoints: ${err.message}`);
+        log.fatal(MODULELOG, `Could not initialise endpoints: ${err.message}`);
         return process.exit(1);
     }
     log.info(MODULELOG, 'Server endpoints initialised');
@@ -327,15 +330,15 @@ function endpointsInitCb(err) {
 /**
  * Callback to log server startup
  * @callback serverStartCb
- * @param {object} err error object if any error
+ * @param {Error} err error object if any error
  * @param {string} url server information
  */
 function serverStartCb(err, url) {
     if (err) {
         if (url) {
-            log.fatal(MODULELOG, `Cannot start server on ${url}: ${err.message}`);
+            log.fatal(MODULELOG, `Could not start server on ${url}: ${err.message}`);
         } else {
-            log.fatal(MODULELOG, `Cannot start server: ${err.message}`);
+            log.fatal(MODULELOG, `Could not start server: ${err.message}`);
         }
         return process.exit(1);
     }

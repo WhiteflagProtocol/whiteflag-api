@@ -19,8 +19,8 @@ The API should provide all message handling i.a.w. the standard:
 * receiving/decoding of all message types (v0.1)
 * syntax (v0.1) and reference (v0.3) checks of all message types
 * encryption/decryption (v0.8)
-* processing of test messages (v1.0)
-* checking for correct subject codes and object types (v1.0)
+* processing of test messages (v1.0) - issue #4
+* checking for correct subject codes and object types (v1.0) - issue #13
 
 ### Blockchain
 
@@ -33,7 +33,7 @@ The API is able to read Whiteflag history from the blockchain into database.
 
 ### Message Indexing & Storage
 
-To keep track of Whiteflag message on the blockchain, the API should:
+To keep track of Whiteflag messages on the blockchain, the API should:
 
 * perform storage of Whiteflag messages outside blockchain (v0.6)
 * keep track of all references between messages (v0.3) and sequences (v0.5)
@@ -41,25 +41,29 @@ To keep track of Whiteflag message on the blockchain, the API should:
 
 ### Advanced Protocol Functionality
 
+Advanced protocol features:
+
 * Whiteflag authentication method 1 (signature-based):
   * create a Whiteflag digital signature (v0.7)
   * check against internet resource for `A1` messages (v0.8)
-* Whiteflag authentication method 2 (token-based) (v1.0)
+* Whiteflag authentication method 2 (token-based) (v1.0) - issue #3
 * manage encryption keys for different originators:
   * pre-shared encryption keys (v0.9)
   * ECDH negotated encryption keys (v0.9)
 
 ### API functions
 
+The API supports:
+
 * basic http authorization (v0.8)
 * native support for SSL (v0.9)
 
-## Postponed functionality
+### Not implemented
 
-The following protool functionality and blockchain interfacing:
+The following functionality is in scope, but currently not implemented:
 
-* message and area concatination using reference code 3 (*planned after v1.0*)
-* bitcoin (*planned after v1.0*)
+* message and area concatenation with reference code 3 - issue #2
+* Bitcoin blockchain support
 
 ## Outside scope
 

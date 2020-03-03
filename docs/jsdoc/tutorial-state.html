@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: state</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: state</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>state</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Protocol State</h1>
+<p>The API has to keep its state of the Whiteflag protocol. This inludes keeping
+track of its blockchain status and accounts, known originators, encryption keys
+etc. The state is implemented as an in-memory object which is managed by
+<code>lib/protocol/state.js</code>. The structure of the state is defined in
+<code>lib/protocol/static/state.schema.json</code>.</p>
+<h2>State configuration</h2>
+<p>All state configuration parameters are in the <code>[state]</code> section of the
+<code>config/whiteflag.toml</code> configuration file.</p>
+<h2>State preservation</h2>
+<p>To preserve the state across restarts of the API, the state object is stored in
+the primary datastore. The state may also be written to file, if the
+<code>saveToFile</code> parameter is set to <code>true</code>. The absolute file name inlcuding path
+must then be defined with the <code>file</code> parameter.</p>
+<p>When the API starts and initialises the state, the state is restored from file
+if the file exists (regardless whether the <code>saveToFile</code> parameter is set to
+<code>true</code> or not). If the file does not exist, the state is restored from the
+primary datastore. If no state is found in either a file or datastore, the API
+starts with an empty state.</p>
+<h2>State encryption</h2>
+<p>The state contains sensitive data on which the security of the Whiteflag
+data depends. Therefore, the state can and should be encrypted. A Master
+Encryption Key (MEK) is used for the encryption of the state. This key is
+provided with the <code>masterKey</code> parameter in the configuration file.</p>
+<p>All secrets and keys that are stored in the state are always encrypted with a
+unique Key Encryption Key (KEK) which is derived from the MEK, using a HKDF
+function with a salt and the key identifier. The key identifier is a hash of
+key specific attributes such as blockchain account and originator address.</p>
+<p>The state as a whole can (and should) also be encrypted when stored in a file
+or in the primary datastore if <code>encryption</code> parameter is set to <code>true</code> in the
+configuration file. The state will then be encrytpted with a Data Encryption
+Key (DEK) which is also derived from the MEK.</p>
+<p>Currently it is not possible to change the MEK without losing the state. Also,
+please be aware that losing the MEK results in unobtainable keys, including
+private blockchain keys and pre-shared encryption keys!!</p>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:40 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

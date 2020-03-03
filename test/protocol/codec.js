@@ -3,7 +3,6 @@
  * @module test/protocol/codec
  * @summary Whiteflag message encoding and decoding test script
  * @description Script for testing all Whiteflag encoding and decoding functions
- * @todo test full message set covering all functionalities
  */
 
 // Node.js core and external modules //
@@ -22,7 +21,7 @@ log.setLogLevel(1, ignore);
 
 // Constants //
 /**
- * @constant {object} testVector
+ * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/codec.testvector.json'));
