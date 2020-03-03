@@ -194,11 +194,10 @@ function initState(callback) {
         });
         // Read saved state from file
         fs.readFile(_stateFile, function stateReadFileCb(err, stateFileData) {
-            if (err) {
-                return callback(new Error(`Could not restore state from ${_stateFile}: ${err.message}`));
-            }
+            if (err) return callback(new Error(`Could not restore state from ${_stateFile}: ${err.message}`));
+
+            // Extract and decrypt state
             try {
-                // Extract and decrypt state
                 _wfState = extractState(JSON.parse(stateFileData));
             } catch(err) {
                 return callback(new Error(`Could not restore previous state from ${_stateFile}: ${err.message}`));
@@ -257,18 +256,14 @@ function saveState() {
     // Save state in datastore
     log.trace(MODULELOG, 'Saving current state to datastore');
     wfApiDatastores.storeState(stateObject, function stateStoreDatastoreCb(err) {
-        if (err) {
-            return log.error(MODULELOG, `Could not store state in datastore: ${err.message}`);
-        }
+        if (err) return log.error(MODULELOG, `Could not store state in datastore: ${err.message}`);
         return wfStateEvent.emit('saved');
     });
     // Save state to file if set in config
     if (_saveToFile) {
         log.trace(MODULELOG, `Saving current state to ${_stateFile}`);
         fs.writeFile(_stateFile, JSON.stringify(stateObject, null, 2), function stateWriteFileCb(err) {
-            if (err) {
-                return log.error(MODULELOG, `Could not save current state to ${_stateFile}: ${err.message}`);
-            }
+            if (err) return log.error(MODULELOG, `Could not save current state to ${_stateFile}: ${err.message}`);
             return wfStateEvent.emit('saved');
         });
     }
@@ -334,9 +329,7 @@ function backupAccount(blockchain, address) {
     if (account) {
         const accountFile = _stateFile + '.' + account.address.substring(0, 8);
         fs.writeFile(accountFile, JSON.stringify(account, null, 2), function stateWriteAccountFileCb(err) {
-            if (err) {
-                return log.error(MODULELOG, `Could not save blockchain account to ${accountFile}: ${err.message}`);
-            }
+            if (err) return log.error(MODULELOG, `Could not save blockchain account to ${accountFile}: ${err.message}`);
             return log.debug(MODULELOG, `Blockchain account saved to ${accountFile}`);
         });
     }
@@ -363,7 +356,9 @@ function getOriginators(callback) {
  * @typedef {Object} originatorData state data of all originators
  */
 function getOriginatorData(address, callback) {
-    const index = _wfState.originators.findIndex(originator => originator.address.toLowerCase() === address.toLowerCase());
+    const index = _wfState.originators.findIndex(
+        originator => originator.address.toLowerCase() === address.toLowerCase()
+    );
     if (index &lt; 0) return callback(null, null);
     return callback(null, _wfState.originators[index]);
 }
@@ -382,13 +377,17 @@ function upsertOriginatorData(data) {
     // Check if originator with the same address or authentication token already exists
     let indexA = null;
     if (Object.prototype.hasOwnProperty.call(data, 'address')) {
-        indexA = _wfState.originators.findIndex(originator => originator.address.toLowerCase() === data.address.toLowerCase());
+        indexA = _wfState.originators.findIndex(
+            originator => originator.address.toLowerCase() === data.address.toLowerCase()
+        );
     } else {
         data.address = '';
     }
     let indexT = null;
     if (Object.prototype.hasOwnProperty.call(data, 'authTokenId')) {
-        indexT = _wfState.originators.findIndex(originator => originator.authTokenId === data.authTokenId);
+        indexT = _wfState.originators.findIndex(
+            originator => originator.authTokenId === data.authTokenId
+        );
     } else {
         data.authTokenId = '';
     }
@@ -456,7 +455,9 @@ function upsertOriginatorData(data) {
  * @emits module:lib/protocol/events.stateEvent:removedOriginator
  */
 function removeOriginatorData(address) {
-    const index = _wfState.originators.findIndex(originator => originator.address.toLowerCase() === address.toLowerCase());
+    const index = _wfState.originators.findIndex(
+        originator => originator.address.toLowerCase() === address.toLowerCase()
+    );
     if (index >= 0) {
         _wfState.originators.splice(index, 1);
         wfStateEvent.emit('removedOriginator', address);
@@ -472,7 +473,9 @@ function removeOriginatorData(address) {
  * @param {function(Error, originatorData)} callback function to which data is passed
  */
 function getOriginatorAuthToken(authTokenId, callback) {
-    const index = _wfState.originators.findIndex(originator => originator.authTokenId === authTokenId);
+    const index = _wfState.originators.findIndex(
+        originator => originator.authTokenId === authTokenId
+    );
     if (index &lt; 0) return callback(null, null);
     return callback(null, _wfState.originators[index]);
 }
@@ -486,7 +489,9 @@ function getOriginatorAuthToken(authTokenId, callback) {
  * @emits module:lib/protocol/events.stateEvent:removedOriginatorAuthToken
  */
 function removeOriginatorAuthToken(authTokenId) {
-    const index = _wfState.originators.findIndex(originator => originator.authTokenId === authTokenId);
+    const index = _wfState.originators.findIndex(
+        originator => originator.authTokenId === authTokenId
+    );
     if (index >= 0) {
         if (!_wfState.originators[index].address) {
             _wfState.originators.splice(index, 1);
@@ -528,7 +533,9 @@ function getQueueData(queue, property, value, callback) {
     if (!Object.prototype.hasOwnProperty.call(_wfState.queue, queue)) {
         return callback(new Error(`Queue ${queue} does not exist`));
     }
-    const index = _wfState.queue[queue].findIndex(item => item[property].toLowerCase() === value.toLowerCase());
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === value.toLowerCase()
+    );
     if (index &lt; 0) return callback(null, null);
     return callback(null, _wfState.queue[queue][index]);
 }
@@ -544,7 +551,9 @@ function getQueueData(queue, property, value, callback) {
  * @emits module:lib/protocol/events.stateEvent:updatedQueue
  */
 function upsertQueueData(queue, property, data) {
-    const index = _wfState.queue[queue].findIndex(item => item[property].toLowerCase() === data[property].toLowerCase());
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === data[property].toLowerCase()
+    );
     if (index &lt; 0) {
         _wfState.queue[queue].push(data);
         wfStateEvent.emit('insertedInQueue', queue, data);
@@ -565,7 +574,9 @@ function upsertQueueData(queue, property, data) {
  * @emits module:lib/protocol/events.stateEvent:removedFromQueue
  */
 function removeQueueData(queue, property, value) {
-    const index = _wfState.queue[queue].findIndex(item => item[property].toLowerCase() === value.toLowerCase());
+    const index = _wfState.queue[queue].findIndex(
+        item => item[property].toLowerCase() === value.toLowerCase()
+    );
     if (index >= 0) {
         const data = _wfState.queue[queue][index];
         _wfState.queue[queue].splice(index, 1);
@@ -601,7 +612,9 @@ function getKey(category, id, callback) {
     if (!Object.prototype.hasOwnProperty.call(_wfState.crypto, category)) {
         return callback(new Error(`Key category ${category} does not exist`));
     }
-    const index = _wfState.crypto[category].findIndex(item => item.id.toLowerCase() === id.toLowerCase());
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
     if (index &lt; 0) return callback(null, null);
 
     let key = decryptKey(_wfState.crypto[category][index].secret, id);
@@ -619,7 +632,9 @@ function getKey(category, id, callback) {
  * @emits module:lib/protocol/events.stateEvent:updatedKey
  */
 function upsertKey(category, id, key) {
-    const index = _wfState.crypto[category].findIndex(item => item.id.toLowerCase() === id.toLowerCase());
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
     const data = encryptKey(key, id);
 
     // Hopefully the garbage collector will do its work
@@ -651,7 +666,9 @@ function upsertKey(category, id, key) {
  * @emits module:lib/protocol/events.stateEvent:removedKey
  */
 function removeKey(category, id) {
-    const index = _wfState.crypto[category].findIndex(item => item.id.toLowerCase() === id.toLowerCase());
+    const index = _wfState.crypto[category].findIndex(
+        item => item.id.toLowerCase() === id.toLowerCase()
+    );
     if (index >= 0) {
         _wfState.crypto[category].splice(index, 1);
         wfStateEvent.emit('removedKey', category, id);
@@ -705,7 +722,10 @@ function extractState(stateObject) {
     if (!Object.prototype.hasOwnProperty.call(stateObject, 'state')) {
         throw new Error('State object might be corrupted: state property is missing');
     }
-    if (Object.prototype.hasOwnProperty.call(stateObject, 'tag') &amp;&amp; Object.prototype.hasOwnProperty.call(stateObject, 'iv')) {
+    if (
+        Object.prototype.hasOwnProperty.call(stateObject, 'tag')
+        &amp;&amp; Object.prototype.hasOwnProperty.call(stateObject, 'iv')
+    ) {
         stateDataStr = decryptState(stateObject);
     } else {
         stateDataStr = stateObject.state;
@@ -743,7 +763,9 @@ function checkState(stateData) {
             for (let a = 0; a &lt; accounts.length; a++) {
                 if (Object.prototype.hasOwnProperty.call(accounts[a], 'privateKey')) {
                     const id = hash(blockchains[b] + accounts[a].address, KEYIDLENGTH);
-                    const index = stateData.crypto.blockchainKeys.findIndex(item => item.id.toLowerCase() === id.toLowerCase());
+                    const index = stateData.crypto.blockchainKeys.findIndex(
+                        item => item.id.toLowerCase() === id.toLowerCase()
+                    );
                     const data = encryptKey(accounts[a].privateKey, id);
                     if (index &lt; 0) {
                         stateData.crypto.blockchainKeys.push({
@@ -943,7 +965,7 @@ function generateKEK(id) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 11:22:24 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:39 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
