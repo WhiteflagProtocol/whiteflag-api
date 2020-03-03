@@ -30,7 +30,7 @@ The following third party software included in this distribution is explicitly
 excluded from dedication to the public domain:
 
 - *Redoc*, copyright (c) 2015-present, Rebilly, Inc., included as
-  `./static/redoc.standalone.js` and `./static/redoc.standalone.js.map`
+  `./static/js/redoc.standalone.js` and `./static/js/redoc.standalone.js.map`
   under the [MIT license](https://mit-license.org/).
 
 ## Third Party Software Dependencies
