@@ -58,8 +58,6 @@ The API supports:
 * basic http authorization (v0.8)
 * native support for SSL (v0.9)
 
-<<<<<<< HEAD
-=======
 ### Not implemented
 
 The following functionality is in scope, but currently not implemented:
@@ -67,7 +65,6 @@ The following functionality is in scope, but currently not implemented:
 * message and area concatenation with reference code 3 - issue #2
 * Bitcoin blockchain support
 
->>>>>>> master
 ## Outside scope
 
 ### Protocol functionality
