@@ -1,0 +1,11 @@
+{
+    "1": {
+        "pubkey": "04f8a947c6656a3a521d0eb69e5e3a4de0054498b3c156c93263031619354388f0f5c71ba1a9ee44c62527aa7e737a2cb4ea436025a470b9dfeeb482a2d2fe7012",
+        "pemkey": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE+KlHxmVqOlIdDraeXjpN4AVEmLPBVsky\nYwMWGTVDiPD1xxuhqe5ExiUnqn5zeiy06kNgJaRwud/utIKi0v5wEg==\n-----END PUBLIC KEY-----",
+        "signature": {
+            "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9",
+            "payload": "eyJhZGRyIjoiNDA4ZTczYTZhMUIyNjg3N2EyZDZmQTREZWFmNDQ1NjYwOEI1QjVmOSIsIm9yZ25hbWUiOiJPcmdhbmlzYXRpb24iLCJ1cmwiOiJodHRwczovL29yZ2FuaXNhdGlvbi5pbnQvd2hpdGVmbGFnL2F1dGhlbnRpY2F0aW9uLmpzb24iLCJpYXQiOjE1ODMyNTgwNDZ9",
+            "signature": "FKyb9jrHzbOBJjE5jcS_--vAcG4thThnOFUy80Bd2oO-QXEC6FZBkGVz5tYWCsoNtU1BFz_Ad1DPdSM8ZlSMIA"
+        }
+    }
+}

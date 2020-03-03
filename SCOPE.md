@@ -62,7 +62,8 @@ The API supports:
 
 The following functionality is in scope, but currently not implemented:
 
-* Message and area concatenation with reference code 3 - issue #2
+* message and area concatenation with reference code 3 - issue #2
+* Bitcoin blockchain support
 
 ## Outside scope
 

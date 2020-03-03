@@ -18,8 +18,8 @@
         "express-basic-auth": "^1.2.0",
         "jsonschema": "^1.2.5",
         "jsonwebtoken": "^8.5.1",
-        "key-encoder": "^1.1.7",
-        "mongodb": "^3.5.3",
+        "key-encoder": "^2.0.3",
+        "mongodb": "^3.5.4",
         "socket.io": "^2.3.0",
         "toml": "^3.0.0",
         "web3": "^2.0.0-alpha.1"
