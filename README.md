@@ -25,7 +25,7 @@ two methods are used:
 * a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
   available for clients to listen for incoming Whiteflag messages from a
   blockchain.
- 
+
 The current version is based on **v1-draft.6** of the Whiteflag protocol. The
 supported Whiteflag protocol features are described in `SCOPE.md`.
 
