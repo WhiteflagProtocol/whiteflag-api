@@ -1,12 +1,12 @@
 ---
-title: Whiteflag API
+title: Whiteflag API v1.0.0-beta
 language_tabs:
   - shell: Shell
   - http: HTTP
   - javascript: JavaScript
-  - javascript--nodejs: Node.JS
   - ruby: Ruby
   - python: Python
+  - php: PHP
   - java: Java
   - go: Go
 toc_footers: []
@@ -16,6 +16,8 @@ highlight_theme: darkula
 headingLevel: 2
 
 ---
+
+<!-- Generator: Widdershins v4.0.1 -->
 
 <h1 id="whiteflag-api">Whiteflag API v1.0.0-beta</h1>
 
@@ -212,7 +214,7 @@ Accepts a Whiteflag message as if received from a blockchain. This may be done f
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[wfMessageEncoded](#schemawfmessageencoded)|false|Whiteflag message to be decoded/decrypted|
+|body|body|object|false|Whiteflag message to be decoded/decrypted|
 
 > Example responses
 
@@ -358,7 +360,7 @@ Decodes a Whiteflag message and returns the result. Typically used for validatio
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[wfMessageEncoded](#schemawfmessageencoded)|false|Whiteflag message to be decoded/decrypted|
+|body|body|object|false|Whiteflag message to be decoded/decrypted|
 
 > Example responses
 
@@ -803,7 +805,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[createAccount](#schemacreateaccount)|false|Blockchain account data|
+|body|body|object|false|Blockchain account data|
 |» privateKey|body|string|false|Optional private key in raw hexadecimal format to create account with|
 
 > Example responses
@@ -1107,7 +1109,7 @@ Transfers value to another blockchain account. This operation may be disabled in
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[transferValue](#schematransfervalue)|false|Data required to transfer value to another blockchain account|
+|body|body|object|false|Data required to transfer value to another blockchain account|
 |» fromAddress|body|string|false|The address of the blockchain account to transfer value from|
 |» toAddress|body|string|true|The address of the blockchain account to transfer value to|
 |» value|body|string|true|Value to be transferred in the main currency of the blockchain|
@@ -1309,7 +1311,7 @@ Stores a unique pre-shared secret authentication token together with the provide
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[storeAuthToken](#schemastoreauthtoken)|false|Pre-shared secret authentication token data|
+|body|body|object|false|Pre-shared secret authentication token data|
 |» name|body|string|true|The name of the orginator|
 |» blockchain|body|string|true|The name of the blockchain used by the originator|
 |» address|body|string|false|The blockchain address of the originator, if already known|
@@ -1489,7 +1491,7 @@ Creates the non-secret Whiteflag authentication token for authentication method 
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[wfAuthToken](#schemawfauthtoken)|false|Whiteflag Authentication Token|
+|body|body|object|false|Whiteflag Authentication Token|
 |» blockchain|body|string|true|The name of the blockchain used by the originator|
 |» address|body|string|true|The address of the originator blockchain account with which the token is used|
 |» authToken|body|string|true|A pre-shared secret authentication token in raw hexadecimal format|
@@ -1620,7 +1622,7 @@ Stores or updates a pre-shared secret encryption key for the specified Whiteflag
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[storePreSharedKey](#schemastorepresharedkey)|false|Pre-shared encryption key data|
+|body|body|object|false|Pre-shared encryption key data|
 |» preSharedKey|body|string|true|A pre-shared secret encryption key in raw hexadecimal format|
 
 > Example responses
@@ -2111,9 +2113,12 @@ HTTP Authentication
 
 # Schemas
 
-<h2 id="tocSwfmessage">wfMessage</h2>
-
+<h2 id="tocS_wfMessage">wfMessage</h2>
+<!-- backwards compatibility -->
 <a id="schemawfmessage"></a>
+<a id="schema_wfMessage"></a>
+<a id="tocSwfmessage"></a>
+<a id="tocswfmessage"></a>
 
 ```json
 {
@@ -2124,15 +2129,18 @@ HTTP Authentication
 
 ```
 
-*Whiteflag Message*
+Whiteflag Message
 
 ### Properties
 
 *None*
 
-<h2 id="tocSresponsebodymetaobject">responseBodyMetaObject</h2>
-
+<h2 id="tocS_responseBodyMetaObject">responseBodyMetaObject</h2>
+<!-- backwards compatibility -->
 <a id="schemaresponsebodymetaobject"></a>
+<a id="schema_responseBodyMetaObject"></a>
+<a id="tocSresponsebodymetaobject"></a>
+<a id="tocsresponsebodymetaobject"></a>
 
 ```json
 {
@@ -2156,7 +2164,7 @@ HTTP Authentication
 
 ```
 
-*API response metadata*
+API response metadata
 
 ### Properties
 
@@ -2172,9 +2180,12 @@ HTTP Authentication
 |warnings|[string]|false|none|Warnings generated when processing the request|
 |errors|[string]|false|none|Errors generated when processing the request|
 
-<h2 id="tocSresponsebodyerrorobject">responseBodyErrorObject</h2>
-
+<h2 id="tocS_responseBodyErrorObject">responseBodyErrorObject</h2>
+<!-- backwards compatibility -->
 <a id="schemaresponsebodyerrorobject"></a>
+<a id="schema_responseBodyErrorObject"></a>
+<a id="tocSresponsebodyerrorobject"></a>
+<a id="tocsresponsebodyerrorobject"></a>
 
 ```json
 [
@@ -2183,7 +2194,7 @@ HTTP Authentication
 
 ```
 
-*API response errors*
+API response errors
 
 ### Properties
 
@@ -2191,9 +2202,12 @@ HTTP Authentication
 |---|---|---|---|---|
 |API response errors|[string]|false|none|Errors describing why the request could not succesfully be fulfilled|
 
-<h2 id="tocSresponsebodyerrors">responseBodyErrors</h2>
-
+<h2 id="tocS_responseBodyErrors">responseBodyErrors</h2>
+<!-- backwards compatibility -->
 <a id="schemaresponsebodyerrors"></a>
+<a id="schema_responseBodyErrors"></a>
+<a id="tocSresponsebodyerrors"></a>
+<a id="tocsresponsebodyerrors"></a>
 
 ```json
 {
