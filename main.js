@@ -191,7 +191,7 @@ function shutdown() {
      */
     function timeoutCb() {
         log.warning(MODULELOG, 'Taking to much time to close down everything. Exiting.');
-        return process.exit(2);
+        return process.exit(1);
     }
 }
 
@@ -207,7 +207,7 @@ function uncaughtExceptionCb(err) {
     } else {
         log.fatal(MODULELOG, `UNCAUGHT EXCEPTION: ${err.toString()}`);
     }
-    return process.exit(2);
+    return process.exit(1);
 }
 
 /**
