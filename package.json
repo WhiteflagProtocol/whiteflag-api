@@ -18,11 +18,12 @@
         "express-basic-auth": "^1.2.0",
         "jsonschema": "^1.2.6",
         "jsonwebtoken": "^8.5.1",
+        "keccak": "3.0.1",
         "key-encoder": "^2.0.3",
         "mongodb": "^3.6.0",
         "socket.io": "^2.3.0",
         "toml": "^3.0.0",
-        "web3": "^2.0.0-alpha.1"
+        "web3": "^1.2.11"
     },
     "devDependencies": {
         "eslint": "^7.1.0",
