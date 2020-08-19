@@ -29,15 +29,15 @@
 
 <article>
     <hr>
-<p>title: Whiteflag API
+<p>title: Whiteflag API v1.0.0-beta.1
 language_tabs:</p>
 <ul>
 <li>shell: Shell</li>
 <li>http: HTTP</li>
 <li>javascript: JavaScript</li>
-<li>javascript--nodejs: Node.JS</li>
 <li>ruby: Ruby</li>
 <li>python: Python</li>
+<li>php: PHP</li>
 <li>java: Java</li>
 <li>go: Go
 toc_footers: []
@@ -47,7 +47,8 @@ highlight_theme: darkula
 headingLevel: 2</li>
 </ul>
 <hr>
-<h1 id="whiteflag-api">Whiteflag API v1.0.0-beta</h1>
+<!-- Generator: Widdershins v4.0.1 -->
+<h1 id="whiteflag-api">Whiteflag API v1.0.0-beta.1</h1>
 <blockquote>
 <p>Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.</p>
 </blockquote>
@@ -370,7 +371,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemawfmessageencoded">wfMessageEncoded</a></td>
+<td>object</td>
 <td>false</td>
 <td>Whiteflag message to be decoded/decrypted</td>
 </tr>
@@ -608,7 +609,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemawfmessageencoded">wfMessageEncoded</a></td>
+<td>object</td>
 <td>false</td>
 <td>Whiteflag message to be decoded/decrypted</td>
 </tr>
@@ -1330,7 +1331,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemacreateaccount">createAccount</a></td>
+<td>object</td>
 <td>false</td>
 <td>Blockchain account data</td>
 </tr>
@@ -1837,7 +1838,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schematransfervalue">transferValue</a></td>
+<td>object</td>
 <td>false</td>
 <td>Data required to transfer value to another blockchain account</td>
 </tr>
@@ -2173,7 +2174,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemastoreauthtoken">storeAuthToken</a></td>
+<td>object</td>
 <td>false</td>
 <td>Pre-shared secret authentication token data</td>
 </tr>
@@ -2477,7 +2478,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemawfauthtoken">wfAuthToken</a></td>
+<td>object</td>
 <td>false</td>
 <td>Whiteflag Authentication Token</td>
 </tr>
@@ -2702,7 +2703,7 @@ HTTP Authentication
 <tr>
 <td>body</td>
 <td>body</td>
-<td><a href="#schemastorepresharedkey">storePreSharedKey</a></td>
+<td>object</td>
 <td>false</td>
 <td>Pre-shared encryption key data</td>
 </tr>
@@ -3377,8 +3378,12 @@ To perform this operation, you must be authenticated by means of one of the foll
 HTTP Authentication
 </aside>
 <h1>Schemas</h1>
-<h2 id="tocSwfmessage">wfMessage</h2>
-<p><a id="schemawfmessage"></a></p>
+<h2 id="tocS_wfMessage">wfMessage</h2>
+<!-- backwards compatibility -->
+<a id="schemawfmessage"></a>
+<a id="schema_wfMessage"></a>
+<a id="tocSwfmessage"></a>
+<a id="tocswfmessage"></a>
 <pre class="prettyprint source lang-json"><code>{
   &quot;MetaHeader&quot;: null,
   &quot;MessageHeader&quot;: null,
@@ -3386,11 +3391,15 @@ HTTP Authentication
 }
 
 </code></pre>
-<p><em>Whiteflag Message</em></p>
+<p>Whiteflag Message</p>
 <h3>Properties</h3>
 <p><em>None</em></p>
-<h2 id="tocSresponsebodymetaobject">responseBodyMetaObject</h2>
-<p><a id="schemaresponsebodymetaobject"></a></p>
+<h2 id="tocS_responseBodyMetaObject">responseBodyMetaObject</h2>
+<!-- backwards compatibility -->
+<a id="schemaresponsebodymetaobject"></a>
+<a id="schema_responseBodyMetaObject"></a>
+<a id="tocSresponsebodymetaobject"></a>
+<a id="tocsresponsebodymetaobject"></a>
 <pre class="prettyprint source lang-json"><code>{
   &quot;additionalProperties&quot;: null,
   &quot;operationId&quot;: &quot;string&quot;,
@@ -3411,7 +3420,7 @@ HTTP Authentication
 }
 
 </code></pre>
-<p><em>API response metadata</em></p>
+<p>API response metadata</p>
 <h3>Properties</h3>
 <table>
 <thead>
@@ -3489,14 +3498,18 @@ HTTP Authentication
 </tr>
 </tbody>
 </table>
-<h2 id="tocSresponsebodyerrorobject">responseBodyErrorObject</h2>
-<p><a id="schemaresponsebodyerrorobject"></a></p>
+<h2 id="tocS_responseBodyErrorObject">responseBodyErrorObject</h2>
+<!-- backwards compatibility -->
+<a id="schemaresponsebodyerrorobject"></a>
+<a id="schema_responseBodyErrorObject"></a>
+<a id="tocSresponsebodyerrorobject"></a>
+<a id="tocsresponsebodyerrorobject"></a>
 <pre class="prettyprint source lang-json"><code>[
   &quot;string&quot;
 ]
 
 </code></pre>
-<p><em>API response errors</em></p>
+<p>API response errors</p>
 <h3>Properties</h3>
 <table>
 <thead>
@@ -3518,8 +3531,12 @@ HTTP Authentication
 </tr>
 </tbody>
 </table>
-<h2 id="tocSresponsebodyerrors">responseBodyErrors</h2>
-<p><a id="schemaresponsebodyerrors"></a></p>
+<h2 id="tocS_responseBodyErrors">responseBodyErrors</h2>
+<!-- backwards compatibility -->
+<a id="schemaresponsebodyerrors"></a>
+<a id="schema_responseBodyErrors"></a>
+<a id="tocSresponsebodyerrors"></a>
+<a id="tocsresponsebodyerrors"></a>
 <pre class="prettyprint source lang-json"><code>{
   &quot;meta&quot;: {
     &quot;additionalProperties&quot;: null,
@@ -3560,7 +3577,7 @@ HTTP Authentication
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Mar 03 2020 20:21:40 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Wed Aug 19 2020 18:19:26 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
