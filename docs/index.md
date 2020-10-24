@@ -1,13 +1,15 @@
-# Whiteflag API
+# General Description and Overview
 
-This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
-software implementation of the API layer that provides an interface with the
-Whiteflag messaging network on one or more underlying blockchains. As such,
-it acts as a message transceiver between one or more blockchains and one or
-more end-user applications.
+This [Whiteflag](https://www.whiteflagprotocol.org/)
+Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/)
+software implementation of the [Whiteflag Protocol](https://standard.whiteflagprotocol.org/).
 
-For interaction with an end-user application, two methods are used.
-A [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
+It provides an interface with the Whiteflag messaging network on one or more
+underlying blockchains. As such, it acts as a message transceiver between one
+or more blockchains and one or more end-user applications.
+
+For interaction with end-user applications, two methods are used:
+a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer)
 is available for originators to provide Whiteflag messages to be sent on the
 blockchain, and a [web socket](https://en.wikipedia.org/wiki/WebSocket) is
 available for clients to listen for incoming Whiteflag messages from a
