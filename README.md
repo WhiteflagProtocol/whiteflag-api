@@ -7,7 +7,7 @@
 
 ## Introduction
 
-Whiteflag is a fully neutral and secure communciations means based on
+Whiteflag is a fully neutral and secure communications means based on
 blockchain technology. It enables near real-time communication in armed
 conflicts and disasters to exchange early warning and status information
 to create shared situational awareness.
