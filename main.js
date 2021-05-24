@@ -13,6 +13,7 @@ process.chdir(__dirname);
 
 // Whiteflag common functions and classes //
 const log = require('./lib/common/logger');
+const { ignore } = require('./lib/common/processing');
 
 // Whiteflag modules //
 const wfApiConfig = require('./lib/config');
@@ -70,7 +71,7 @@ function main(callback) {
 
         // Log version number
         if (apiConfig.version) {
-            log.info(MODULELOG, `Running version ${apiConfig.version}`);
+            log.info(MODULELOG, `Version: ${apiConfig.version}`);
         }
         // Set set logging level
         const loglevel = process.env.WFLOGLEVEL || apiConfig.logger.loglevel;
@@ -146,8 +147,8 @@ function initModules() {
     * Connects to datastores and initiliase state,
     * which triggers all other initialisations
     */
-    wfApiDatastores.init(function apiDatastoresInitCb(err) {
-        datastoresInitCb(err);
+    wfApiDatastores.init(function apiDatastoresInitCb(err, primaryDatastore) {
+        datastoresInitCb(err, primaryDatastore);
         wfState.init(stateInitCb);
     });
 }
@@ -220,7 +221,7 @@ function uncaughtExceptionCb(err) {
  */
 function endpointEventCb(err, client, event, info) {
     if (err) return log.error(MODULELOG, `Endpoint error: ${err.message}`);
-    return log.debug(MODULELOG, `Client ${client}: ${event}: ${info}`);
+    return log.info(MODULELOG, `Client ${client}: ${event}: ${info}`);
 }
 
 /**
@@ -234,7 +235,7 @@ function endpointEventCb(err, client, event, info) {
 function socketEventCb(err, client, event, info) {
     // Logs socket event
     if (err) return log.error(MODULELOG, `Socket error: ${err.message}`);
-    return log.debug(MODULELOG, `Socket client ${client}: ${event}: ${info}`);
+    return log.info(MODULELOG, `Socket client ${client}: ${event}: ${info}`);
 }
 
 /**
@@ -255,7 +256,7 @@ function transceiveInitCb(err, info) {
  * @callback datastoresInitCb
  * @param {Error} err error object if any error
  */
-function datastoresInitCb(err) {
+function datastoresInitCb(err, primaryDatastore) {
     if (err) {
         if (err.line) {
             log.fatal(MODULELOG, `Error in datastores configuration file on line ${err.line}: ${err.message}`);
@@ -264,7 +265,7 @@ function datastoresInitCb(err) {
         }
         return process.exit(1);
     }
-    log.info(MODULELOG, 'Primary datastore initialised');
+    log.info(MODULELOG, `Primary datastore initialised: ${primaryDatastore}`);
 }
 
 /**
@@ -281,11 +282,7 @@ function blockhainsInitCb(err, blockchains) {
         }
         return process.exit(1);
     }
-    if (blockchains) {
-        log.info(MODULELOG, `Started the initialisation of ${blockchains.length} blockchains: ${JSON.stringify(blockchains)}`);
-    } else {
-        log.info(MODULELOG, 'Started initialisation of blockchains');
-    }
+    ignore(blockchains);
 }
 
 /**

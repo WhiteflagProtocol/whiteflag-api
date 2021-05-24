@@ -11,12 +11,13 @@ const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Project modules required for test //
-const wfApiServer = require('../lib/server');
-
-// Set logger to log only fatal conditions //
+// Whiteflag common functions and classes //
+const { ignore } = require('../lib/common/processing');
 const log = require('../lib/common/logger');
 log.setLogLevel(1, ignore);
+
+// Project modules required for test //
+const wfApiServer = require('../lib/server');
 
 // Constants //
 const OPENAPIFILE = './static/openapi.json';
@@ -110,10 +111,3 @@ testCase('Whiteflag API server module', function() {
  * No server operations are currently tested here.
  * Server functions are assumed to be online end-to-end tested
  */
-
-// PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}

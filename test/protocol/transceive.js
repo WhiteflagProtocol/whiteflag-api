@@ -11,6 +11,11 @@ const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
+// Whiteflag common functions and classes //
+const { ignore } = require('../../lib/common/processing');
+const log = require('../../lib/common/logger');
+log.setLogLevel(1, ignore);
+
 // Project modules required for test //
 const wfTransmit = require('../../lib/protocol/transmit');
 const wfReceive = require('../../lib/protocol/receive');
@@ -19,10 +24,6 @@ const { ProcessingError, ProtocolError } = require('../../lib/common/errors');
 // Whiteflag event emitters //
 const wfRxEvent = require('../../lib/protocol/events').rxEvent;
 const wfTxEvent = require('../../lib/protocol/events').txEvent;
-
-// Set logger to log only fatal conditions //
-const log = require('../../lib/common/logger');
-log.setLogLevel(6, ignore);
 
 // Constants //
 /**
@@ -122,10 +123,3 @@ testCase('Whiteflag message transceive modules', function() {
         });
     });
 });
-
-// PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}
