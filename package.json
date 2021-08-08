@@ -30,13 +30,13 @@
         "web3": "^1.2.11"
     },
     "devDependencies": {
-        "eslint": "^7.1.0",
-        "semver": "^7.3.2",
-        "mocha": "^7.2.0",
-        "jsdoc": "~3.6.4",
-        "widdershins": "^4.0.1",
         "cloc": "^2.5.1",
-        "license-checker": "^25.0.1"
+        "eslint": "^7.1.0",
+        "jsdoc": "~3.6.4",
+        "license-checker": "^25.0.1",
+        "mocha": "^7.2.0",
+        "semver": "^7.3.2",
+        "widdershins": "^4.0.1"
     },
     "homepage": "https://github.com/WhiteflagProtocol/whiteflag-api#readme",
     "repository": {
