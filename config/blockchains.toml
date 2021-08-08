@@ -34,15 +34,14 @@ password = ""
 [[blockchains]]
 name = "bitcoin-testnet"
 module = "bitcoin"
-active = true
-node = true
 testnet = true
+active = true
 blockRetrievalInterval = 20000
 blockRetrievalStart = 0
 blockRetrievalEnd = 0
 blockRetrievalRestart = 1
 transactionBatchSize = 1
-transactionValue = "0"
+transactionFee = 4000
 traceRawTransaction = false
 rpcProtocol = "http"
 rpcHost = "localhost"
