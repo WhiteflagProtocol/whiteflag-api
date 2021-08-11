@@ -10,14 +10,13 @@ const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 
-// Project modules required for test //
-const wfApiConfig = require('../lib/config');
-
-// Set logger to log only fatal conditions //
+// Whiteflag common functions and classes //
+const { ignore } = require('../lib/common/processing');
 const log = require('../lib/common/logger');
 log.setLogLevel(1, ignore);
 
-// Constants //
+// Project modules required for test //
+const wfApiConfig = require('../lib/config');
 
 // TEST SCRIPT //
 testCase('Whiteflag API configuration module', function() {
@@ -31,11 +30,3 @@ testCase('Whiteflag API configuration module', function() {
         });
     });
 });
-
-// PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}
-

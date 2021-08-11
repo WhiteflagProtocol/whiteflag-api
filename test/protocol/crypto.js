@@ -11,13 +11,14 @@ const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
+// Whiteflag common functions and classes //
+const { ignore } = require('../../lib/common/processing');
+const log = require('../../lib/common/logger');
+log.setLogLevel(1, ignore);
+
 // Project modules required for test //
 const wfCrypto = require('../../lib/protocol/crypto');
 const { ProcessingError, ProtocolError } = require('../../lib/common/errors');
-
-// Set logger to log only fatal conditions //
-const log = require('../../lib/common/logger');
-log.setLogLevel(1, ignore);
 
 // Constants //
 const BINENCODING = 'hex';
@@ -319,10 +320,3 @@ testCase('Whiteflag cryptography module', function() {
         });
     });
 });
-
-// PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}

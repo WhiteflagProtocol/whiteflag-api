@@ -13,16 +13,16 @@ const fs = require('fs');
 const semver = require('semver');
 const jsonValidate = require('jsonschema').validate;
 
-// Project modules required for test //
-const array = require('../lib/common/arrays');
-
-// Set logger to log only fatal conditions //
+// Whiteflag common functions and classes //
+const { ignore } = require('../lib/common/processing');
 const log = require('../lib/common/logger');
 log.setLogLevel(1, ignore);
 
+// Project modules required for test //
+const array = require('../lib/common/arrays');
+
 // Constants //
 const _metaSchema = JSON.parse(fs.readFileSync('./test/static/json-schema.schema.json'));
-
 
 // TEST SCRIPT //
 testCase('Whiteflag API static data tests', function() {
@@ -74,12 +74,6 @@ testCase('Whiteflag API static data tests', function() {
 });
 
 // PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}
-
 /**
  * Validates a JSON specification against a JSON schema
  * @private

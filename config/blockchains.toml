@@ -1,7 +1,7 @@
 # Whiteflag blockchains configuration file
 #
 # This configuration file contains blockchain related configuration parameters
-# Please see `./doc/configuration.md` for a description.
+# Please see `./docs/configuration.md` for a description.
 #
 
 [confirmation]
@@ -24,6 +24,7 @@ blockMaxRetries = 0
 transactionBatchSize = 64
 transactionValue = "0"
 traceRawTransaction = false
+rpcTimeout = 2000
 rpcProtocol = "http"
 rpcHost = "localhost"
 rpcPort = "8545"
