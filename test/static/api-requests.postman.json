@@ -76,7 +76,7 @@
 					"response": []
 				},
 				{
-					"name": "transferValue",
+					"name": "transferFunds",
 					"request": {
 						"auth": {
 							"type": "noauth"

@@ -576,13 +576,13 @@
             "post": {
                 "tags": [ "Blockchains", "Accounts" ],
                 "description": "Transfers value to another blockchain account. This operation may be disabled in the configuration.",
-                "operationId": "transferValue",
+                "operationId": "transferFunds",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/transferValue"
+                    "$ref": "#/components/requestBodies/transferFunds"
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/transferValue"
+                        "$ref": "#/components/responses/transferFunds"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -1254,7 +1254,7 @@
                     }
                 }
             },
-            "transferValue": {
+            "transferFunds": {
                 "description": "Data required to transfer value to another blockchain account",
                 "content": {
                     "application/json": {
@@ -1644,7 +1644,7 @@
                     }
                 }
             },
-            "transferValue": {
+            "transferFunds": {
                 "description": "Successfully transferred value to another blockchain account and returning the transaction hash",
                 "content": {
                     "application/json": {

@@ -74,7 +74,7 @@
         "no-proto": [ "error" ],
         "no-redeclare": [ "error" ],
         "no-regex-spaces": [ "error" ],
-        "no-return-assign": [ "error" ],
+        "no-return-assign": [ "warn" ],
         "no-self-assign": [ "error" ],
         "no-sequences": [ "error" ],
         "no-shadow-restricted-names": [ "error" ],
