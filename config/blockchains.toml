@@ -24,6 +24,7 @@ blockMaxRetries = 0
 transactionBatchSize = 64
 transactionValue = "0"
 traceRawTransaction = false
+rpcTimeout = 2000
 rpcProtocol = "http"
 rpcHost = "localhost"
 rpcPort = "8545"
