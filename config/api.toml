@@ -30,7 +30,7 @@ enable = true
 [endpoints]
 sendMessage = true
 receiveMessage = false
-transferValue = false
+transferFunds = false
 createAccount = false
 updateAccount = false
 deleteAccount = false
