@@ -39,11 +39,11 @@ module.exports = {
     // Blockchain functions
     init: initBlockchains,
     sendMessage,
-    lookupMessage,
+    getMessage,
     requestSignature,
     requestKeys,
     getBinaryAddress,
-    transfer,
+    transferFunds,
     createAccount,
     updateAccount,
     deleteAccount
@@ -133,9 +133,9 @@ function initBlockchains(callback) {
                 }
             });
             // Initialise each enabled blockchain
-            _blockchainsConfig.forEach(bcConfig => {
-                if (bcConfig._enabled) {
-                    bcConfig._moduleImpl.init(bcConfig, blockchainInitCb);
+            _blockchainsConfig.forEach(blockchainInstance => {
+                if (blockchainInstance._enabled) {
+                    blockchainInstance._moduleImpl.init(blockchainInstance, blockchainInitCb);
                 }
             });
             // Initiliase transcation confirmation
@@ -194,13 +194,13 @@ function sendMessage(wfMessage, callback) {
     }
     // Request correct blockchain to make the transfer
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
+    _blockchainsConfig.forEach(blockchainInstance => {
         // Get configuration and call init function for this blockchain
-        if (bcConfig.name === wfMessage.MetaHeader.blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.sendMessage(wfMessage, blockchainSendMessageCb);
+        if (blockchainInstance.name === wfMessage.MetaHeader.blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.sendMessage(wfMessage, blockchainSendMessageCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'), wfMessage);
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'), wfMessage);
             }
         }
     });
@@ -225,12 +225,12 @@ function sendMessage(wfMessage, callback) {
 
 /**
  * Performs a simple query to find a message by transaction hash
- * @function lookupMessage
- * @alias module:lib/blockchains.lookupMessage
+ * @function getMessage
+ * @alias module:lib/blockchains.getMessage
  * @param {Object} wfQuery the property of the transaction to look up
  * @param {function(Error, wfMessage)} callback function to be called upon completion
  */
-function lookupMessage(wfQuery = {}, callback) {
+function getMessage(wfQuery = {}, callback) {
     // Check query parameters
     let queryErrors = [];
     if (!wfQuery['MetaHeader.blockchain']) queryErrors.push('Blockchain not specified in query');
@@ -244,13 +244,13 @@ function lookupMessage(wfQuery = {}, callback) {
     }
     // Request correct blockchain to look up message
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
+    _blockchainsConfig.forEach(blockchainInstance => {
         // Get configuration and call init function for this blockchain
-        if (bcConfig.name === wfQuery['MetaHeader.blockchain']) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.lookupMessage(wfQuery, blockchainLookupMessageCb);
+        if (blockchainInstance.name === wfQuery['MetaHeader.blockchain']) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.getMessage(wfQuery, blockchainLookupMessageCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -288,13 +288,13 @@ function requestSignature(signPayload = {}, blockchain, callback) {
 
     // Request signature from the correct blockchain
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
+    _blockchainsConfig.forEach(blockchainInstance => {
         // Get configuration and call init function for this blockchain
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.requestSignature(signPayload, blockchainRequestSignatureCb);
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.requestSignature(signPayload, blockchainRequestSignatureCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -329,13 +329,13 @@ function requestKeys(originatorPubKey, blockchain, callback) {
     }
     // Request keys from the correct blockchain
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
+    _blockchainsConfig.forEach(blockchainInstance => {
         // Get configuration and call init function for this blockchain
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.requestKeys(originatorPubKey, blockchainRequestKeysCb);
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.requestKeys(originatorPubKey, blockchainRequestKeysCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -372,13 +372,13 @@ function getBinaryAddress(address, blockchain, callback) {
         return callback(new ProcessingError('Missing originator address', null, 'WF_API_BAD_REQUEST'));
     }
     // Request keys from the correct blockchain
-    _blockchainsConfig.forEach(bcConfig => {
+    _blockchainsConfig.forEach(blockchainInstance => {
         // Get configuration and call init function for this blockchain
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.getBinaryAddress(address, blockchainBinaryAddressCb);
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.getBinaryAddress(address, blockchainBinaryAddressCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -396,8 +396,8 @@ function getBinaryAddress(address, blockchain, callback) {
 
 /**
  * @description Transfers value from one blockchain address to an other address
- * @function transfer
- * @alias module:lib/blockchains.transfer
+ * @function transferFunds
+ * @alias module:lib/blockchains.transferFunds
  * @param {Object} transfer the object with the transaction details to transfer value
  * @param {string} address the address of the account from which to make the transfer from
  * @param {string} blockchain the blockchain on which the value must be transdered
@@ -405,7 +405,7 @@ function getBinaryAddress(address, blockchain, callback) {
  * @typedef {string} transactionHash the transaction hash of the successful transfer
  * @typedef {number} blockNumber the blocknumber of the successful transfer transaction
  */
-function transfer(transfer = {}, address, blockchain, callback) {
+function transferFunds(transfer = {}, address, blockchain, callback) {
     // Check blockchain and address
     if (!blockchain || !_blockchains.includes(blockchain)) {
         return callback(new ProcessingError(`Unsupported blockchain: ${blockchain}`, null, 'WF_API_NOT_IMPLEMENTED'));
@@ -423,12 +423,12 @@ function transfer(transfer = {}, address, blockchain, callback) {
 
     // Request correct blockchain to make the transfer
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.transfer(transfer, blockchainTransferValueCb);
+    _blockchainsConfig.forEach(blockchainInstance => {
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.transfer(transfer, blockchainTransferValueCb);
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -461,15 +461,15 @@ function createAccount(blockchain, privateKey = null, callback) {
     }
     // Request correct blockchain to create account
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.createAccount(privateKey, function blockchainCreateAccountCb(err, result) {
+    _blockchainsConfig.forEach(blockchainInstance => {
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.createAccount(privateKey, function blockchainCreateAccountCb(err, result) {
                     if (err) return callback(err);
                     return callback(null, result);
                 });
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -504,15 +504,15 @@ function updateAccount(account = {}, address, blockchain, callback) {
 
     // Request correct blockchain to update account
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.updateAccount(account, function blockchainUpdateAccountCb(err, result) {
+    _blockchainsConfig.forEach(blockchainInstance => {
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.updateAccount(account, function blockchainUpdateAccountCb(err, result) {
                     if (err) return callback(err);
                     return callback(null, result);
                 });
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -540,15 +540,15 @@ function deleteAccount(address, blockchain, callback) {
 
     // Request correct blockchain to delete account
     if (_blockchainsConfig.length &lt;= 0) return callback(new Error('No blockchain configured'), null);
-    _blockchainsConfig.forEach(bcConfig => {
-        if (bcConfig.name === blockchain) {
-            if (bcConfig._enabled) {
-                bcConfig._moduleImpl.deleteAccount(address, function blockchainDeleteAccountCb(err, result) {
+    _blockchainsConfig.forEach(blockchainInstance => {
+        if (blockchainInstance.name === blockchain) {
+            if (blockchainInstance._enabled) {
+                blockchainInstance._moduleImpl.deleteAccount(address, function blockchainDeleteAccountCb(err, result) {
                     if (err) return callback(err);
                     return callback(null, result);
                 });
             } else {
-                return callback(new ProcessingError(`Blockchain not active: ${bcConfig.name}`, null, 'WF_API_NOT_AVAILABLE'));
+                return callback(new ProcessingError(`Blockchain not active: ${blockchainInstance.name}`, null, 'WF_API_NOT_AVAILABLE'));
             }
         }
     });
@@ -571,8 +571,8 @@ function parseConfig(bcConfigData) {
             log.error(MODULELOG, 'Configuration errors: ' + JSON.stringify(blockchainsConfigErrors));
         } else {
             // Parse config of each blockchain
-            bcConfigData.blockchains.forEach(bcConfig => {
-                bcConfig._enabled = enableBlockchain(bcConfig);
+            bcConfigData.blockchains.forEach(blockchainInstance => {
+                blockchainInstance._enabled = enableBlockchain(blockchainInstance);
             });
             return true;
         }
@@ -597,18 +597,18 @@ function validateConfig(bcConfigData) {
 /**
  * Enables a specific blockchain and loads module
  * @private
- * @param {Object} bcConfig the configuration of a specific blockchain
+ * @param {Object} blockchainInstance the configuration of a specific blockchain
  * @returns {boolean} true if blockchain could be activated and module could be loaded, else false
  */
-function enableBlockchain(bcConfig) {
+function enableBlockchain(blockchainInstance) {
     // Check if blockchain is set to active
-    if (!bcConfig.active) return false;
+    if (!blockchainInstance.active) return false;
 
     // Try loading the module to assure it exists
     try {
-        bcConfig._moduleImpl = require(BCMODULEDIR + bcConfig.module);
+        blockchainInstance._moduleImpl = require(BCMODULEDIR + blockchainInstance.module);
     } catch(err) {
-        log.error(MODULELOG, `Module ${bcConfig.module} cannot be loaded: ${err.message}`);
+        log.error(MODULELOG, `Module ${blockchainInstance.module} cannot be loaded: ${err.message}`);
         return false;
     }
     // Blockchain enabled
@@ -630,11 +630,11 @@ function initConfirmMessages() {
         if (err) return log.error(MODULELOG, err.message);
 
         // Cycle through blockchains
-        _blockchainsConfig.forEach(bcConfig => {
-            if (!bcConfig._enabled) {
+        _blockchainsConfig.forEach(blockchainInstance => {
+            if (!blockchainInstance._enabled) {
                 // Run through queue to remove messages of unenabled blockchain
                 confirmationQueue.forEach(message => {
-                    if (message.blockchain === bcConfig.name) {
+                    if (message.blockchain === blockchainInstance.name) {
                         removeMessageConfirmation(message);
                     }
                 });
@@ -717,15 +717,19 @@ function checkMessageConfirmation(message) {
             if (_confirmEachBlock) updateMessageConfirmation(message);
             return;
         }
-        // Double check block number with data from blockchain
-        const bcConfig = _blockchainsConfig.find(bcConfig => bcConfig.name === message.blockchain);
-        if (!bcConfig._enabled) return;
-        bcConfig._moduleImpl.getTransaction(message.transactionHash, function blockchainTransactionConfirmCb(err, wfMessage) {
+        // Double check block number with message duplicate from blockchain
+        const blockchainInstance = _blockchainsConfig.find(blockchainInstance => blockchainInstance.name === message.blockchain);
+        if (!blockchainInstance._enabled) {
+            return log.warn(MODULELOG, `Cannot check block depth for disabled blockchain: ${message.blockchain}`);
+        }
+        let wfQuery = {};
+        wfQuery['MetaHeader.transactionHash'] = message.transactionHash;
+        blockchainInstance._moduleImpl.getMessage(wfQuery, function blockchainTransactionConfirmCb(err, messageDuplicate) {
             if (err) return log.error(MODULELOG, err.message);
 
             // Check known block number against actual block number
-            if (message.blockNumber !== wfMessage.MetaHeader.blockNumber) {
-                message.blockNumber = wfMessage.MetaHeader.blockNumber;
+            if (message.blockNumber !== messageDuplicate.MetaHeader.blockNumber) {
+                message.blockNumber = messageDuplicate.MetaHeader.blockNumber;
                 return wfState.upsertQueueData('blockDepths', 'transactionHash', message);
             }
             // Message is confirmed
@@ -799,13 +803,13 @@ function getBlockHeight(blockchain, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Mon May 24 2021 22:55:33 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Aug 19 2021 04:16:12 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

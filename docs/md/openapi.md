@@ -1087,9 +1087,9 @@ To perform this operation, you must be authenticated by means of one of the foll
 HTTP Authentication
 </aside>
 
-## transferValue
+## transferFunds
 
-<a id="opIdtransferValue"></a>
+<a id="opIdtransferFunds"></a>
 
 `POST /blockchains/{blockchain}/accounts/{account}/transfer`
 
@@ -1105,7 +1105,7 @@ Transfers value to another blockchain account. This operation may be disabled in
 }
 ```
 
-<h3 id="transfervalue-parameters">Parameters</h3>
+<h3 id="transferfunds-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -1144,7 +1144,7 @@ Transfers value to another blockchain account. This operation may be disabled in
 }
 ```
 
-<h3 id="transfervalue-responses">Responses</h3>
+<h3 id="transferfunds-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -1157,7 +1157,7 @@ Transfers value to another blockchain account. This operation may be disabled in
 |501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
-<h3 id="transfervalue-responseschema">Response Schema</h3>
+<h3 id="transferfunds-responseschema">Response Schema</h3>
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:

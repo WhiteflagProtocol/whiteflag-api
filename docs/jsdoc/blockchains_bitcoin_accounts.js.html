@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchains/bitcoin/accounts.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchains/bitcoin/accounts.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/blockchains/bitcoin/accounts
+ * @summary Whiteflag API Bitcoin accounts module
+ * @description Module for managing Bitcoin accounts for Whiteflag
+ */
+module.exports = {
+    init: initAccounts,
+    get: getAccount,
+    check: checkAccount,
+    create: createAccount,
+    update: updateAccount,
+    delete: deleteAccount
+};
+
+// Node.js core and external modules //
+const bitcoin = require('bitcoinjs-lib');
+
+// Whiteflag common functions and classes //
+const log = require('../../common/logger');
+const object = require('../../common/objects');
+const { ignore } = require('../../common/processing');
+const { ProcessingError } = require('../../common/errors');
+
+// Whiteflag modules //
+const wfState = require('../../protocol/state');
+
+// Bitcoin sub-modules //
+const bcRpc = require('./rpc');
+const { UTXOSTATUS } = require('./common');
+
+// Module constants //
+const SATOSHI = 100000000;
+
+// Module variables //
+let _blockchainName;
+let _bcState;
+let _walletSyncronisationFailTimeout = 30000;
+
+/**
+ * Initialises Bitcoin accounts management
+ * @function initAccounts
+ * @alias module:lib/blockchains/bitcoin/accounts.init
+ * @param {Object} bcConfig the Bitcoin blockchain configuration
+ * @param {Object} bcState the Bitcoin blockchain state
+ */
+function initAccounts(bcConfig, bcState) {
+    log.trace(_blockchainName, 'Initialising Bitcoin accounts management...');
+    return new Promise((resolve, reject) => {
+        _blockchainName = bcConfig.name;
+        _bcState = bcState;
+        for (let account of _bcState.accounts) {
+            synchronizeWallet(account);
+        }
+        resolve();
+        ignore(reject); // This promise will never be rejected
+    });
+}
+
+/**
+ * Gets account data of a Bitcoin blockchain account by address
+ * @function getAccount
+ * @alias module:lib/blockchains/bitcoin/accounts.get
+ * @param {string} address the Bitcoin account address
+ * @returns {Promise} the account data
+ */
+function getAccount(address) {
+    return new Promise((resolve, reject) => {
+        let account = _bcState.accounts.find(item => item.address === address);
+        if (!account) {
+            return reject(new ProcessingError(`No ${_blockchainName} account found with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
+        }
+        resolve(account);
+    });
+}
+
+/**
+ * Verifies if an account exists and is not syncing
+ * @function checkAccount
+ * @alias module:lib/blockchains/bitcoin/accounts.check
+ * @param {string} address the Bitcoin account address
+ * @returns {Promise} the account data
+ */
+function checkAccount(address) {
+    return new Promise((resolve, reject) => {
+        getAccount(address)
+        .then(account => {
+            if (account.walletSyncing === true) {
+                return reject(new ProcessingError(`Account cannot be used because it is currently syncing at block: ${account.lastBlock}`, null, 'WF_API_NOT_AVAILABLE'));
+            }
+            resolve(account);
+        })
+        .catch(err => reject(err));
+    });
+}
+
+/**
+ * Creates a new Bitcoin account from an existing or a new key pair
+ * @function createAccount
+ * @alias module:lib/blockchains/bitcoin/accounts.create
+ * @param {Object} wif Wallet Import Format
+ * @returns {Promise} resolves to the account data
+ */
+function createAccount(wif = null) {
+    return new Promise((resolve, reject) => {
+        let account;
+        try {
+            if (wif !== null) {
+                log.trace(_blockchainName, 'Creating account from WIF');
+                account = generateAccount(bitcoin.ECPair.fromWif(wif, _bcState.parameters.network));
+            } else {
+                log.trace(_blockchainName, 'Creating new account with generated keys');
+                account = generateAccount(bitcoin.ECPair.makeRandom({ network: _bcState.parameters.network }));
+                account.lastBlock = _bcState.status.currentBlock;
+            }
+        } catch(err) {
+            return reject(err);
+        }
+        saveAccount(account);
+        resolve(account);
+    });
+}
+
+/**
+ * Updates a Bitcoin blockchain account attributes
+ * @function updateAccount
+ * @alias module:lib/blockchains/bitcoin/accounts.update
+ * @param account the account information object with updated information
+ * @returns {Promise} resolves to the account data
+ */
+function updateAccount(account) {
+    log.trace(_blockchainName, `Updating account: ${account.address}`);
+    return new Promise((resolve, reject) => {
+        getAccount(account.address)
+        .then(account => {
+            saveAccount(account);
+            resolve(account);
+        })
+        .catch(err => reject(err));
+    });
+}
+
+/**
+ * Deletes a Bitcoin blockchain account
+ * @function deleteAccount
+ * @alias module:lib/blockchains/bitcoin/accounts.delete
+ * @param address the address of the account information object with updated informationto be deleted
+ * @param {blockchainDeleteAccountCb} callback function to be called upon completion
+ */
+function deleteAccount(address) {
+    log.trace(_blockchainName, `Deleting account: ${address}`);
+    return new Promise((resolve, reject) => {
+        // Get index of account in state
+        const index = _bcState.accounts.findIndex(item => item.address === address);
+        if (index &lt; 0) {
+            return reject(new ProcessingError(`Could not find ${_blockchainName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
+        }
+        // Remove account from state after double check
+        const account = _bcState.accounts[index];
+        if (account.address === address) {
+            _bcState.accounts.splice(index, 1);
+            wfState.updateBlockchainData(_blockchainName, _bcState);
+            return resolve(account);
+        }
+        reject(new Error(`Could not not delete account: ${address}`));
+    });
+}
+
+// PRIVATE MODULE FUNCTIONS //
+/**
+ * Updates the Bitcoin blockchain state with a new or updated account
+ * @private
+ * @param {Object} account the account data
+ */
+ function saveAccount(upsertAccount) {
+    // Check if we are inserting or updating
+    let stateAccount = _bcState.accounts.find(account => account.address === upsertAccount.address);
+    if (!stateAccount) {
+        // Insert new account
+        _bcState.accounts.push(upsertAccount);
+        log.info(_blockchainName, `Blockchain account added to state: ${upsertAccount.address}`);
+    } else {
+        // Update account
+        object.update(upsertAccount, stateAccount);
+        log.info(_blockchainName, `Blockchain account updated in state: ${upsertAccount.address}`);
+    }
+    wfState.updateBlockchainData(_blockchainName, _bcState);
+}
+
+/**
+ * Syncronizes the wallet by looking for utxos
+ * @private
+ */
+function synchronizeWallet(account) {
+    try {
+        for (let thisBlock = account.lastBlock; thisBlock &lt;= _bcState.status.currentBlock; thisBlock++) {
+            log.trace(_blockchainName, `Synchronizing account ${account.address} with block: ${account.lastBlock}/${_bcState.status.currentBlock}`);
+            account.walletSyncing = true;
+            account.lastBlock = thisBlock;
+            bcRpc.getBlockIncludingTransactions(thisBlock)
+            .then(function processTransactionsForAccount(block) {
+                if (block !== null) {
+                    processAccountTransactions(block.tx, account);
+                    account.lastBlock = thisBlock;
+                }
+            });
+        }
+    } catch(err) {
+        log.error(_blockchainName, 'Error synchronizing wallet: ' + err.message);
+        setTimeout(function timeoutCb() {
+            synchronizeWallet(account);
+        }, _walletSyncronisationFailTimeout);
+    }
+    log.info(_blockchainName, `Completed synchronizing account ${account.address} at block: ${account.lastBlock}/${_bcState.status.currentBlock}`);
+    account.walletSyncing = false;
+}
+
+/**
+ * Checks a list of transactions for utxos related to an account
+ * @private
+ * @param {Object} transactions the transactions to check
+ * @param {Object} account the account to check for
+ */
+function processAccountTransactions(transactions, account) {
+    for (let transaction of transactions) {
+        for (let indexOut of Object.keys(transaction.vout)) {
+            if (typeof transaction.vout[indexOut].scriptPubKey.addresses !== 'undefined') {
+                checkAccountUtxoReceived(transaction, account, indexOut);
+                for (let indexIn of Object.keys(transaction.vin)) {
+                    if (typeof transaction.vin[indexIn].txid !== 'undefined') {
+                        for (let otherAccount of _bcState.accounts) {
+                            checkAccountUtxoSpent(transaction, otherAccount, indexIn);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * checks if a transactions contains an utxo that is received for an account, if a tansaction is received the balance is calculated and the account is saved
+ * @param {Object} transaction the transaction to check
+ * @param {Object} account the account to check against
+ * @param {Object} index index of the transaction
+ * @private
+ */
+function checkAccountUtxoReceived(transaction, account, index) {
+    if (account.address === transaction.vout[index].scriptPubKey.addresses[0]) {
+        if (!account.utxos.some(utxo => utxo.txid === transaction.txid)) {
+            let utxo = {
+                txid: transaction.txid,
+                index: index,
+                value: parseInt((transaction.vout[index].value * SATOSHI).toFixed(0)),
+                spent: UTXOSTATUS.UNSPENT
+            };
+            log.info(_blockchainName, 'Received ' + (transaction.vout[index].value * SATOSHI).toFixed(0) + ' on account: ' + account.address);
+            account.utxos.push(utxo);
+            account.balance = calculateAccountBalance(account);
+            saveAccount(account);
+        }
+    }
+}
+
+/**
+ * Checks if a transaction contains an utxo for an account; if the tansaction has spent, the balance is calculated and the account is saved
+ * @private
+ * @param {Object} transaction the transaction to check
+ * @param {Object} account the account to check against
+ * @param {Object} index index of the transaction
+ */
+function checkAccountUtxoSpent(transaction, account, index) {
+    for (let utxo of account.utxos) {
+        if (utxo.txid === transaction.vin[index].txid
+            &amp;&amp; transaction.vin[index].vout === utxo.index
+            &amp;&amp; utxo.spent !== UTXOSTATUS.SPENTVERIFIED
+        ) {
+            log.info(_blockchainName, 'Spent ' + utxo.value + ' from account: ' + account.address);
+            utxo.spent = UTXOSTATUS.SPENTVERIFIED;
+            calculateAccountBalance(account);
+            saveAccount(account);
+        }
+    }
+}
+
+/**
+ * Calculates the account balance based on unspent UTXOs
+ * @private
+ * @param {Object} account the Bitcoin account
+ * @returns {Object} balance of the account
+ * @TDOD Remove function and use the one in accounts submodule
+ */
+function calculateAccountBalance(account) {
+    // Put unspent UTXOs in an array
+    let unspentUtxos = [];
+    for (let utxo of account.utxos) {
+        if (utxo.spent === UTXOSTATUS.UNSPENT) {
+            unspentUtxos.push(utxo);
+        }
+    }
+    // Accumulate all UTXO values
+    return unspentUtxos.reduce(function(accumulator, utxo) {
+        return accumulator + utxo.value;
+    }, 0);
+}
+
+/**
+ * Generate account from keypair
+ * @private
+ * @param {Object} keyPair a cryptographic key pair for Bitcoin
+ * @returns {Object} the account data
+ */
+function generateAccount(keyPair) {
+    return {
+        address: bitcoin.payments.p2pkh({
+            pubkey: keyPair.publicKey,
+            network: _bcState.parameters.network
+        }).address,
+        publicKey: keyPair.publicKey.toString('hex'),
+        privateKey: keyPair.privateKey.toString('hex'),
+        wif: keyPair.toWif(),
+        balance: 0,
+        firstBlock: 0,
+        lastBlock: 0,
+        walletSyncing: false,
+        utxos: []
+    };
+}
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Aug 19 2021 04:16:12 GMT+0200 (Central European Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

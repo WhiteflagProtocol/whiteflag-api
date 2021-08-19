@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchains/bitcoin/rpc.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchains/bitcoin/rpc.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/blockchains/bitcoin/rpc
+ * @summary Whiteflag API Bitcoin RPC module
+ * @description Module to connect to the Bitcoin network through a Bitcoin node
+ */
+module.exports = {
+    init: initRpc,
+    getConnectionCount,
+    getBlockChainInfo,
+    getBlockCount,
+    getBlockHash,
+    getBlockByNumber,
+    getBlockByHash,
+    getRawTransaction,
+    sendSignedTransaction
+};
+
+// Node.js core and external modules //
+const request = require('request');
+
+// Whiteflag common functions and classes //
+const log = require('../../common/logger');
+const { timeoutPromise, ignore } = require('../../common/processing');
+
+// Whiteflag modules //
+const wfState = require('../../protocol/state');
+
+// Module constants //
+const STATUSINTERVAL = 60000;
+const INFOINTERVAL = 3600000;
+
+// Module variables //
+let _blockchainName;
+let _bcState;
+let _rpcProtocol;
+let _rpcHost;
+let _rpcPort;
+let _rpcUser;
+let _rpcPass;
+let _rpcTimeout = 2000;
+
+/**
+ * Intitialises Bitcoin RPC connection
+ * @function initRpc
+ * @alias module:lib/blockchains/bitcoin/rpc.init
+ * @param {Object} bcConfig the Bitcoin blockchain configuration
+ * @param {Object} bcState the Bitcoin blockchain state
+ */
+function initRpc(bcConfig, bcState) {
+    log.trace(_blockchainName, 'Initialising Bitcoin RPC connection...');
+    return new Promise((resolve, reject) => {
+        _blockchainName = bcConfig.name;
+        _bcState = bcState;
+        _rpcProtocol = bcConfig.rpcProtocol;
+        _rpcHost = bcConfig.rpcHost;
+        _rpcPort = bcConfig.rpcPort;
+        _rpcUser = bcConfig.username;
+        _rpcPass = bcConfig.password;
+        // RPC timeout period
+        if (bcConfig.rpcTimeout &amp;&amp; bcConfig.rpcTimeout > 500) {
+            _rpcTimeout = bcConfig.rpcTimeout;
+        }
+        log.info(_blockchainName, `Timeout of RPC calls to Bitcoin node is set to ${_rpcTimeout} ms`);
+
+        // Initialise node status monitoring
+        updateNodeInfo();
+        setInterval(updateNodeInfo, INFOINTERVAL);
+        updateNodeStatus();
+        setInterval(updateNodeStatus, STATUSINTERVAL);
+
+        // All done
+        resolve();
+        ignore(reject);
+    });
+}
+
+// RPC CALL WRAPPER FUNCTIONS //
+/**
+ * Get number of connections of the node to other nodes
+ * @returns {Promise} resolves to connection count
+ */
+ function getConnectionCount() {
+    return rpcCall('getconnectioncount');
+}
+
+/**
+ * Gets various information from the node regarding blockchain processing
+ * @returns {Promise} resolves to object with blockchain info
+ */
+ function getBlockChainInfo() {
+    return rpcCall('getblockchaininfo');
+}
+
+/**
+ * Gets the current block count of the longest chains
+ * @returns {Object} resolves to block count
+ */
+ function getBlockCount() {
+    return rpcCall('getblockcount');
+}
+
+/**
+ * Gets the hash of the block specified by its block number
+ * @param {Object} blockNumber
+ * @returns {Promise} resolves to block hash
+ */
+ function getBlockHash(blockNumber) {
+    return rpcCall('getblockhash', [blockNumber]);
+}
+
+/**
+ * Gets a block by its number including transaction data
+ * @param {Object} blockNumber
+ * @returns {Promise} resolves to block including transactions
+ */
+function getBlockByNumber(blockNumber) {
+    return getBlockHash(blockNumber)
+    .then(blockHash => {
+        return getBlockByHash(blockHash);
+    })
+    .catch(err => {
+        log.warn(_blockchainName, `RPC request returned error: ${err.message}`);
+        return Promise.reject(err);
+    });
+}
+
+/**
+ * Get block by its hash inlcuding transactions
+ * @param {Object} blockHash
+ * @returns {Promise} resolves to block inlcuding transactions
+ */
+function getBlockByHash(blockHash) {
+    return rpcCall('getblock', [blockHash, 2]);
+}
+
+
+/**
+ * Gets raw transaction data
+ * @param {string} transactionHash the transaction hash, aka txid
+ * @returns {Object} resolves to raw transaction data
+ */
+ function getRawTransaction(transactionHash) {
+    return rpcCall('getrawtransaction', [transactionHash, true]);
+}
+
+/**
+ * Send a raw signed transaction
+ * @param {Object} rawTransaction raw transaction
+ * @returns {Promise} resolves to the transaction hash, aka txid
+ */
+function sendSignedTransaction(rawTransaction) {
+    return rpcCall('sendrawtransaction', rawTransaction);
+}
+
+// PRIVATE NODE STATUS FUNCTIONS //
+/**
+ * Requests some Bitcoin node information
+ * @private
+ */
+ function updateNodeInfo() {
+    // Get basic blockchain info
+    getBlockChainInfo()
+    .then(result => (_bcState.parameters.chain = result.chain))
+    .catch(err => log.warn(_blockchainName, `Could not get network: ${err.message}`));
+
+    // Log node information
+    setTimeout(function ethNodeInfo() {
+        log.info(_blockchainName, `Node status: {${JSON.stringify(_bcState.parameters)}, ${JSON.stringify(_bcState.status)}}`);
+    }, _rpcTimeout);
+}
+
+/**
+ * Requests some Bitcoin blockchain status information
+ * @private
+ */
+function updateNodeStatus() {
+    _bcState.status.updated = new Date().toISOString();
+
+    // Get number of peers
+    getConnectionCount()
+    .then(status => (_bcState.status.peers = status))
+    .catch(err => log.warn(_blockchainName, `Could not get peer status: ${err.message}`));
+
+    // Save node status to state
+    wfState.updateBlockchainData(_blockchainName, _bcState);
+}
+
+// PRIVATE GENERIC RPC CALL FUNCTIONS //
+/**
+ * Makes a connection with a node
+ * @function rpcCall
+ * @private
+ * @param {string} method the rpc method
+ * @param {string} params the parameters for the rpc method
+ * @returns {Promise}
+ */
+function rpcCall(method, params) {
+    // Prepare request
+    let rpcOptions = {
+        url: _rpcProtocol + '://' + _rpcHost + ':' + _rpcPort,
+        auth: {
+            user: _rpcUser,
+            password: _rpcPass
+        },
+        method: 'post',
+        headers:
+        {
+            'content-type': 'text/plain'
+        },
+        body: JSON.stringify({
+            'jsonrpc': '2.0',
+            'method': method,
+            'params': params
+        })
+    };
+    // Send request with a timeout
+    log.trace(_blockchainName, `Making remote procedure call: ${JSON.stringify(rpcOptions.body)}`);
+    return timeoutPromise(
+        new Promise((resolve, reject) => {
+            request(rpcOptions, function rpcRequestCb(err, response, body) {
+                if (err) return reject(err);
+                ignore(response);
+                try {
+                    if (JSON.parse(body).error !== null) {
+                        return reject(new Error(JSON.stringify(JSON.parse(body).error)));
+                    }
+                    resolve(JSON.parse(body).result);
+                } catch(jsonErr) {
+                    reject(jsonErr);
+                }
+            });
+        }),
+        _rpcTimeout
+    );
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Aug 19 2021 04:16:12 GMT+0200 (Central European Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

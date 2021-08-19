@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchains/bitcoin/utxo.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchains/bitcoin/utxo.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/blockchains/bitcoin/utxo
+ * @summary Whiteflag API Bitcoin UTXO module
+ * @description Module for tracking Bitcoin UTXO
+ */
+module.exports = {
+    init: initUtxo,
+    signTransaction,
+    setUtxoStatus,
+    getTransactionInputs,
+    getTotalUtxoInputValue,
+    getUtxosForTransaction
+};
+
+// Node.js core and external modules //
+const bitcoin = require('bitcoinjs-lib');
+
+// Whiteflag common functions and classes //
+const log = require('../../common/logger');
+const { ProcessingError } = require('../../common/errors');
+
+// Bitcoin sub-modules //
+const { UTXOSTATUS } = require('./common');
+const { ignore } = require('../../common/processing');
+
+// Module variables //
+let _blockchainName;
+let _bcNetwork;
+
+/**
+ * Initialises Bitcoin UTXO tracking
+ * @function initUtxo
+ * @alias module:lib/blockchains/bitcoin/utxo.init
+ * @param {Object} bcConfig the Bitcoin blockchain configuration
+ * @param {Object} bcState the Bitcoin blockchain state
+ */
+ function initUtxo(bcConfig, bcState) {
+    log.trace(_blockchainName, 'Initialising UTXO tracking...');
+    return new Promise((resolve, reject) => {
+        _blockchainName = bcConfig.name;
+        _bcNetwork = bcState.network;
+        resolve();
+        ignore(reject);
+    });
+}
+
+/**
+ * Signs the transacton
+ * @private
+ * @param {Object} tx
+ * @param {Object} account
+ * @returns {Object} transaction hex
+ */
+function signTransaction(account, tx) {
+    let privateKey = bitcoin.ECPair.fromWif(account.wif, _bcNetwork);
+    for (let b = 0; b &lt; tx.__inputs.length; b++) {
+        tx.sign(b, privateKey);
+    }
+    return [tx.build().toHex()];
+}
+
+/**
+ * Sets the status of the utxos for an account
+ * @private
+ * @param {Object} UtxoInputList
+ * @param {Object} account
+ */
+function setUtxoStatus(utxoInputList, account) {
+    if (utxoInputList.length > 0) {
+        utxoInputList.forEach(utxoInput => {
+            account.utxos.forEach(utxoAccount => {
+                if (utxoAccount.txid === utxoInput.txid) {
+                    utxoAccount.spent = UTXOSTATUS.NEEDSVERIFICATION;
+                }
+            });
+        });
+    } else {
+        account.utxos.forEach(utxoAccount => {
+            if (utxoAccount.txid === utxoInputList.txid) {
+                utxoAccount.spent = UTXOSTATUS.NEEDSVERIFICATION;
+            }
+        });
+    }
+}
+
+/**
+ * Sets the input values for a transaction
+ * @private
+ * @param {Object} UtxoInputList
+ * @returns {Object} tx
+ */
+function getTransactionInputs(UtxoInputList) {
+    let tx = new bitcoin.TransactionBuilder(_bcNetwork);
+    for (let utxo of UtxoInputList) {
+        tx.addInput(utxo.txid, parseInt(utxo.index, 10));
+    }
+    return tx;
+}
+
+/**
+ * Returns the total UTXO value
+ * @private
+ * @param {Object} UtxoInputList
+ * @returns {Object} totalUtxoValue
+ */
+function getTotalUtxoInputValue(UtxoInputList) {
+    return UtxoInputList.reduce(function (a, b) {
+        return a + b.value;
+    }, 0);
+}
+
+/**
+ * Returns a list of possible UTXO sets that meets or is greater then the target value
+ * @private
+ * @param {Object} account
+ * @param {Object} amount
+ * @returns {Object} utxoInputs
+ */
+function getUtxosForTransaction(account, amount) {
+    let unspentUtxos = [];
+    for (let utxo of account.utxos) {
+        if (utxo.spent === UTXOSTATUS.UNSPENT) {
+            unspentUtxos.push(utxo);
+        }
+    }
+    let totalUtxoValue = unspentUtxos.reduce(function(a, b) {
+        return a + b.value;
+    }, 0);
+    if (totalUtxoValue &lt; amount || unspentUtxos.length &lt; 1) {
+        throw new ProcessingError('Not enough satoshis to perform the transaction');
+    }
+    unspentUtxos.sort((a, b) => a.value - b.value);
+    return getUtxoInputs(unspentUtxos, amount);
+}
+
+/**
+ * Returns a list of UTXOs that meets or is greater then the target value
+ * @private
+ * @param {Object} unspentUtxos
+ * @returns {Object} possibleUtxoSets
+ */
+ function getUtxoInputs(unspentUtxos, data) {
+    let utxoInputs = [];
+    for (let y = 0; y &lt;= unspentUtxos.length; y++) {
+        utxoInputs.push(unspentUtxos[y]);
+        let sum = utxoInputs.reduce(function(a, b) {
+            return a + b.value;
+        }, 0);
+        if (sum >= data) {
+            return utxoInputs;
+        }
+    }
+    return utxoInputs;
+ }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Aug 19 2021 04:16:12 GMT+0200 (Central European Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
