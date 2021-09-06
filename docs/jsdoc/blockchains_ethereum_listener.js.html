@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchains/ethereum/listener.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchains/ethereum/listener.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/blockchains/ethereum/listener
+ * @summary Whiteflag API Ethereum listener module
+ * @description Module to connect to the Ethereum network and crawl/listen for transactions
+ */
+module.exports = {
+    init: initListener
+};
+
+// Whiteflag common functions and classes //
+const log = require('../../common/logger');
+const { ignore } = require('../../common/processing');
+const { ProcessingError } = require('../../common/errors');
+const { determineStartingBlock } = require('../common');
+
+// Whiteflag modules //
+const wfState = require('../../protocol/state');
+
+// Whiteflag event emitters //
+const wfRxEvent = require('../../protocol/events').rxEvent;
+
+// Ethereum sub-modules //
+const ethRpc = require('./rpc');
+const ethTransactions = require('./transactions');
+
+// Module constants //
+const BLOCKSTACKSIZE = 100;
+const BLOCKITERATIONDELAY = 50;
+
+// Module variables //
+let _blockchainName;
+let _ethState;
+let _iterationCount = 0;
+let _discoveredBlock = 0;
+let _blockCursor = 0;
+let _blockInterval = 5000;
+let _blockRetrievalRestart = 100;
+let _blockRetrievalStart = 0;
+let _blockRetrievalEnd = 0;
+let _blockStackSize = 0;
+let _blockMaxRetries = 100;
+let _blockRetryCount = 0;
+let _skippedBlocks = 0;
+let _transactionBatchSize = 32;
+let _traceRawTransaction = false;
+
+/**
+ * Initialises Ethereum blockchain listener
+ * @function initListener
+ * @alias module:lib/blockchains/ethereum/listener.init
+ * @param {Object} ethConfig the Ethereum blockchain configuration
+ * @param {Object} ethState the Ethereum blockchain state
+ */
+async function initListener(ethConfig, ethState) {
+    log.trace(_blockchainName, 'Initialising listener for Ethereum blockchain transactions...');
+    _blockchainName = ethConfig.name;
+    _ethState = ethState;
+
+    // Block processing parameters
+    if (ethConfig.blockMaxRetries) _blockMaxRetries = ethConfig.blockMaxRetries;
+    if (_blockMaxRetries > 0) log.debug(_blockchainName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
+    if (ethConfig.transactionBatchSize) _transactionBatchSize = ethConfig.transactionBatchSize;
+    log.debug(_blockchainName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
+
+    // Block interval time
+    if (ethConfig.blockRetrievalInterval &amp;&amp; ethConfig.blockRetrievalInterval > 500) {
+        _blockInterval = ethConfig.blockRetrievalInterval;
+    }
+    log.info(_blockchainName, `Block retrieval interval: ${_blockInterval} ms`);
+
+    // Determine block retrieval range
+    if (ethConfig.blockRetrievalRestart) _blockRetrievalRestart = ethConfig.blockRetrievalRestart;
+    if (ethConfig.blockRetrievalStart &amp;&amp; ethConfig.blockRetrievalStart > 0) {
+        log.info(_blockchainName, `Starting block specified in configuration: ${ethConfig.blockRetrievalStart}`);
+        _blockRetrievalStart = ethConfig.blockRetrievalStart;
+    }
+    if (ethConfig.blockRetrievalEnd &amp;&amp; ethConfig.blockRetrievalEnd > 0) {
+        log.info(_blockchainName, `Ending block specified in configuration: ${ethConfig.blockRetrievalEnd}`);
+        _blockRetrievalEnd = ethConfig.blockRetrievalEnd;
+    }
+    // Determine starting block
+    try {
+        _ethState.status.highestBloc = await ethRpc.getHighestBlock();
+        _blockCursor = await determineStartingBlock(
+            _ethState.status.highestBlock,
+            _ethState.status.currentBlock,
+            _blockRetrievalStart,
+            _blockRetrievalRestart
+        );
+        logStartingBlock(_blockCursor, _ethState.status.highestBlock);
+    } catch(err) {
+        if (err) return Promise.reject(err);
+        return Promise.reject(new Error('Could not connect to Ethereum node and start blockchain listener'));
+    }
+    // Schedule iterative block retrieval
+    scheduleBlockIteration();
+    return Promise.resolve(); // Succesfully completed initialisation
+}
+
+// PRIVATE LISTENER FUNCTIONS //
+/*
+* The functions below retrieve Ethereum blockchain data, then the blocks and then for each
+* block the transactions. To assure the data is retrieved in a controlled and sequential
+* manner, promises are used. When one block has succesfully been processed, the next
+* block will be processed. If an error occurs while retrieving a block, the block
+* will be retrieved again until successfully processed. To optimize retrieval of data,
+* transactions for a single block will be retrieved in a batch, based on the batch number
+* configuration parameter.
+*/
+
+/**
+ * Schedules next block retrieval iteration
+ * @private
+ */
+function scheduleBlockIteration() {
+    log.trace(_blockchainName, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
+    setTimeout(executeBlockIteration, _blockInterval);
+}
+
+/**
+ * Executes block retrieval iteration and re-schedules itself when completed
+ * @private
+ */
+function executeBlockIteration() {
+    _iterationCount += 1;
+    log.trace(_blockchainName, `Starting block retrieval iteration ${_iterationCount}`);
+
+    // Get the actual Ethereum blockchain height
+    ethRpc.getHighestBlock()
+    .then(highestBlock => {
+        _ethState.status.highestBlock = highestBlock;
+
+        // Check if highest block is already processed, and schedule next iteration
+        if (highestBlock === _blockCursor) {
+            log.trace(_blockchainName, `Highest block ${highestBlock} has already been processed`);
+            return Promise.reject(); // Stop this iteration without error
+        }
+        // Current block may be higher than highest block when node is resyncing
+        if (_blockCursor > highestBlock) {
+            log.debug(_blockchainName, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
+            return Promise.reject(); // Stop this iteration withour error
+        }
+        // Check if one more new block exists
+        if (_blockRetrievalEnd === 0 &amp;&amp; highestBlock !== _discoveredBlock) {
+            _discoveredBlock = highestBlock;
+            log.trace(_blockchainName, `New highest block discovered on node: ${_discoveredBlock}`);
+        }
+        // Last block to retrieve is highest block or, if provided, end block
+        let endBlock = highestBlock;
+        if (_blockRetrievalEnd > 0 &amp;&amp; _blockRetrievalEnd &lt; highestBlock) {
+            endBlock = _blockRetrievalEnd;
+        }
+        // Process new stack of blocks
+        _blockStackSize = 0;
+        return processBlocks(_blockCursor, endBlock); // Return new Promise
+    })
+    .then(async () => {
+        // Done processing blocks, continue with the next
+        if (_blockRetrievalEnd === 0 || _blockCursor &lt; _blockRetrievalEnd) {
+            return Promise.resolve(); // This iteration is completed
+        }
+        // Provided end block is reached
+        log.info(_blockchainName, `Reached configured block retrieval end: ${_blockCursor}`);
+        _blockRetrievalEnd = 0;
+
+        // Dtermine from where to proceed
+        _blockCursor = await determineStartingBlock(_ethState.status.highestBlock, _blockCursor, _blockRetrievalEnd, _blockRetrievalRestart);
+        logStartingBlock(_blockCursor, _ethState.status.highestBlock);
+        return Promise.resolve();
+    })
+    .then(() => {
+        // Iteration completed; continue shortly with next iteration
+        setTimeout(executeBlockIteration, BLOCKITERATIONDELAY);
+    })
+    .catch(err => {
+        // Stop iterations and schedule next one
+        if (err) log.warn(_blockchainName, `Could not complete block retrieval iteration ${_iterationCount}: ${err.message}`);
+        scheduleBlockIteration();
+    });
+}
+
+/**
+ * Processes multiple blocks
+ * @private
+ * @param {number} startBlock the block after which the next blocks are processed
+ * @param {number} endBlock the block up to which blocks should be processed
+ * @returns {Promise} resolves to Error or null when completed
+ */
+async function processBlocks(startBlock, endBlock) {
+    // Stack callbacks to a maximum of 100
+    _blockStackSize += 1;
+    if (_blockStackSize > BLOCKSTACKSIZE) {
+        log.trace(_blockchainName, `Reached maximum block processing stack size: ${_blockStackSize}`);
+        return Promise.resolve(); // Completed for now
+    }
+    // If current block is last block, then there is no new block to retrieve
+    if (startBlock === endBlock) {
+        log.trace(_blockchainName, 'No new block to retrieve');
+        return Promise.resolve(); // Completed for now
+    }
+    // Block to be processed is the next block after starting block and skipped blocks
+    if (_skippedBlocks > 0) log.trace(_blockchainName, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
+    let thisBlock = startBlock + _skippedBlocks + 1;
+
+    // Skip this block if the block has been retried too often
+    if (_blockMaxRetries > 0 &amp;&amp; _blockRetryCount > _blockMaxRetries) {
+        log.warn(_blockchainName, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
+        thisBlock += 1;
+        _blockRetryCount = 0;
+        _skippedBlocks += 1;
+    }
+    // Log where we are with blocks
+    if (_blockRetryCount !== 0) log.debug(_blockchainName, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
+    log.trace(_blockchainName, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
+
+    // Retrieve new block
+    try {
+        await processBlock(thisBlock);
+    } catch(err) {
+        _blockRetryCount += 1;
+        return Promise.reject(err); // Retry this block
+    }
+    // Completed this block
+    _blockCursor = thisBlock;
+    _blockRetryCount = 0;
+    _skippedBlocks = 0;
+
+    // Update state
+    _ethState.status.currentBlock = _blockCursor;
+    wfState.updateBlockchainData(_blockchainName, _ethState);
+
+    // Get next block if not yet at last block
+    if (thisBlock &lt; endBlock) return processBlocks(_blockCursor, endBlock); // Process next block
+    return Promise.resolve(); // Completed all blocks
+}
+
+/**
+ * Processes a blocks
+ * @private
+ * @param {number} thisBlock the block to be processed
+ * @returns {Promise} the result, which may be an Error or null (success)
+ */
+async function processBlock(thisBlock) {
+    // Get block from node
+    let block;
+    try {
+        block = await ethRpc.getBlockByNumber(thisBlock);
+    } catch(err) {
+        return Promise.reject(new Error(`Could not retrieve block ${thisBlock}: ${err.message}`));
+    }
+    // Check transaction in block
+    let transactionCount = block.transactions.length;
+    if (!block || transactionCount &lt; 1) {
+        // Rare case, but in certain instances there could be no transactions in the block
+        log.info(_blockchainName, `No transactions in block: ${thisBlock}`);
+        return Promise.resolve(); // Completed this block
+    }
+    // Retrieve transactions from block
+    log.trace(_blockchainName, `Transactions discovered in block ${thisBlock}: ${transactionCount}`);
+    return processTransactions(0, block.transactions, block.timestamp)
+    .then(() => {
+        log.info(_blockchainName, `Transactions processed from block ${thisBlock}: ${transactionCount} `);
+        return Promise.resolve(); // Completed this block
+    })
+    .catch(err => {
+        if (!err) return Promise.reject(new Error(`Could not process block ${thisBlock}`));
+        return Promise.reject(new Error(`Could not process block ${thisBlock}: ${err.message}`));
+    });
+}
+
+/**
+ * Gets multiple transactions from an Ethereum block
+ * @private
+ * @param {number} index the transaction in the array to process
+ * @param {array} transactions the transactions to process
+ * @param {number} timestamp the block timestamp
+ * @returns {Error} the result, which may be an Error or null (success)
+ */
+ function processTransactions(index, transactions, timestamp) {
+    // Get transaction batch of Promises in an array
+    let transactionBatch = getTransactionBatch(index, transactions, timestamp);
+    if (transactionBatch.length &lt; 1) return Promise.resolve();
+
+    // Resolve all transaction promises in the batch
+    return Promise.all(transactionBatch)
+    .then(data => {
+        ignore(data); // Any Whiteflag message is already succesfully extracted by the promise
+
+        // Next batch
+        let nextIndex = index + _transactionBatchSize;
+        if (nextIndex >= transactions.length) return Promise.resolve();
+        return processTransactions(nextIndex, transactions, timestamp);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
+}
+
+/**
+ * Combines multiple transactions from an Ethereum block as promises in an array for batch processing
+ * @private
+ * @param {number} index the first transaction in the array to process
+ * @param {array} transactions the transactions to process
+ * @param {number} timestamp the block timestamp
+ * @return {Array} Array with transaction Promises
+ */
+function getTransactionBatch(index, transactions, timestamp) {
+    let transactionBatch = [];
+    for (
+        let i = index;
+        i &lt; Math.min(index + _transactionBatchSize, transactions.length);
+        i++
+    ) {
+        // Get a promise for the next transaction
+        let transactionHash = transactions[i];
+        transactionBatch.push(
+            // Whiteflag message is extracted by resolving the promise
+            ethRpc.getRawTransaction(transactionHash)
+            .then(transaction => {
+                if (!transaction) return log.warn(_blockchainName, `No data received for transaction: ${transactionHash}`);
+                if (_traceRawTransaction) log.trace(_blockchainName, `Processing transaction: ${transactionHash}`);
+                return ethTransactions.extractMessage(transaction, timestamp);
+            })
+            .then(wfMessage => {
+                log.trace(_blockchainName, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
+                wfRxEvent.emit('messageReceived', wfMessage);
+            })
+            .catch(err => {
+                if (err instanceof ProcessingError) return Promise.resolve(); // No Whiteflag message in transaction
+                return Promise.reject(new Error(`Could not process transaction ${transactionHash}: ${err.message}`)); // Other error
+            })
+        );
+    }
+    return transactionBatch;
+}
+
+/**
+ * Logs where the listener will start next
+ * @private
+ * @param {number} blockCursor block pointer
+ * @param {number} highestBlock the highest known block
+ */
+function logStartingBlock(blockCursor, highestBlock) {
+    let nextBlock = blockCursor + 1;
+    let arrearBlocks = highestBlock - nextBlock;
+    if (arrearBlocks &lt; 0) {
+        log.info(_blockchainName, `Resuming with next block: ${nextBlock} (when node catches up from its current highest block ${highestBlock})`);
+    } else {
+        log.info(_blockchainName, `Resuming with next block: ${nextBlock} (${arrearBlocks} blocks behind the highest known block ${highestBlock})`);
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Sep 05 2021 23:05:20 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

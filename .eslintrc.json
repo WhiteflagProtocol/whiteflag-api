@@ -6,7 +6,7 @@
     "extends": "eslint:recommended",
     "parserOptions": {
         "sourceType": "module",
-        "ecmaVersion": 6
+        "ecmaVersion": 8
     },
     "rules": {
         "block-spacing": [ "warn" ],
@@ -21,6 +21,7 @@
         "eol-last": [ "error" ],
         "eqeqeq": [ "warn" ],
         "func-call-spacing": [ "warn" ],
+        "func-style": [ "off" ],
         "handle-callback-err": [ "error" ],
         "indent": [ "off", 4 ],
         "linebreak-style": [ "error", "unix" ],
