@@ -147,9 +147,9 @@ The project style has the following deviations from StandardJS:
 9. Use template strings instead of concatenation
 10. Use asynchronous code (callbacks or promises) to process results:
     * Functions exposed by a module MUST be asynchronous, except:
-    * Functions in so called common modules
+    * Functions in so called common project modules
       (i.e. either in a directory `common/` or a single module `common.js`)
-      MAY be synchronous and MAY NOT require other project modules
+      MAY be synchronous and MAY ONLY require other common project modules
     * Private functions inside a module may be synchronous
 11. Always place a `return` statement before invoking a callback:
    `return callback(err, wfMessage);`
