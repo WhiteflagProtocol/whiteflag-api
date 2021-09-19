@@ -6,7 +6,7 @@
 
 [confirmation]
 enabled = true
-interval = 6000
+interval = 12000
 maxBlockDepth = 8
 updateEachBlock = false
 
@@ -20,7 +20,7 @@ blockRetrievalInterval = 6000
 blockRetrievalStart = 0
 blockRetrievalEnd = 0
 blockRetrievalRestart = 100
-blockMaxRetries = 0
+blockMaxRetries = 20
 transactionBatchSize = 32
 transactionValue = "0"
 traceRawTransaction = false
@@ -37,10 +37,12 @@ name = "bitcoin-testnet"
 module = "bitcoin"
 testnet = true
 active = false
+createAccount = false
 blockRetrievalInterval = 60000
 blockRetrievalStart = 0
 blockRetrievalEnd = 0
-blockRetrievalRestart = 1
+blockRetrievalRestart = 10
+blockMaxRetries = 20
 transactionBatchSize = 128
 transactionFee = 4000
 traceRawTransaction = false
