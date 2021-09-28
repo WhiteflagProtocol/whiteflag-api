@@ -1451,7 +1451,7 @@
                 }
             },
             "wfMessage": {
-                "description": "Succesfully processed the Whiteflag message and returning the message with updated MetaHeader",
+                "description": "Successfully processed the Whiteflag message and returning the message with updated MetaHeader",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1491,7 +1491,7 @@
                 }
             },
             "wfSignature": {
-                "description": "Succesfully processed the Whiteflag authentication signature and returning the result",
+                "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1509,7 +1509,7 @@
                 }
             },
             "wfSignatureDecoded": {
-                "description": "Succesfully processed the Whiteflag authentication signature and returning the result",
+                "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1527,7 +1527,7 @@
                 }
             },
             "wfAuthToken": {
-                "description": "Succesfully created the Whiteflag authentication token verification data and returning the result",
+                "description": "Successfully created the Whiteflag authentication token verification data and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1551,7 +1551,7 @@
                 }
             },
             "blockchainsState": {
-                "description": "Successfully retrieved and returning all blockchain configurations and states",
+                "description": "Successfully retrieved and returning the names of all configured blockchains",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1561,10 +1561,10 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "description": "The configured blockchains",
+                                    "description": "The names of the configured blockchains",
                                     "type": "array",
                                     "items": {
-                                        "description": "The blockchain name",
+                                        "description": "The name of the blockchain",
                                         "type": "string"
                                     }
                                 }
@@ -1592,7 +1592,7 @@
                 }
             },
             "blockchainAccounts": {
-                "description": "Successfully retrieved and returning all blockchain accounts",
+                "description": "Successfully retrieved and returning the addresses of the blockchain accounts",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1602,7 +1602,7 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "description": "Blockchain accounts",
+                                    "description": "The addresses of the blockchain accounts",
                                     "type": "array",
                                     "items": {
                                         "description": "The blockchain address that identifies the account",
