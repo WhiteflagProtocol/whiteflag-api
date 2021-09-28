@@ -353,7 +353,7 @@
         "/blockchains": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns an array with all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
+                "description": "Returns an array with the names of all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
                 "operationId": "getAllBlockchains",
                 "responses": {
                     "200": {
@@ -398,7 +398,7 @@
         "/blockchains/{blockchain}/accounts": {
             "get": {
                 "tags": [ "Blockchains", "Accounts", "State" ],
-                "description": "Returns the accounts of the specified blockchain. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all account addresses of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getAccounts",
                 "responses": {
                     "200": {
@@ -1561,7 +1561,12 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "$ref": "protocol/state.schema.json#/properties/blockchains"
+                                    "description": "The configured blockchains",
+                                    "type": "array",
+                                    "items": {
+                                        "description": "The blockchain name",
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
@@ -1600,7 +1605,8 @@
                                     "description": "Blockchain accounts",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "protocol/state.schema.json#/definitions/blockchainAccountObject"
+                                        "description": "The blockchain address that identifies the account",
+                                        "type": "string"
                                     }
                                 }
                             }
