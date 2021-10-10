@@ -1298,7 +1298,7 @@ HTTP Authentication
 
 `POST /originators/tokens`
 
-Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, both used for authentication method 2. This operation may be disabled in the configuration.
+Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, used for authentication method 2. This operation may be disabled in the configuration.
 
 > Body parameter
 
@@ -1307,7 +1307,7 @@ Stores a unique pre-shared secret authentication token together with the provide
   "name": "string",
   "blockchain": "string",
   "address": "string",
-  "authToken": "string"
+  "secret": "string"
 }
 ```
 
@@ -1319,7 +1319,7 @@ Stores a unique pre-shared secret authentication token together with the provide
 |» name|body|string|true|The name of the orginator|
 |» blockchain|body|string|true|The name of the blockchain used by the originator|
 |» address|body|string|false|The blockchain address of the originator, if already known|
-|» authToken|body|string|true|A pre-shared secret authentication token in raw hexadecimal format|
+|» secret|body|string|true|A pre-shared secret authentication token in raw hexadecimal format|
 
 > Example responses
 
@@ -1479,7 +1479,7 @@ HTTP Authentication
 
 `POST /token/create`
 
-Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an `A2` authentication message by the specified blockchain account. This operation may be disabled in the configuration.
+Creates the non-secret Whiteflag verification token for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.
 
 > Body parameter
 
@@ -1487,7 +1487,7 @@ Creates the non-secret Whiteflag authentication token for authentication method 
 {
   "blockchain": "string",
   "address": "string",
-  "authToken": "string"
+  "secret": "string"
 }
 ```
 
@@ -1498,7 +1498,7 @@ Creates the non-secret Whiteflag authentication token for authentication method 
 |body|body|object|false|Whiteflag Authentication Token|
 |» blockchain|body|string|true|The name of the blockchain used by the originator|
 |» address|body|string|true|The address of the originator blockchain account with which the token is used|
-|» authToken|body|string|true|A pre-shared secret authentication token in raw hexadecimal format|
+|» secret|body|string|true|A pre-shared secret authentication token in raw hexadecimal format|
 
 > Example responses
 

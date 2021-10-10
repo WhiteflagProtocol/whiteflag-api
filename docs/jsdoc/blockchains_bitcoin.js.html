@@ -51,11 +51,13 @@ module.exports = {
 // Node.js core and external modules //
 const bitcoin = require('bitcoinjs-lib');
 const bs58 = require('bs58');
+const KeyEncoder = require('key-encoder').default;
 
 // Whiteflag common functions and classes //
 const log = require('../common/logger');
+const { hash } = require('../common/crypto');
 const { ProcessingError } = require('../common/errors');
-const { getEmptyState } = require('./common');
+const { getEmptyState, createSignature } = require('./common');
 
 // Whiteflag modules //
 const wfState = require('../protocol/state');
@@ -65,6 +67,12 @@ const bcRpc = require('./bitcoin/rpc');
 const bcAccounts = require('./bitcoin/accounts');
 const bcListener = require('./bitcoin/listener');
 const bcTransactions = require('./bitcoin/transactions');
+
+// Module constants //
+const KEYIDLENGTH = 12;
+const SIGNALGORITHM = 'ES256';
+const SIGNKEYTYPE = 'secp256k1';
+const BINENCODING = 'hex';
 
 // Module variables //
 let _blockchainName = 'bitcoin';
@@ -170,22 +178,68 @@ function getMessage(wfQuery, callback) {
  * Requests a Whiteflag signature for a specific Bitcoin address
  * @function requestSignature
  * @alias module:lib/blockchains/bitcoin.requestSignature
- * @param {wfSignaturePayload} signPayload the JWS payload for the Whiteflag signature
+ * @param {wfSignaturePayload} payload the JWS payload for the Whiteflag signature
  * @param {blockchainRequestSignatureCb} callback function to be called upon completion
  */
-function requestSignature(signPayload, callback) {
-    return callback(new ProcessingError('Whiteflag signatures not yet implemented for Bitcoin', null, 'WF_API_NOT_IMPLEMENTED'));
+function requestSignature(payload, callback) {
+    log.trace(_blockchainName, `Generating signature: ${JSON.stringify(payload)}`);
+
+    // Get Ethereum account, address and private key
+    bcAccounts.get(payload.addr)
+    .then(account => {
+        payload.addr = account.address;
+        const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
+        wfState.getKey('blockchainKeys', privateKeyId, function bcGetKeyCb(keyErr, privateKey) {
+            if (keyErr) return callback(keyErr);
+
+            // Create JSON serialization of JWS token from array
+            let wfSignature;
+            try {
+                wfSignature = createSignature(payload, privateKey, SIGNKEYTYPE, SIGNALGORITHM);
+            } catch(err) {
+                log.error(_blockchainName, `Could not not sign payload: ${err.message}`);
+                return callback(err);
+            }
+            // Callback with any error and signature
+            return callback(null, wfSignature);
+        });
+    })
+    .catch(err => callback(err));
 }
 
 /**
  * Requests the Bitcoin address and correctly encoded pubic key of an originator
  * @function requestKeys
  * @alias module:lib/blockchains/bitcoin.requestKeys
- * @param {string} originatorPubKey the raw hex public key of the originator
+ * @param {string} publicKey the raw hex public key of the originator
  * @param {blockchainRequestKeysCb} callback function to be called upon completion
  */
-function requestKeys(originatorPubKey, callback) {
-    return callback(new ProcessingError('Key and adress conversions not yet implemented for Bitcoin', null, 'WF_API_NOT_IMPLEMENTED'));
+function requestKeys(publicKey, callback) {
+    log.trace(_blockchainName, `Getting address and encoded keys for public key: ${publicKey}`);
+
+    // Create data structure for requested keys
+    let originatorKeys = {
+        address: null,
+        publicKey: {
+            hex: null,
+            pem: null
+        }
+    };
+    try {
+        // Bitcoin public key in HEX and PEM encoding
+        const keyEncoder = new KeyEncoder(SIGNKEYTYPE);
+        const publicKeyBuffer = Buffer.from(publicKey, BINENCODING);
+        originatorKeys.publicKey.hex = publicKeyBuffer.toString(BINENCODING);
+        originatorKeys.publicKey.pem = keyEncoder.encodePublic(originatorKeys.publicKey.hex, 'raw', 'pem');
+
+        // Bitcoin address
+        const { address } = bitcoin.payments.p2pkh({ pubkey: publicKeyBuffer });
+        originatorKeys.address = address;
+    } catch(err) {
+        log.error(_blockchainName, `Could not get key and address: ${err.message}`);
+        return callback(err);
+    }
+    return callback(null, originatorKeys);
 }
 
 /**
@@ -194,7 +248,13 @@ function requestKeys(originatorPubKey, callback) {
  * @param {blockchainBinaryAddressCb} callback function to be called upon completion
  */
 function getBinaryAddress(address, callback) {
-    const addressBuffer = bs58.decode(address);
+    let addressBuffer;
+    try {
+        bitcoin.address.toOutputScript(address, _bcState.parameters.network);
+        addressBuffer = bs58.decode(address);
+    } catch(err) {
+        return callback(new ProcessingError(`Invalid Bitcoin address: ${address}`, err.message, 'WF_API_PROCESSING_ERROR'));
+    }
     return callback(null, addressBuffer);
 }
 
@@ -285,7 +345,7 @@ function deleteAccount(address, callback) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 05:24:02 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 23:16:00 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

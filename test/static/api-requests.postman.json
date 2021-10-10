@@ -410,7 +410,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Organisation\",\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"authToken\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
+							"raw": "{\r\n    \"name\": \"Organisation\",\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"secret\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
 						},
 						"url": {
 							"raw": "http://localhost:5746/originators/tokens",
@@ -441,7 +441,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"address\": \"0000000000000000000000000000000000000000\",\r\n    \"authToken\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
+							"raw": "{\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"address\": \"0000000000000000000000000000000000000000\",\r\n    \"secret\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
 						},
 						"url": {
 							"raw": "http://localhost:5746/token/create",
