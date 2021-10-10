@@ -31,7 +31,6 @@
  * @module lib/blockchains/bitcoin/listener
  * @summary Whiteflag API Bitcoin listener module
  * @description Module to connect to the Bitcoin network and crawl/listen for transactions
- * @TODO Refactor and cross-check block retrieval algorithm with Ethereum
  */
 module.exports = {
     init: initListener
@@ -39,6 +38,9 @@ module.exports = {
 
 // Whiteflag common functions and classes //
 const log = require('../../common/logger');
+const { ignore } = require('../../common/processing');
+const { ProcessingError } = require('../../common/errors');
+const blockchainUtil = require('../common');
 
 // Whiteflag modules //
 const wfRxEvent = require('../../protocol/events').rxEvent;
@@ -50,20 +52,25 @@ const bcAccounts = require('./accounts');
 const bcTransactions = require('./transactions');
 
 // Module constants //
-const WFINDENTIFIER = '5746';
-const SCRIPTIDENTIFIER = 'OP_RETURN ';
+const BLOCKSTACKSIZE = 100;
+const BLOCKRETRYDELAY = 10000;
+const BLOCKITERATIONDELAY = 5;
 
 // Module variables //
 let _blockchainName;
 let _bcState;
+let _iterationCount = 0;
+let _discoveredBlock = 0;
 let _blockCursor = 0;
 let _blockInterval = 5000;
-let _blockMaxRetries = 100;
-let _transactionBatchSize = 0;
-let _blockRetrievalEnd = 0; // For debugging purposes
 let _blockRetrievalRestart = 100;
-let _currentBlockNumber = 0;
-let _traceRawTransaction;
+let _blockRetrievalStart = 0;
+let _blockRetrievalEnd = 0;
+let _blockStackSize = 0;
+let _blockMaxRetries = 100;
+let _blockRetryCount = 0;
+let _skippedBlocks = 0;
+let _transactionBatchSize = 128;
 
 /**
  * Initiates the listener for Bitcoin blockchain transactions
@@ -71,215 +78,287 @@ let _traceRawTransaction;
  * @alias module:lib/blockchains/bitcoin/listener.init
  * @param {Object} bcConfig the Bitcoin blockchain configuration
  * @param {Object} bcState the Bitcoin blockchain state
+ * @returns {Promise} resolve if succesfully initialised
  */
- function initListener(bcConfig, bcState) {
+async function initListener(bcConfig, bcState) {
+    _blockchainName = bcConfig.name;
+    _bcState = bcState;
     log.trace(_blockchainName, 'Initialising listener for Bitcoin blockchain transactions...');
-    return new Promise((resolve, reject) => {
-        _blockchainName = bcConfig.name;
-        _bcState = bcState;
 
-        // Block processing parameters
-        if (bcConfig.traceRawTransaction) _traceRawTransaction = bcConfig.traceRawTransaction;
-        if (bcConfig.blockMaxRetries) _blockMaxRetries = bcConfig.blockMaxRetries;
-        if (_blockMaxRetries > 0) log.info(_blockchainName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
-        if (bcConfig.transactionBatchSize) _transactionBatchSize = bcConfig.transactionBatchSize;
-        log.info(_blockchainName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
+    // Block processing parameters
+    if (bcConfig.blockMaxRetries) _blockMaxRetries = bcConfig.blockMaxRetries;
+    if (_blockMaxRetries > 0) log.debug(_blockchainName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
+    if (bcConfig.transactionBatchSize) _transactionBatchSize = bcConfig.transactionBatchSize;
+    log.debug(_blockchainName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
 
-        // Block interval time
-        if (bcConfig.blockRetrievalInterval &amp;&amp; bcConfig.blockRetrievalInterval > 500) {
-            _blockInterval = bcConfig.blockRetrievalInterval;
-        }
-        log.info(_blockchainName, `Block retrieval interval is set to ${_blockInterval} ms`);
+    // Block interval time
+    if (bcConfig.blockRetrievalInterval &amp;&amp; bcConfig.blockRetrievalInterval > 500) {
+        _blockInterval = bcConfig.blockRetrievalInterval;
+    }
+    log.info(_blockchainName, `Block retrieval interval is set to ${_blockInterval} ms`);
 
-        // Coonect to node, determine blocks, and start listener
-        bcRpc.getBlockCount()
-        .then(function bcGetBlockCountResolve(highestBlock) {
-            _bcState.status.highestBlock = highestBlock;
+    // Determine block retrieval range
+    if (bcConfig.blockRetrievalRestart) _blockRetrievalRestart = bcConfig.blockRetrievalRestart;
+    if (bcConfig.blockRetrievalStart &amp;&amp; bcConfig.blockRetrievalStart > 0) {
+        log.info(_blockchainName, `Starting block specified in configuration: ${bcConfig.blockRetrievalStart}`);
+        _blockRetrievalStart = bcConfig.blockRetrievalStart;
+    }
+    if (bcConfig.blockRetrievalEnd &amp;&amp; bcConfig.blockRetrievalEnd > 0) {
+        log.info(_blockchainName, `Ending block specified in configuration: ${bcConfig.blockRetrievalEnd}`);
+        _blockRetrievalEnd = bcConfig.blockRetrievalEnd;
+    }
 
-            // Determine block retrieval range
-            if (bcConfig.blockRetrievalRestart) _blockRetrievalRestart = bcConfig.blockRetrievalRestart;
-            if (bcConfig.blockRetrievalStart &amp;&amp; bcConfig.blockRetrievalStart > 0) {
-                log.info(_blockchainName, `Starting block specified in configuration: ${bcConfig.blockRetrievalStart}`);
-                _blockCursor = bcConfig.blockRetrievalStart - 1;
-            }
-            if (bcConfig.blockRetrievalEnd &amp;&amp; bcConfig.blockRetrievalEnd > 0) {
-                log.info(_blockchainName, `Ending block specified in configuration: ${bcConfig.blockRetrievalEnd}`);
-                _blockRetrievalEnd = bcConfig.blockRetrievalEnd;
-            }
-            // Determine current block from where we want to retrieve next block
-            if (_blockCursor &lt; 1 &amp;&amp; bcConfig.blockRetrievalStart &lt; 1) {
-                if (_bcState.status.currentBlock > 0) {
-                    if ((highestBlock - _bcState.status.currentBlock) > _blockRetrievalRestart) {
-                        let nextBlock = highestBlock - _blockRetrievalRestart;
-                        _blockCursor = nextBlock - 1;
-                        log.info(_blockchainName, `Resuming from block: ${nextBlock} (${_blockRetrievalRestart} blocks behind the highest block ${highestBlock} on node)`);
-                    }
-                    if ((highestBlock - _bcState.status.currentBlock) &lt; _blockRetrievalRestart) {
-                        _blockCursor = _bcState.status.currentBlock;
-                        let nextBlock = _blockCursor + 1;
-                        let arrearBlocks = highestBlock - nextBlock;
-                        if (arrearBlocks &lt; 0) {
-                            log.info(_blockchainName, `Resuming from block: ${nextBlock} (when node catches up from its current highest block ${highestBlock})`);
-                        } else {
-                            log.info(_blockchainName, `Resuming from block: ${nextBlock} (${arrearBlocks} blocks behind the highest block ${highestBlock} on node)`);
-                        }
-                    }
-                } else {
-                    _blockCursor = highestBlock - 1;
-                    log.info(_blockchainName, `Starting from highest block on node: ${highestBlock}`);
-                }
-            }
-            getBlockchainDataRecursive();
-            resolve();
-        }, err => {
-            reject(new Error(`Could not retrieve highest blocknumer from Bitcoin node: ${err.message}`));
-        });
-    });
+    // Determine starting block
+    try {
+        _bcState.status.highestBlock = await bcRpc.getBlockCount();
+        _blockCursor = blockchainUtil.determineStartingBlock(
+            _bcState.status.highestBlock,
+            _bcState.status.currentBlock,
+            _blockRetrievalStart,
+            _blockRetrievalRestart
+        );
+        blockchainUtil.logStartingBlock(_blockchainName, _blockCursor, _bcState.status.highestBlock);
+    } catch(err) {
+        if (err) return Promise.reject(err);
+        return Promise.reject(new Error('Could not connect to Bitcoin node and determine starting block'));
+    }
+    // Schedule iterative block retrieval
+    scheduleBlockIteration();
+    wfState.updateBlockchainData(_blockchainName, _bcState);
+    return Promise.resolve();
 }
 
 // PRIVATE BLOCKCHAIN LISTENER FUNCTIONS //
 /**
- * Initiates the functions for retrieving data from the Bitcoin blockchain
+ * Schedules next block retrieval iteration
  * @private
  */
-function getBlockchainDataRecursive() {
-    setTimeout(function bitcoinGetBlockchainDataRecursiveTimeoutCb() {
-        getBlockchainData()
-        .then(function bitcoinGetBlockchainDataCb(doContinue) {
-            wfState.updateBlockchainData(_blockchainName, _bcState);
-            if (doContinue) {
-                getBlockchainDataRecursive();
-            }
-        }, err => {
-            log.debug(_blockchainName, `Retrieving blockchain data failed: ${err.message}`);
-            getBlockchainDataRecursive();
-        });
-    }, _blockInterval);
+function scheduleBlockIteration() {
+    log.trace(_blockchainName, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
+    setTimeout(executeBlockIteration, _blockInterval);
 }
 
 /**
- * Gets transactions from unprocessed blocks
+ * Executes block retrieval iteration and re-schedules itself when completed
  * @private
- * @returns {Promise}
- * @TODO Replace async-await construct
  */
-async function getBlockchainData() {
-    return new Promise((resolve, reject) => {
-        // The actual Bitcoin blockchain height
-        bcRpc.getBlockCount()
-        .then(function bitcoinGetBlockNumberCb(latestBlockNumber) {
-            // The block currently processed
-            if (_currentBlockNumber === latestBlockNumber) {
-                resolve(true);
-                return;
-            }
-            // If a end block retrieval number is provided the logic needs to crawl a specific range of blocks
-            // Hence the latestBlockNumber is overwritten.
-            if (_blockRetrievalEnd > 0) latestBlockNumber = _blockRetrievalEnd;
-            // Validate if the listener has been off for a short period of time and.
-            if (_currentBlockNumber === 0
-                &amp;&amp; _bcState.status.currentBlock > 0
-                &amp;&amp; (latestBlockNumber - _bcState.status.currentBlock) > _blockRetrievalRestart
-            ) {
-                _currentBlockNumber = latestBlockNumber - _blockRetrievalRestart;
-            }
-            if (_currentBlockNumber === 0
-                &amp;&amp; _bcState.status.currentBlock > 0
-                &amp;&amp; (latestBlockNumber - _bcState.status.currentBlock) &lt; _blockRetrievalRestart
-            ) {
-                _currentBlockNumber = _bcState.status.currentBlock;
-            }
-            // Initial state if current block number = 0 hence it set to properly process current blocks
-            if (_currentBlockNumber &lt; 1) _currentBlockNumber = latestBlockNumber - 1;
+async function executeBlockIteration() {
+    _iterationCount += 1;
+    log.trace(_blockchainName, `Starting block retrieval iteration ${_iterationCount}`);
 
-            // Process block sequentially until the latest block is reached
-            processMultipleBlocks(_currentBlockNumber, latestBlockNumber)
-            .then(() => {
-                if (latestBlockNumber === _blockRetrievalEnd) {
-                    log.debug(_blockchainName, `Reached configured block retrieval end: ${latestBlockNumber}`);
-                    resolve(false); // As an end blocknumber is provided and already reached. We stop further processing.
-                    return;
-                }
-                resolve(true);
-            }, err => {
-                reject(err);
-            });
-        }, err => {
-            err.message = 'Error when retrieving latest block: ' + err.message;
-            reject(err);
-        });
-    }).catch(err => {
-        if (err) log.error(_blockchainName, `Error caught while retrieving blockchain data: ${err.toString()}`);
-        getBlockchainDataRecursive();
+    // Get the actual Bitcoin blockchain height
+    bcRpc.getBlockCount()
+    .then(highestBlock => {
+        _bcState.status.highestBlock = highestBlock;
+
+        // Check if highest block is already processed, and schedule next iteration
+        if (highestBlock === _blockCursor) {
+            log.trace(_blockchainName, `Highest block ${highestBlock} has already been processed`);
+            return Promise.reject(); // Stop this iteration without error
+        }
+        // Current block may be higher than highest block when node is resyncing
+        if (_blockCursor > highestBlock) {
+            log.debug(_blockchainName, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
+            return Promise.reject(); // Stop this iteration withour error
+        }
+        // Check if one more new block exists
+        if (_blockRetrievalEnd === 0 &amp;&amp; highestBlock !== _discoveredBlock) {
+            _discoveredBlock = highestBlock;
+            log.trace(_blockchainName, `New highest block discovered on node: ${_discoveredBlock}`);
+        }
+        // Last block to retrieve is highest block or, if provided, end block
+        let endBlock = highestBlock;
+        if (_blockRetrievalEnd > 0 &amp;&amp; _blockRetrievalEnd &lt; highestBlock) {
+            endBlock = _blockRetrievalEnd;
+        }
+        // Process new stack of blocks
+        _blockStackSize = 0;
+        return processBlocks(_blockCursor, endBlock); // Return new Promise
+    })
+    .then(async () => {
+        // Done processing blocks, continue with the next
+        if (_blockRetrievalEnd === 0 || _blockCursor &lt; _blockRetrievalEnd) {
+            return Promise.resolve(); // This iteration is completed
+        }
+        // Provided end block is reached
+        log.info(_blockchainName, `Reached configured block retrieval end: ${_blockCursor}`);
+        _blockRetrievalEnd = 0;
+
+        // Dtermine from where to proceed
+        _blockCursor = blockchainUtil.determineStartingBlock(_blockchainName, _bcState.status.highestBlock, _blockCursor, _blockRetrievalEnd, _blockRetrievalRestart);
+        blockchainUtil.logStartingBlock(_blockchainName, _blockCursor, _bcState.status.highestBlock);
+        return Promise.resolve();
+    })
+    .then(() => {
+        // Continue with next iteration almost immediately
+        return setTimeout(executeBlockIteration, BLOCKITERATIONDELAY);
+    })
+    .catch(err => {
+        if (err) {
+            // Schedule next iteration shortly to retry
+            log.warn(_blockchainName, `Could not complete retrieval of block ${_blockCursor} in iteration ${_iterationCount}: ${err.message}`);
+            return setTimeout(executeBlockIteration, BLOCKRETRYDELAY);
+        }
+        // Schedule next iteration based on configured block time
+        return scheduleBlockIteration();
     });
 }
 
 /**
- * Syncronizes the wallet by looking for utxos
+ * Processes multiple Bitcoin blocks
  * @private
- * @param {Object} curent current block
- * @param {Object} limit limit block
+ * @param {number} startBlock the block after which the next blocks are processed
+ * @param {number} endBlock the block up to which blocks should be processed
+ * @returns {Promise} resolves to Error or null when completed
  */
-async function processMultipleBlocks(current, limit) {
-    for (current; current &lt;= limit; current++) {
-        await getBlockTransactions(current);
-        _currentBlockNumber = current;
-        _bcState.status.currentBlock = current;
-        log.debug(_blockchainName, 'Current block number in the blockchain state: ' + _currentBlockNumber);
+async function processBlocks(startBlock, endBlock) {
+    // Stack callbacks to a maximum of 100
+    _blockStackSize += 1;
+    if (_blockStackSize > BLOCKSTACKSIZE) {
+        log.trace(_blockchainName, `Reached maximum block processing stack size: ${_blockStackSize}`);
+        return Promise.resolve(); // Completed for now
     }
+    // If current block is last block, then there is no new block to retrieve
+    if (startBlock === endBlock) {
+        log.trace(_blockchainName, 'No new block to retrieve');
+        return Promise.resolve(); // Completed for now
+    }
+    // Block to be processed is the next block after starting block and skipped blocks
+    if (_skippedBlocks > 0) log.trace(_blockchainName, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
+    let thisBlock = startBlock + _skippedBlocks + 1;
+
+    // Skip this block if the block has been retried too often
+    if (_blockMaxRetries > 0 &amp;&amp; _blockRetryCount > _blockMaxRetries) {
+        log.warn(_blockchainName, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
+        thisBlock += 1;
+        _blockRetryCount = 0;
+        _skippedBlocks += 1;
+    }
+    // Log where we are with blocks
+    if (_blockRetryCount !== 0) log.debug(_blockchainName, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
+    log.trace(_blockchainName, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
+
+    // Retrieve new block
+    try {
+        await processBlock(thisBlock);
+    } catch(err) {
+        _blockRetryCount += 1;
+        return Promise.reject(err); // Retry this block
+    }
+    // Completed this block
+    _blockCursor = thisBlock;
+    _blockRetryCount = 0;
+    _skippedBlocks = 0;
+
+    // Update state
+    _bcState.status.currentBlock = _blockCursor;
+    wfState.updateBlockchainData(_blockchainName, _bcState);
+
+    // Get next block if not yet at last block
+    if (thisBlock &lt; endBlock) return processBlocks(_blockCursor, endBlock); // Process next block
+    return Promise.resolve(); // Completed all blocks
 }
 
 /**
- * checks a block for whiteflag messages and utxos
- * @param {Object} curent current block
+ * Processes a single Bitcoin block
  * @private
+ * @param {number} blockNumber the block to be processed
+ * @returns {Promise} resolves if the block is succesfully processed
  */
-async function getBlockTransactions(current) {
-    await bcRpc.getBlockByNumber(current)
-    .then(function processTransactions(block) {
-        checkWfMessage(block.tx);
-        for (let account of _bcState.accounts) {
-            if (account.walletSyncing === false
-                &amp;&amp; account.lastBlock &lt;= current
-            ) {
-                bcAccounts.processAccountTransactions(block.tx, account);
-                account.lastBlock = current;
-            }
-        }
+async function processBlock(blockNumber) {
+    // Get block from node
+    let block;
+    try {
+        block = await bcRpc.getBlockByNumber(blockNumber, true); // Get full block inclusing transactions
+    } catch(err) {
+        return Promise.reject(new Error(`Could not retrieve block ${blockNumber}: ${err.message}`));
+    }
+    // Check transactions in block
+    let transactionCount = block.tx.length;
+    if (!block || transactionCount &lt; 1) {
+        // Rare case, but a block may be empty
+        log.info(_blockchainName, `No transactions in block: ${blockNumber}`);
+        return Promise.resolve(); // Completed this block
+    }
+    log.trace(_blockchainName, `Transactions discovered in block ${blockNumber}: ${transactionCount}`);
+
+    // Let accounts process this block for UXTOs
+    bcAccounts.processBlockUtxos(blockNumber, block);
+
+    // Process transactions from block
+    return processTransactions(blockNumber, 0, block.tx, block.time)
+    .then(() => {
+        log.info(_blockchainName, `Transactions processed from block ${blockNumber}: ${transactionCount} `);
+        return Promise.resolve(); // Completed this block
+    })
+    .catch(err => {
+        if (!err) return Promise.reject(new Error(`Could not process block ${blockNumber}`));
+        return Promise.reject(new Error(`Could not process block ${blockNumber}: ${err.message}`));
     });
 }
 
 /**
- * Checks the transactions from a block for Whiteflag messages and sends wfRxEvent
+ * Processes the transactions of a Bitcoin block
  * @private
- * @param {Object} transactions
- * @TDOD Function is to complex and need refactoring
+ * @param {number} blockNumber the block number of the transactions
+ * @param {number} index the first transaction in the array to process
+ * @param {Array} transactions the transactions to process
+ * @param {number} timestamp the block timestamp
+ * @returns {Promise} resolves if all transactions are successfully processed
  */
-function checkWfMessage(transactions) {
-    for (let transaction of transactions) {
-        if (transaction.vout.length > 0) {
-            for (let vout of transaction.vout) {
-                if (vout.scriptPubKey.asm.startsWith(SCRIPTIDENTIFIER)) {
-                    let hexMessage = vout.scriptPubKey.asm;
-                    let encodedMessage = hexMessage.substring(hexMessage.indexOf(' ') + 1);
-                    if (encodedMessage.startsWith(WFINDENTIFIER)) {
-                        transaction.encodedMessage = encodedMessage;
+function processTransactions(blockNumber, index, transactions, timestamp) {
+    // Get transaction batch of Promises in an array to extract Whiteflag messages
+    let transactionBatch = createTransactionBatch(blockNumber, index, transactions, timestamp);
+    if (transactionBatch.length &lt; 1) return Promise.resolve();
 
-                        // Put transaction details in new Whiteflag message metaheader
-                        let wfMessage;
-                        try {
-                            wfMessage = bcTransactions.extractMessage(transaction);
-                        } catch(err) {
-                            log.error(_blockchainName, `Error caught while converting transaction ${transaction.hash} to Whiteflag message object and recovering public key: ${err.toString()}`);
-                        }
-                        // Process the Whiteflag message in the rx event chain
-                        log.trace(_blockchainName, 'Received Whiteflag message: ' + JSON.stringify(wfMessage));
-                        wfRxEvent.emit('messageReceived', wfMessage);
-                    }
-                }
-            }
-        }
+    // Resolve all transaction promises in the batch
+    return Promise.all(transactionBatch)
+    .then(data => {
+        ignore(data); // All extracted Whiteflag messages are already put on the rx event chain
+
+        // Next batch
+        let nextIndex = index + _transactionBatchSize;
+        if (nextIndex >= transactions.length) return Promise.resolve();
+        return processTransactions(blockNumber, nextIndex, transactions, timestamp);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
+}
+
+/**
+ * Combines multiple transactions from a Bitcoin block as promises in an array for batch processing
+ * @private
+ * @param {number} blockNumber the block number of the transactions
+ * @param {number} index the first transaction in the array to process
+ * @param {Array} transactions the transactions to process
+ * @param {number} timestamp the block timestamp
+ * @return {Array} Array with transaction Promises
+ */
+function createTransactionBatch(blockNumber, index, transactions, timestamp) {
+    let transactionBatch = [];
+    for (
+        let i = index;
+        i &lt; Math.min(index + _transactionBatchSize, transactions.length);
+        i++
+    ) {
+        // Get a promise for the next transaction
+        transactionBatch.push(
+            new Promise((resolve, reject) => {
+                bcTransactions.extractMessage(transactions[i], blockNumber, timestamp)
+                .then(wfMessage => {
+                    log.trace(_blockchainName, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
+                    wfRxEvent.emit('messageReceived', wfMessage);
+                    return resolve();
+                })
+                .catch(err => {
+                    if (err instanceof ProcessingError) return resolve(); // No Whiteflag message in transaction
+                    return reject(new Error(`Could not process transaction ${transactions[i].hash}: ${err.message}`)); // Other error
+                });
+            })
+        );
     }
+    return transactionBatch;
 }
 </code></pre>
         </article>
@@ -291,13 +370,13 @@ function checkWfMessage(transactions) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Fri Sep 17 2021 03:46:16 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 05:24:02 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

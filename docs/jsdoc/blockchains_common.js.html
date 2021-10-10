@@ -33,8 +33,26 @@
  * @description Module for common blockchain functions
  */
 module.exports = {
-    determineStartingBlock
+    getEmptyState,
+    determineStartingBlock,
+    logStartingBlock
 };
+
+// Whiteflag common functions and classes //
+const log = require('../common/logger');
+
+/**
+ * Returns an empty blockchain state
+ * @function getEmptyState
+ * @returns {Object} An empty blockchain state
+ */
+function getEmptyState() {
+    return {
+        parameters: {},
+        status: {},
+        accounts: []
+    };
+}
 
 /**
  * Determines the starting block for a blockchain listener
@@ -44,23 +62,33 @@ module.exports = {
  * @param {number} currentBlock the block currently being the latest processed
  * @param {number} startingBlock the block  where the listener should start
  * @param {number} rewindBlocks the number of blocks to look back from highest block
+ * @returns {number} the starting block
  */
 function determineStartingBlock(highestBlock = 0, currentBlock = 0, startingBlock = 0, rewindBlocks = 0) {
-    return new Promise((resolve, reject) => {
-        if (startingBlock > 0) {
-            return resolve((startingBlock - 1));
-        }
-        if ((highestBlock - rewindBlocks) > (currentBlock + 1)) {
-            return resolve(highestBlock - rewindBlocks - 1);
-        }
-        if (currentBlock > 0) {
-            return resolve(currentBlock);
-        }
-        if (highestBlock > 0) {
-            return resolve(highestBlock - 1);
-        }
-        reject(new Error(`Cannot determine starting block (Current block: ${currentBlock}, Highest known block: ${highestBlock})`));
-    });
+    if (startingBlock > 0) return (startingBlock - 1);
+    if ((highestBlock - rewindBlocks) > (currentBlock + 1)) {
+        return (highestBlock - rewindBlocks - 1);
+    }
+    if (currentBlock > 0) return (currentBlock);
+    if (highestBlock > 0) return (highestBlock - 1);
+    return 1;
+}
+
+/**
+ * Logs where the listener will start next
+ * @function logStartingBlock
+ * @alias module:lib/blockchains/common.logStartingBlock
+ * @param {number} blockCursor block pointer
+ * @param {number} highestBlock the highest known block
+ */
+ function logStartingBlock(blockchainName, blockCursor, highestBlock) {
+    let nextBlock = blockCursor + 1;
+    let arrearBlocks = highestBlock - nextBlock;
+    if (arrearBlocks &lt; 0) {
+        log.info(blockchainName, `Resuming with next block: ${nextBlock} (when node catches up from its current highest block ${highestBlock})`);
+    } else {
+        log.info(blockchainName, `Resuming with next block: ${nextBlock} (${arrearBlocks} blocks behind the highest known block ${highestBlock})`);
+    }
 }
 </code></pre>
         </article>
@@ -72,13 +100,13 @@ function determineStartingBlock(highestBlock = 0, currentBlock = 0, startingBloc
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Fri Sep 17 2021 03:46:16 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 05:24:02 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

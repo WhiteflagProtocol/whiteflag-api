@@ -58,6 +58,7 @@ const jwt = require('jsonwebtoken');
 const log = require('../common/logger');
 const { hash } = require('../common/crypto');
 const { ProcessingError } = require('../common/errors');
+const { getEmptyState } = require('./common');
 
 // Whiteflag modules //
 const wfState = require('../protocol/state');
@@ -89,23 +90,20 @@ let _transactionValue = '0';
  * @param {blockchainInitCb} callback function to be called after intitialising Ethereum
  */
 function initEthereum(ethConfig, callback) {
+    _blockchainName = ethConfig.name;
     log.trace(_blockchainName, 'Initialising the Ethereum blockchain...');
 
-    // Preserve the name of the blockchain
-    _blockchainName = ethConfig.name;
-
     // Get Ethereum blockchain state
-    wfState.getBlockchainData(_blockchainName, function blockchainsGetStateDb(err, blockchainState) {
+    wfState.getBlockchainData(_blockchainName, function blockchainsGetStateDb(err, ethState) {
         if (err) return callback(err, _blockchainName);
-        if (!blockchainState) {
-            blockchainState = {
-                parameters: {},
-                status: {},
-                accounts: []
-            };
+
+        // Check and preserve Ethereum state
+        if (!ethState) {
+            log.info(_blockchainName, 'Creating new Ethereum entry in internal state');
+            ethState = getEmptyState();
+            wfState.updateBlockchainData(_blockchainName, ethState);
         }
-        // Preserve state for module
-        _ethState = blockchainState;
+        _ethState = ethState;
 
         // Connect to node, determine blocks, and start listener
         ethRpc.init(ethConfig, _ethState)
@@ -129,14 +127,16 @@ function initEthereum(ethConfig, callback) {
 function sendMessage(wfMessage, callback) {
     ethAccounts.get(wfMessage.MetaHeader.originatorAddress)
     .then(account => {
-        return ethTransactions.send(account, account.address, _transactionValue, wfMessage.MetaHeader.encodedMessage);
+        const toAddress = account.address;
+        const encodedMessage = wfMessage.MetaHeader.encodedMessage;
+        return ethTransactions.send(account, toAddress, _transactionValue, encodedMessage);
     })
     .then((transactionHash, blockNumber) => {
         return callback(null, transactionHash, blockNumber);
     })
     .catch(err => {
-        log.error(_blockchainName, `Error sending Whiteflag message: ${err.toString()}`);
-        return callback(err);
+        log.error(_blockchainName, `Error sending Whiteflag message: ${err.message}`);
+        callback(err);
     });
 }
 
@@ -156,11 +156,11 @@ function getMessage(wfQuery, callback) {
     .then(wfMessage => callback(null, wfMessage))
     .catch(err => {
         if (err instanceof ProcessingError) {
-            log.debug(_blockchainName, `Could not retrieve Whiteflag message: ${err.message}`);
+            log.debug(_blockchainName, `No Whiteflag message with transaction hash ${transactionHash} found: ${err.message}`);
         } else {
-            log.error(_blockchainName, `Error retrieving Whiteflag message: ${err.message}`);
+            log.error(_blockchainName, `Error retrieving Whiteflag message with transaction hash ${transactionHash}: ${err.message}`);
         }
-        return callback(err);
+        return callback(err, null);
     });
 }
 
@@ -271,7 +271,10 @@ function transferFunds(transfer, callback) {
         return ethTransactions.send(account, transfer.toAddress, transfer.value, '');
     })
     .then((transactionHash, blockNumber) => callback(null, transactionHash, blockNumber))
-    .catch(err => callback(err));
+    .catch(err => {
+        log.error(_blockchainName, `Error transferring funds: ${err.message}`);
+        return callback(err);
+    });
 }
 
 /**
@@ -284,7 +287,7 @@ function transferFunds(transfer, callback) {
  function createAccount(privateKey, callback) {
     ethAccounts.create(privateKey)
     .then(account => {
-        log.info(_blockchainName, `Blockchain account created: ${account.address}`);
+        log.info(_blockchainName, `Ethereum account created: ${account.address}`);
         return callback(null, account);
     })
     .catch(err => callback(err));
@@ -300,7 +303,7 @@ function transferFunds(transfer, callback) {
 function updateAccount(account, callback) {
     ethAccounts.update(account)
     .then(updatedAccount => {
-        log.debug(_blockchainName, `Blockchain account updated: ${account.address}`);
+        log.debug(_blockchainName, `Ethereum account updated: ${account.address}`);
         return callback(null, updatedAccount);
     })
     .catch(err => callback(err));
@@ -316,7 +319,7 @@ function updateAccount(account, callback) {
 function deleteAccount(address, callback) {
     ethAccounts.delete(address)
     .then(account => {
-        log.info(_blockchainName, `Blockchain account deleted: ${account.address}`);
+        log.info(_blockchainName, `Ethereum account deleted: ${account.address}`);
         return callback(null, account);
     })
     .catch(err => callback(err));
@@ -331,13 +334,13 @@ function deleteAccount(address, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Fri Sep 17 2021 03:46:16 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 05:24:02 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

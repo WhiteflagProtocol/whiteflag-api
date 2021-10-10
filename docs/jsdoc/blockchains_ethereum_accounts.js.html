@@ -78,19 +78,18 @@ let _web3;
  * @returns {Promise} resolve if succesfully initialised
  */
 async function initAccounts(ethConfig, ethState, web3) {
-    log.trace(_blockchainName, 'Initialising Ethereum accounts management...');
     _blockchainName = ethConfig.name;
     _ethState = ethState;
     _web3 = web3;
+    log.trace(_blockchainName, 'Initialising Ethereum accounts management...');
 
     // If configured, create new account if none exists
     if (ethConfig.createAccount &amp;&amp; _ethState.accounts.length === 0) {
-        try {
-            let account = await createAccount(null);
-            ignore(account);
-        } catch(err) {
-            if (err) log.warn(_blockchainName, err.message);
-        }
+        createAccount(null)
+        .then(account => {
+            log.info(_blockchainName, `Ethereum account created automatically: ${account.address}`);
+        })
+        .catch(err => log.warn(_blockchainName, err.message));
     }
     // Periodically update account balances
     updateAccounts(); setInterval(updateAccounts, STATUSINTERVAL);
@@ -101,6 +100,7 @@ async function initAccounts(ethConfig, ethState, web3) {
 
 /**
  * Gets Ethereum account from the blockchain state by address
+ * @function getAccount
  * @alias module:lib/blockchains/ethereum/accounts.get
  * @param {string} address the account address
  * @returns {Promise} resolves to the requested account
@@ -124,43 +124,37 @@ function getAccount(address = null) {
  */
 function createAccount(privateKey) {
     return new Promise((resolve, reject) => {
-        let newEthAccount;
+        let account;
         try {
             if (privateKey) {
-                log.trace(_blockchainName, 'Creating account from existing private key');
-                newEthAccount = _web3.eth.accounts.privateKeyToAccount(formatHexEthereum(privateKey));
+                log.trace(_blockchainName, 'Creating Ethereum account from existing private key');
+                account = generateAccount(_web3.eth.accounts.privateKeyToAccount(formatHexEthereum(privateKey)));
+                updateAccountBalance(account);
+                updateAccountTransactions(account);
             } else {
-                log.trace(_blockchainName, 'Creating new account with generated keys');
-                newEthAccount = _web3.eth.accounts.create(crypto.randomBytes(64));
+                log.trace(_blockchainName, 'Creating new Ethereum account with generated keys');
+                account = generateAccount(_web3.eth.accounts.create(crypto.randomBytes(64)));
+                account.balance = 0;
+                account.transactionCount = 0;
             }
             // Hopefully the garbage collector will do its work
             privateKey = undefined;
         } catch(err) {
             privateKey = undefined;
-            log.error(_blockchainName, `Error while creating new blockchain account: ${err.toString()}`);
+            log.error(_blockchainName, `Error while creating new Ethereum account: ${err.message}`);
             return reject(err);
         }
-        // web3 does not expose public key; using ethereumjs-util instead
-        const publicKey = ethereumUtil.privateToPublic(Buffer.from(formatHexApi(newEthAccount.privateKey), BINENCODING));
-        const account = {
-            address: formatAddressApi(newEthAccount.address),
-            publicKey: formatPubkeyApi(publicKey.toString(BINENCODING)),
-            transactionCount: 0
-        };
         // Check for existing account and store account
-        const existingAccount = getAccount(account.address);
-        if (existingAccount &amp;&amp; existingAccount.address === account.address) {
-            return reject(new ProcessingError(`A ${_blockchainName} account with address ${account.address} already exists`, null, 'WF_API_RESOURCE_CONFLICT'));
-        }
+        getAccount(account.address)
+        .then(existingAccount => {
+            if (existingAccount.address === account.address) {
+                return reject(new ProcessingError(`The ${_blockchainName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
+            }
+        })
+        .catch(err => ignore(err)); // all good if account does not yet exist
+
+        // Save and return result
         upsertAccount(account);
-
-        // Securely store the private key in state
-        const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
-        wfState.upsertKey('blockchainKeys', privateKeyId, formatHexApi(newEthAccount.privateKey));
-        delete newEthAccount.privateKey;
-
-        // Log and return result
-        log.info(_blockchainName, `Blockchain account created: ${account.address}`);
         return resolve(account);
     });
 }
@@ -173,26 +167,24 @@ function createAccount(privateKey) {
  * @returns {Promise} resolves to updated account
  */
 function updateAccount(account) {
+    log.trace(_blockchainName, `Updating Ethereum account: ${account.address}`);
     return new Promise((resolve, reject) => {
-        if (!getAccount(account.address)) {
-            return reject(new ProcessingError(`${_blockchainName} account does not exist: ${account.address}`), null, 'WF_API_NO_RESOURCE');
-        }
-        log.trace(_blockchainName, `Updating account: ${account.address}`);
-
-        // Securely store the private key in state
-        if (account.privateKey) {
-            const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
-            wfState.upsertKey('blockchainKeys', privateKeyId, formatHexApi(account.privateKey));
-            delete account.privateKey;
-        }
-        // Update state with new or updated account
-        try {
-            upsertAccount(account);
-        } catch(err) {
-            return reject(new Error(`Could not update ${_blockchainName} account: ${err.message}`));
-        }
-        log.debug(_blockchainName, `Blockchain account updated: ${account.address}`);
-        return resolve(account);
+        // Update only if account exists
+        getAccount(account.address)
+        .then(existingAccount => {
+            // Double check addresses
+            if (existingAccount.address !== account.address) {
+                return reject(new Error(`Address of ${_blockchainName} account in state does not correspond with updated account data address`));
+            }
+            // Upsert updated account data
+            try {
+                upsertAccount(account);
+            } catch(err) {
+                return reject(new Error(`Could not update ${_blockchainName} account: ${err.message}`));
+            }
+            return resolve(account);
+        })
+        .catch(err => reject(err));
     });
 }
 
@@ -204,7 +196,7 @@ function updateAccount(account) {
  * @returns {Promise} resolves to updated account
  */
 function deleteAccount(address) {
-    log.trace(_blockchainName, `Deleting account: ${address}`);
+    log.trace(_blockchainName, `Deleting Ethereum account: ${address}`);
     return new Promise((resolve, reject) => {
         // Get index of account
         const index = _ethState.accounts.findIndex(item => item.address === address);
@@ -217,10 +209,9 @@ function deleteAccount(address) {
             _ethState.accounts.splice(index, 1);
             wfState.updateBlockchainData(_blockchainName, _ethState);
         } else {
-            return reject(new Error(`Could not not delete account: ${address}`));
+            return reject(new Error(`Could not not delete ${_blockchainName} account: ${address}`));
         }
         // Log and return result
-        log.info(_blockchainName, `Blockchain account deleted: ${address}`);
         return resolve(account);
     });
 }
@@ -230,17 +221,46 @@ function deleteAccount(address) {
  * Updates all Ethereum blockchain accounts
  * @private
  */
- function updateAccounts() {
+function updateAccounts() {
     _ethState.accounts.forEach(account => {
-        ethRpc.getBalance(account.address)
-        .then(balance => (account.balance = _web3.utils.fromWei(balance, 'ether')))
-        .catch(err => log.warn(_blockchainName, `Could not update balance for account ${account.address}: ${err.message}`));
-
-        ethRpc.getTransactionCount(account.address)
-        .then(transactionCount => (account.transactionCount = transactionCount))
-        .catch(err => log.warn(_blockchainName, `Could not update transaction count for account ${account.address}: ${err.message}`));
+        Promise.all([
+            updateAccountBalance(account),
+            updateAccountTransactions(account)
+        ])
+        .then(() => {
+            wfState.updateBlockchainData(_blockchainName, _ethState);
+        });
     });
-    wfState.updateBlockchainData(_blockchainName, _ethState);
+}
+
+/**
+ * Updates all Ethereum blockchain accounts
+ * @private
+ * @param {Object} account
+ * @returns {Promise}
+ */
+function updateAccountBalance(account) {
+    return ethRpc.getBalance(account.address)
+    .then(balance => {
+        account.balance = _web3.utils.fromWei(balance, 'ether');
+        return Promise.resolve(account.balance);
+    })
+    .catch(err => log.warn(_blockchainName, `Could not update balance for account ${account.address}: ${err.message}`));
+}
+
+ /**
+ * Updates all Ethereum blockchain accounts
+ * @private
+ * @param {Object} account
+ * @returns {Promise}
+ */
+function updateAccountTransactions(account) {
+    return ethRpc.getTransactionCount(account.address)
+    .then(transactionCount => {
+        account.transactionCount = transactionCount;
+        return Promise.resolve(account.transactionCount);
+    })
+    .catch(err => log.warn(_blockchainName, `Could not update transaction count for account ${account.address}: ${err.message}`));
 }
 
 /**
@@ -249,18 +269,41 @@ function deleteAccount(address) {
  * @param {Object} account Ethereum account to be upserted
  */
 function upsertAccount(account) {
-    // nserting or updating
-    let stateAccount = _ethState.accounts.find(item => item.address === account.address);
-    if (!stateAccount) {
+    // Securely store the private key in state
+    if (Object.prototype.hasOwnProperty.call(account, 'privateKey')) {
+        const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
+        wfState.upsertKey('blockchainKeys', privateKeyId, formatHexApi(account.privateKey));
+        delete account.privateKey;
+    }
+    // Inserting or updating
+    let existingAccount = _ethState.accounts.find(item => item.address === account.address);
+    if (!existingAccount) {
         // Insert new account
         _ethState.accounts.push(account);
-        log.trace(_blockchainName, `Blockchain account added to state: ${account.address}`);
+        log.trace(_blockchainName, `New Ethereum account added to state: ${account.address}`);
     } else {
         // Update account
-        object.update(account, stateAccount);
-        log.trace(_blockchainName, `Blockchain account updated in state: ${account.address}`);
+        object.update(account, existingAccount);
+        log.trace(_blockchainName, `Ethereum account updated in state: ${account.address}`);
     }
     wfState.updateBlockchainData(_blockchainName, _ethState);
+}
+
+/**
+ * Generate account from keypair
+ * @private
+ * @param {Object} newEthAccount a new Web3 Ethereum account
+ * @returns {Object} the account data
+ */
+ function generateAccount(newEthAccount) {
+    const publicKey = ethereumUtil.privateToPublic(Buffer.from(formatHexApi(newEthAccount.privateKey), BINENCODING));
+    return {
+        address: formatAddressApi(newEthAccount.address),
+        publicKey: formatPubkeyApi(publicKey.toString(BINENCODING)),
+        privateKey: formatHexApi(newEthAccount.privateKey),
+        balance: null,
+        transactionCount: null
+    };
 }
 </code></pre>
         </article>
@@ -272,13 +315,13 @@ function upsertAccount(account) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_bitcoin_utxo.html">lib/blockchains/bitcoin/utxo</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Fri Sep 17 2021 03:46:16 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 05:24:02 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
