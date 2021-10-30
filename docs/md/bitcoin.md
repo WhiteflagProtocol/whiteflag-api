@@ -43,6 +43,7 @@ these parameters may be provided, otherwise default values are used:
 * `blockMaxRetries`: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is `0`, which means unlimited retries
 * `transactionBatchSize`: how many transactions from a single block the API may process in parallel; default is `128`
 * `transactionFee`: the value of a transaction fee when sending a Whiteflag message if the fee cannot be automatically determined; default is 4000 satoshis
+* `transactionPriority`: the priority for a message, defined by the number of blocks by which confirmation is desired; `1` is highest priority, but also a higher transaction fee; if `0` the fixed transaction fee is used
 * `traceRawTransaction`: whether to show each individual transaction when the loglevel is set to `6` (trace); default is `false` because this results in massive logging
 
 To send and receive Whiteflag messages, the API must be connected to a Bitcoin
