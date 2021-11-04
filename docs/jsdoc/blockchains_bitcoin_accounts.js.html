@@ -39,7 +39,7 @@ module.exports = {
     create: createAccount,
     update: updateAccount,
     delete: deleteAccount,
-    updateUtxos: updateAccountUtxos,
+    updateUtxosSpent: updateAccountUtxosSpent,
     updateBalance: updateAccountBalance,
     processBlockUtxos
 };
@@ -58,11 +58,9 @@ const { ProcessingError } = require('../../common/errors');
 const wfState = require('../../protocol/state');
 
 // Bitcoin sub-modules //
-const bcCommon = require('./common');
 const bcRpc = require('./rpc');
 
 // Module constants //
-const UTXOSTATUS = bcCommon.getUxtoStatuses();
 const ACCOUNTSYNCDELAY = 10000;
 const SATOSHI = 100000000;
 const KEYIDLENGTH = 12;
@@ -94,6 +92,11 @@ async function initAccounts(bcConfig, bcState) {
             log.info(_blockchainName, `Bitcoin account created automatically: ${account.address}`);
         })
         .catch(err => log.warn(_blockchainName, err.message));
+    } else {
+        // Upgrade data structure of existing accounts
+        for (let account of _bcState.accounts) {
+            upgradeAccountData(account);
+        }
     }
     // Start synchronisation of all accounts
     setTimeout(synchroniseAccounts, ACCOUNTSYNCDELAY);
@@ -131,7 +134,7 @@ function checkAccount(address) {
         getAccount(address)
         .then(account => {
             if (account.syncing === true) {
-                return reject(new ProcessingError(`The ${_blockchainName} account cannot be used because it is currently syncing at block: ${account.lastBlock}`, null, 'WF_API_NOT_AVAILABLE'));
+                return reject(new ProcessingError(`The ${_blockchainName} account cannot be used because it is currently syncing at block: ${account.lastBlock}/${_bcState.status.currentBlock}`, null, 'WF_API_NOT_AVAILABLE'));
             }
             resolve(account);
         })
@@ -143,7 +146,7 @@ function checkAccount(address) {
  * Creates a new Bitcoin account from an existing or a new key pair
  * @function createAccount
  * @alias module:lib/blockchains/bitcoin/accounts.create
- * @param {Object} wif Wallet Import Format
+ * @param {string} wif Wallet Import Format
  * @returns {Promise} resolves to the account data
  */
 async function createAccount(wif = null) {
@@ -185,7 +188,7 @@ async function createAccount(wif = null) {
  * Updates a Bitcoin blockchain account attributes
  * @function updateAccount
  * @alias module:lib/blockchains/bitcoin/accounts.update
- * @param account the account information object with updated information
+ * @param {string} account the account information object with updated information
  * @returns {Promise} resolves to the account data
  */
 function updateAccount(account) {
@@ -214,7 +217,7 @@ function updateAccount(account) {
  * Deletes a Bitcoin blockchain account
  * @function deleteAccount
  * @alias module:lib/blockchains/bitcoin/accounts.delete
- * @param address the address of the account information object with updated informationto be deleted
+ * @param {string} address the address of the account information object with updated informationto be deleted
  * @param {blockchainDeleteAccountCb} callback function to be called upon completion
  */
 function deleteAccount(address) {
@@ -240,52 +243,39 @@ function deleteAccount(address) {
 }
 
 /**
- * Updates the status of the UXTOs for an account
+ * Updates the status of the UTXOs for an account
  * @function updateAccountUtxos
  * @alias module:lib/blockchains/bitcoin/accounts.updateUtxos
  * @param {Object} account the Bitcoin account
- * @param {Array} utxoInputList the input UXTOs of a transaction
- * @param {boolean} confirmed true if the transaction is confirmed
+ * @param {Array} spentUtxos the UTXOs spent by a transaction
  * @returns {Object} the updated account
  */
- function updateAccountUtxos(account, utxoInputList, confirmed) {
-    // Is the transaction confirmed?
-    let spent = UTXOSTATUS.NEEDSVERIFICATION;
-    if (confirmed) spent = UTXOSTATUS.SPENT;
-
-    // Check account UXTOs against the list of input UXTOs
-    if (utxoInputList.length > 0) {
-        utxoInputList.forEach(utxoInput => {
-            account.utxos.forEach(utxoAccount => {
-                if (utxoAccount.txid === utxoInput.txid) {
-                    utxoAccount.spent = spent;
-                }
-            });
-        });
-    } else {
-        account.utxos.forEach(utxoAccount => {
-            if (utxoAccount.txid === utxoInputList.txid) {
-                utxoAccount.spent = spent;
+ function updateAccountUtxosSpent(account, spentUtxos) {
+    // Check account UTXOs against the provided UTXOs
+    spentUtxos.forEach(spentUtxo => {
+        account.utxos.forEach(utxo => {
+            if (utxo.txid === spentUtxo.txid) {
+                utxo.spent = true;
             }
         });
-    }
+    });
     updateAccountBalance(account);
 }
 
 /**
- * Updates the account balance based on unspent UXTOs
+ * Updates the account balance based on unspent UTXOs
  * @function updateAccountBalance
  * @param {Object} account the account to be updated
  */
  function updateAccountBalance(account) {
+    // Get unspent UTXOs
     let unspentUtxos = [];
     for (let utxo of account.utxos) {
-        if (utxo.spent === UTXOSTATUS.UNSPENT) {
-            unspentUtxos.push(utxo);
-        }
+        if (!utxo.spent) unspentUtxos.push(utxo);
     }
-    account.balance = (unspentUtxos.reduce((accumulator, uxto) => {
-        return accumulator + uxto.value;
+    // Sum unspent UTXOs
+    account.balance = (unspentUtxos.reduce((accumulator, utxo) => {
+        return accumulator + utxo.value;
     }, 0));
     upsertAccount(account);
 }
@@ -307,7 +297,7 @@ function processBlockUtxos(blockNumber, block) {
                 account.lastBlock = blockNumber;
             })
             .catch(err => {
-                log.warn(_blockchainName, `Error processing block ${blockNumber} to check UXTOs for account ${account.address}: ${err.message}`);
+                log.warn(_blockchainName, `Error processing block ${blockNumber} to check UTXOs for account ${account.address}: ${err.message}`);
                 return scheduleSynchroniseAccount(account.address);
             });
         } else {
@@ -318,6 +308,47 @@ function processBlockUtxos(blockNumber, block) {
 }
 
 // PRIVATE MODULE FUNCTIONS //
+/**
+ * Generate Bitcoin account from key pair
+ * @private
+ * @param {Object} bcKeyPair a cryptographic key pair for Bitcoin
+ * @returns {Object} the account data
+ */
+function generateAccount(bcKeyPair) {
+    return {
+        address: bitcoin.payments.p2pkh({
+            pubkey: bcKeyPair.publicKey,
+            network: _bcState.parameters.network
+        }).address,
+        publicKey: bcKeyPair.publicKey.toString('hex'),
+        privateKey: bcKeyPair.privateKey.toString('hex'),
+        balance: 0,
+        firstBlock: 1,
+        lastBlock: 0,
+        syncing: false,
+        utxos: []
+    };
+}
+
+/**
+ * Upgrades Bitcoin account data structure to current version
+ * @private
+ * @param {Object} account the account data
+ */
+function upgradeAccountData(account) {
+    // Upgrade UTXO spent values
+    for (let utxo of account.utxos) {
+        if (typeof utxo.spent === 'string' || utxo.spent instanceof String) {
+            if (utxo.spent === 'UNSPENT') utxo.spent = false;
+            if (utxo.spent === 'SPENT') utxo.spent = true;
+            if (utxo.spent === 'SPENTVERIFIED') utxo.spent = true;
+            if (utxo.spent === 'NEEDSVERIFICATION') utxo.spent = true;
+        }
+        utxo.index = +utxo.index;
+    }
+    return account;
+}
+
 /**
  * Updates or inserts an Bitcoin account in the blockchain state without private key
  * @private
@@ -378,18 +409,18 @@ function synchroniseAccount(account) {
     // To sync or not to sync
     if (account.lastBlock >= _bcState.status.currentBlock) {
         if (account.syncing) {
-            log.info(_blockchainName, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_bcState.status.currentBlock}`);
+            log.info(_blockchainName, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_bcState.status.highestBlock}`);
             account.syncing = false;
         }
         return Promise.resolve();
     }
     if (!account.syncing) {
-        log.info(_blockchainName, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_bcState.status.currentBlock}`);
+        log.info(_blockchainName, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_bcState.status.highestBlock}`);
         account.syncing = true;
     }
     // Get next block
     let thisBlock = account.lastBlock + 1;
-    log.trace(_blockchainName, `Synchronising account ${account.address} with block: ${thisBlock}/${_bcState.status.currentBlock}`);
+    log.trace(_blockchainName, `Synchronising account ${account.address} with block: ${thisBlock}/${_bcState.status.highestBlock}`);
     bcRpc.getBlockByNumber(thisBlock, true)
     .then(block => {
         return processAccountTransactions(0, block.tx, account);
@@ -413,7 +444,7 @@ function synchroniseAccount(account) {
  * @returns {Promise} resolves if all transactions are successfully processed
  */
  function processAccountTransactions(index, transactions, account) {
-    // Get transaction batch of Promises in an array to check transactions for UXTOs
+    // Get transaction batch of Promises in an array to check transactions for UTXOs
     let transactionBatch = createTransactionBatch(index, transactions, account);
     if (transactionBatch.length &lt; 1) return Promise.resolve();
 
@@ -461,20 +492,20 @@ function createTransactionBatch(index, transactions, account) {
 /**
  * Checks a list of transactions for utxos related to an account
  * @private
- * @param {Object} transaction the transaction to check for UXTOs
+ * @param {Object} transaction the transaction to check for UTXOs
  * @param {Object} account the account to check the transaction for
  */
  function processTransaction(transaction, account) {
-    for (let indexOut of Object.keys(transaction.vout)) {
-        if (typeof transaction.vout[indexOut].scriptPubKey.addresses !== 'undefined') {
-            checkAccountUtxosReceived(transaction, account, indexOut);
+    // Check transaction for received UTXOs
+    for (let index in transaction.vout) {
+        if (typeof transaction.vout[index].scriptPubKey.addresses !== 'undefined') {
+            checkAccountUtxosReceived(transaction, index, account);
         }
     }
-    for (let indexIn of Object.keys(transaction.vin)) {
-        if (typeof transaction.vin[indexIn].txid !== 'undefined') {
-            for (let otherAccount of _bcState.accounts) {
-                checkAccountUtxosSpent(transaction, otherAccount, indexIn);
-            }
+    // Check transaction for spent UTXOs
+    for (let index in transaction.vin) {
+        if (typeof transaction.vin[index].txid !== 'undefined') {
+            checkAccountUtxosSpent(transaction, index, account);
         }
     }
 }
@@ -483,19 +514,19 @@ function createTransactionBatch(index, transactions, account) {
  * Checks a transaction and processes a received utxo for an account
  * @private
  * @param {Object} transaction the transaction to check
+ * @param {Object} index the UTXO index within the transaction
  * @param {Object} account the account to check against
- * @param {Object} index index of the transaction
  */
-function checkAccountUtxosReceived(transaction, account, index) {
+function checkAccountUtxosReceived(transaction, index, account) {
     if (account.address === transaction.vout[index].scriptPubKey.addresses[0]) {
         if (!account.utxos.some(utxo => utxo.txid === transaction.txid)) {
             let utxo = {
                 txid: transaction.txid,
-                index: index,
+                index: +index,
                 value: parseInt((transaction.vout[index].value * SATOSHI).toFixed(0)),
-                spent: UTXOSTATUS.UNSPENT
+                spent: false
             };
-            log.info(_blockchainName, 'Received ' + (transaction.vout[index].value * SATOSHI).toFixed(0) + 'satoshis on Bitcoin account: ' + account.address);
+            log.info(_blockchainName, `Received ${utxo.value} satoshis on account: ${account.address}`);
             account.utxos.push(utxo);
             updateAccountBalance(account);
         }
@@ -506,44 +537,20 @@ function checkAccountUtxosReceived(transaction, account, index) {
  * Checks a transaction and processes a spent utxo for an account
  * @private
  * @param {Object} transaction the transaction to check
+ * @param {Object} index the UTXO index within the transaction
  * @param {Object} account the account to check against
- * @param {Object} index index of the transaction
  */
-function checkAccountUtxosSpent(transaction, account, index) {
+function checkAccountUtxosSpent(transaction, index, account) {
     for (let utxo of account.utxos) {
         if (utxo.txid === transaction.vin[index].txid
-            &amp;&amp; transaction.vin[index].vout === utxo.index
-            &amp;&amp; utxo.spent !== UTXOSTATUS.SPENTVERIFIED
+            &amp;&amp; +transaction.vin[index].vout === +utxo.index
         ) {
-            log.info(_blockchainName, 'Spent ' + utxo.value + 'satoshis from account: ' + account.address);
-            utxo.spent = UTXOSTATUS.SPENTVERIFIED;
+            log.info(_blockchainName, `Spent ${utxo.value} satoshis from account: ${account.address}`);
+            utxo.spent = transaction.txid;
             updateAccountBalance(account);
         }
     }
 }
-
-/**
- * Generate account from keypair
- * @private
- * @param {Object} bcKeyPair a cryptographic key pair for Bitcoin
- * @returns {Object} the account data
- */
-function generateAccount(bcKeyPair) {
-    return {
-        address: bitcoin.payments.p2pkh({
-            pubkey: bcKeyPair.publicKey,
-            network: _bcState.parameters.network
-        }).address,
-        publicKey: bcKeyPair.publicKey.toString('hex'),
-        privateKey: bcKeyPair.privateKey.toString('hex'),
-        balance: 0,
-        firstBlock: 1,
-        lastBlock: 0,
-        syncing: false,
-        utxos: []
-    };
-}
-
 </code></pre>
         </article>
     </section>
@@ -554,13 +561,13 @@ function generateAccount(bcKeyPair) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 23:16:00 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Nov 04 2021 12:26:59 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

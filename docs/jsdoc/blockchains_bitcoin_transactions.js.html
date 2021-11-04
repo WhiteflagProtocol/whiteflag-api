@@ -37,8 +37,7 @@ module.exports = {
     init: initTransactions,
     send: sendTransaction,
     get: getTransaction,
-    extractMessage,
-    getFee: getTransactionFee
+    extractMessage
 };
 
 // Node.js core and external modules //
@@ -53,21 +52,26 @@ const { ProcessingError } = require('../../common/errors');
 const wfState = require('../../protocol/state');
 
 // Bitcoin sub-modules //
-const bcCommon = require('./common');
 const bcRpc = require('./rpc');
 const bcAccounts = require('./accounts');
 
 // Module constants //
+const BINENCODING = 'hex';
 const WFINDENTIFIER = '5746';
 const SCRIPTIDENTIFIER = 'OP_RETURN';
 const OPRETURNSIZE = 80;
 const KEYIDLENGTH = 12;
-const UTXOSTATUS = bcCommon.getUxtoStatuses();
+const KILOBYTE = 1024;
+const SATOSHI = 100000000;
+const P2PKHTXBYTES = 30;
+const P2PKHOUTPUTBYTES = 33;
+const P2PKHINPUTBUTES = 146;
 
 // Module variables //
 let _blockchainName;
 let _bcState;
-let _transactionFee = 4000;
+let _transactionFee = 1000;
+let _transactionPriority = 0;
 let _traceRawTransaction = false;
 
 /**
@@ -85,6 +89,7 @@ function initTransactions(bcConfig, bcState) {
 
     // Get configuration paramters
     if (bcConfig.transactionValue) _transactionFee = bcConfig.transactionValue;
+    if (bcConfig.transactionPriority) _transactionPriority = bcConfig.transactionPriority;
     if (bcConfig.traceRawTransaction) _traceRawTransaction = bcConfig.traceRawTransaction;
 
     // Succesfully completed initialisation
@@ -101,58 +106,30 @@ function initTransactions(bcConfig, bcState) {
  * @param {Buffer} data the data to be embedded in the OP_RETURN of the transaction
  * @returns {Promise} resolves to transaction hash
  */
-function sendTransaction(account, toAddress, amount, data) {
+function sendTransaction(account, toAddress, amount, data = null) {
     log.trace(_blockchainName, `Sending transaction from account: ${account.address}`);
     return new Promise((resolve, reject) => {
-        // Extract and check transaction data
-        const fromAddress = account.address;
-        if (data.length > OPRETURNSIZE) {
+        // Check transaction data
+        if (data &amp;&amp; data.length > OPRETURNSIZE) {
             return reject(new ProcessingError(`Encoded message size of ${data.length} bytes exceeds maximum size of ${OPRETURNSIZE} bytes`, null, 'WF_API_BAD_REQUEST'));
         }
-        // Calculate input UTXOs
-        let utxoInputList = getUtxosForTransaction(account, amount);
-        let totalUtxoValue = getTotalUtxoInputValue(utxoInputList);
-
-        // Create transaction
-        let transaction;
-        try {
-            transaction = createTransaction(utxoInputList, _bcState.parameters.network);
-        } catch(err) {
-            return reject(new Error(`Error creating transaction: ${err.message}`));
-        }
-        // Add data to transaction
-        try {
-            // Embed data in unspendable OP_RETURN output
-            if (data !== null) {
-                const embed = bitcoin.payments.embed({ data: [data] });
-                transaction.addOutput(embed.output, 0);
-            }
-        } catch (err) {
-            return reject(new Error(`Error embedding data in transaction: ${err.message}`));
-        }
-        // Add outputs to transaction
-        try {
-            // Aamount to transfer to other address
-            if (fromAddress !== toAddress) {
-                transaction.addOutput(toAddress, amount);
-            }
-            // Unspent funds go back to account address, minus mining fee
-            const returnValue = (totalUtxoValue - (amount + _transactionFee));
-            transaction.addOutput(fromAddress, returnValue);
-        } catch (err) {
-            return reject(new Error(`Error adding outputs to transaction: ${err.message}`));
-        }
-        // Sign and send transaction
-        signTransaction(account, transaction, _bcState.parameters.network)
-        .then(rawTransaction => {
-            return bcRpc.sendSignedTransaction(rawTransaction);
+        // Get inputs and create transaction
+        let inputs = getUtxosForTransaction(account, amount);
+        createTransaction(account, toAddress, inputs, amount, data)
+        .then(transaction => {
+            return signTransaction(account, transaction, _bcState.parameters.network);
+        })
+        .then(signedTransaction => {
+            log.trace(_blockchainName, `Sending signed transaction: ${JSON.stringify(signedTransaction)}`);
+            const rawTransaction = signedTransaction.toHex();
+            return bcRpc.sendRawTransaction(rawTransaction);
         })
         .then(transactionHash => {
             if (transactionHash === null) return reject(new Error('Transaction not processed by node'), null);
-            bcAccounts.updateUtxos(account, utxoInputList);
+            bcAccounts.updateUtxosSpent(account, inputs);
             resolve(transactionHash);
         })
-        .catch(err => reject(new Error(`Error signing and sending transaction: ${err.message}`)));
+        .catch(err => reject(new Error(`Error processing transaction: ${err.message}`)));
     });
 }
 
@@ -182,7 +159,6 @@ function getTransaction(transactionHash) {
  * @param {number} blockNumber the block number
  * @param {number} timestamp the block or transaction time
  * @returns {Promise} resolves to a Whiteflag message
- * @todo Find better way to extract pubKey
  */
 function extractMessage(transaction, blockNumber, timestamp) {
     if (_traceRawTransaction) log.trace(_blockchainName, `Extracting Whiteflag message from transaction: ${transaction.hash}`);
@@ -204,9 +180,9 @@ function extractMessage(transaction, blockNumber, timestamp) {
                 transactionTime = new Date(timestamp * 1000).toISOString();
             }
             // Get originator address and public key
-            const pubKey = transaction.vin[0].scriptSig.asm.split('[ALL] ')[1];
+            const publicKey = transaction.vin[0].scriptSig.asm.split('[ALL] ')[1];
             const { address } = bitcoin.payments.p2pkh({
-                pubkey: pubkeyToBuffer(pubKey),
+                pubkey: Buffer.from(publicKey, BINENCODING),
                 network: _bcState.parameters.network
             });
             // Return a new Whiteflag message object
@@ -217,7 +193,7 @@ function extractMessage(transaction, blockNumber, timestamp) {
                     transactionHash: transaction.hash,
                     transactionTime: transactionTime,
                     originatorAddress: address,
-                    originatorPubKey: pubKey,
+                    originatorPubKey: publicKey,
                     encodedMessage: data
                 }
             });
@@ -226,60 +202,49 @@ function extractMessage(transaction, blockNumber, timestamp) {
     });
 }
 
-/**
- * Determines the fee in satoshis per byte of a given Bitcoin transaction
- * @function getTransactionFee
- * @alias module:lib/blockchains/bitcoin/transactions.getFee
- * @param {string} transactionHash
- * @returns {Promise} resolves to transaction fee
- */
-function getTransactionFee(transactionHash) {
-    log.trace(_blockchainName, `Determining fee of transaction: ${transactionHash}`);
-    return new Promise((resolve, reject) => {
-        bcRpc.getRawTransaction(transactionHash)
-        .then(transaction => {
-            let totalOutputValue = 0;
-            let totalInputValue = 0;
-            let inputsBatch = [];
-            transaction.vout.forEach(vout => {
-                totalOutputValue += vout.value;
-            });
-            // loop through all inputs of the transaction, to find the input values
-            transaction.vin.forEach(vin => {
-                inputsBatch.push(
-                    bcRpc.getRawTransaction(vin.transactionHash)
-                    .then(inputTransaction => {
-                        inputTransaction.vout.forEach(vout => {
-                            if (vin.vout === vout.n &amp;&amp; vout.value !== null) {
-                                totalInputValue += vout.value;
-                            }
-                        });
-                    })
-                    .catch(err => reject(err))
-                );
-            });
-            Promise.all(inputsBatch)
-            .then(() => {
-                let fee = (((totalInputValue - totalOutputValue) * 100000000) / transaction.size).toFixed();
-                resolve(fee);
-            })
-            .catch(err => reject(err));
-        })
-        .catch(err => reject(err));
-    });
-}
-
 // PRIVATE MODULE FUNCTIONS //
 /**
- * Converts public key string to buffer
+ * Creates a new Bitcoin transaction
  * @private
+ * @param {Object} account the account used to send the transaction
+ * @param {string} toAddress the address to send the transaction to
+ * @param {string} amount the amount of funds to be transfered with the transaction
+ * @param {Buffer} data the data to be embedded in the OP_RETURN of the transaction
+ * @returns {Promise} returns to the newly create transaction
  */
- function pubkeyToBuffer(publicKey) {
-    let bytes = new Uint8Array(Math.ceil(publicKey.length / 2));
-    for (let i = 0; i &lt; bytes.length; i++) {
-        bytes[i] = parseInt(publicKey.substr(i * 2, 2), 16);
-    }
-    return bytes;
+function createTransaction(account, toAddress, inputs, amount, data = null) {
+    return new Promise((resolve, reject) => {
+        let outputLength = P2PKHOUTPUTBYTES;
+        let inputValue = sumUtxos(inputs);
+        let transaction = new bitcoin.TransactionBuilder(_bcState.parameters.network);
+        try {
+            // Transaction inputs
+            for (let utxo of inputs) {
+                transaction.addInput(utxo.txid, +utxo.index);
+            }
+            // Embed data in transaction
+            if (data !== null) {
+                const embed = bitcoin.payments.embed({ data: [data] });
+                transaction.addOutput(embed.output, 0);
+                outputLength += 2 + data.length;
+            }
+            // Aamount to transfer to other address
+            if (account.address !== toAddress) {
+                transaction.addOutput(toAddress, amount);
+                outputLength += P2PKHOUTPUTBYTES;
+            }
+        } catch(err) {
+            return reject(new Error(`Could not create transaction: ${err.message}`));
+        }
+        // Unspent funds go back to account address, minus transaction fee
+        const transactionSize = (inputs.length * P2PKHINPUTBUTES) + (outputLength) + P2PKHTXBYTES;
+        calculateTransactionFee(transactionSize)
+        .then(transactionFee => {
+            const returnValue = (inputValue - (amount + transactionFee));
+            transaction.addOutput(account.address, returnValue);
+            return resolve(transaction);
+        });
+    });
 }
 
 /**
@@ -288,7 +253,7 @@ function getTransactionFee(transactionHash) {
  * @param {Object} transaction the transaction to sign
  * @param {Object} account the account making the transaction
  * @param {Object} bcNetwork the Bitcoin network parameters
- * @returns {Promise} resolves to the transaction in hexadecimal format
+ * @returns {Promise} resolves to the signed raw transaction
  */
  function signTransaction(account, transaction, bcNetwork) {
     return new Promise((resolve, reject) => {
@@ -299,27 +264,39 @@ function getTransactionFee(transactionHash) {
             // Get keys in the correct encoding and sign inputs
             const privateKeyBuffer = Buffer.from(privateKey, 'hex');
             const keyPair = bitcoin.ECPair.fromPrivateKey(privateKeyBuffer, { network: bcNetwork });
-            for (let b = 0; b &lt; transaction.__inputs.length; b++) {
-                transaction.sign(b, keyPair);
+            for (let i = 0; i &lt; transaction.__TX.ins.length; i++) {
+                transaction.sign(i, keyPair);
             }
-            return resolve([transaction.build().toHex()]);
+            return resolve(transaction.build());
         });
     });
 }
 
 /**
- * Sets the input values for a transaction
+ * Determines the fee for a new transaction in satoshis
  * @private
- * @param {Array} utxoInputList the input UXTOs for the transaction
- * @param {Object} bcNetwork the Bitcoin network parameters
- * @returns {Object} transaction
+ * @param {string} transactionHash
+ * @returns {Promise} resolves to transaction fee
  */
- function createTransaction(utxoInputList, bcNetwork) {
-    let transaction = new bitcoin.TransactionBuilder(bcNetwork);
-    for (let utxo of utxoInputList) {
-        transaction.addInput(utxo.txid, parseInt(utxo.index, 10));
+ function calculateTransactionFee(transactionSize) {
+    // Use fixed rate if no priority given
+    if (!_transactionPriority) {
+        return Promise.resolve(_transactionFee);
     }
-    return transaction;
+    // Try to estimate fee based on priority
+    return bcRpc.getFeeRate(_transactionPriority)
+    .then(estimate => {
+        const estimatedFee = Math.ceil((estimate.feerate * SATOSHI) * (transactionSize / KILOBYTE));
+
+        // Use estimated fee if higher than configured transaction fee
+        return Promise.resolve(Math.max(_transactionFee, estimatedFee));
+    })
+    .catch(err => {
+        // Try to estimate with previously retrieved fee rate, and use that if higher than configured fee
+        log.warn(_blockchainName, `Could not determine actual transaction fee rate: ${err.message}`);
+        const estimatedFee = Math.ceil((_bcState.status.feerate * SATOSHI) * (transactionSize / KILOBYTE));
+        return Promise.resolve(Math.max(_transactionFee, estimatedFee));
+    });
 }
 
 /**
@@ -328,9 +305,9 @@ function getTransactionFee(transactionHash) {
  * @param {Array} utxoInputList list of UTXOs
  * @returns {number} the total value of the UTXOs in the list
  */
-function getTotalUtxoInputValue(utxoInputList) {
-    return utxoInputList.reduce((accumulator, uxto) => {
-        return accumulator + uxto.value;
+function sumUtxos(utxoList) {
+    return utxoList.reduce((accumulator, utxo) => {
+        return accumulator + utxo.value;
     }, 0);
 }
 
@@ -339,22 +316,21 @@ function getTotalUtxoInputValue(utxoInputList) {
  * @private
  * @param {Object} account the account making the transaction
  * @param {Object} amount the required amount
- * @returns {Array} list of unspent UXTOs providing the required amount
+ * @returns {Array} list of unspent UTXOs providing the required amount
  */
 function getUtxosForTransaction(account, amount) {
     let unspentUtxos = [];
+    let totalValue = 0;
     for (let utxo of account.utxos) {
-        if (utxo.spent === UTXOSTATUS.UNSPENT) {
-            unspentUtxos.push(utxo);
-        }
+        if (!utxo.spent) unspentUtxos.push(utxo);
+        totalValue += utxo.value;
     }
-    let totalUtxoValue = unspentUtxos.reduce((accumulator, uxto) => {
-        return accumulator + uxto.value;
-    }, 0);
-    if (totalUtxoValue &lt; amount || unspentUtxos.length &lt; 1) {
+    if (totalValue &lt; amount || unspentUtxos.length &lt; 1) {
         throw new Error('Not enough satoshis to perform the transaction');
     }
-    unspentUtxos.sort((a, b) => a.value - b.value);
+    unspentUtxos.sort((a, b) => {
+        return a.value - b.value;
+    });
     return getUtxoInputs(unspentUtxos, amount);
 }
 
@@ -363,16 +339,15 @@ function getUtxosForTransaction(account, amount) {
  * @private
  * @param {Array} unspentUtxos list of unspent UTXOs
  * @param {Object} amount the required amount
- * @returns {Array} list of unspent UXTOs providing the required amount
+ * @returns {Array} list of unspent UTXOs providing the required amount
  */
 function getUtxoInputs(unspentUtxos, amount) {
     let utxoInputs = [];
-    for (let y = 0; y &lt;= unspentUtxos.length; y++) {
-        utxoInputs.push(unspentUtxos[y]);
-        let sum = utxoInputs.reduce((accumulator, uxto) => {
-            return accumulator + uxto.value;
-        }, 0);
-        if (sum >= amount) {
+    let totalInput = 0;
+    for (let utxo of unspentUtxos) {
+        utxoInputs.push(utxo);
+        totalInput += utxo.value;
+        if (totalInput >= amount) {
             return utxoInputs;
         }
     }
@@ -388,13 +363,13 @@ function getUtxoInputs(unspentUtxos, amount) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_common.html">lib/blockchains/bitcoin/common</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Oct 10 2021 23:16:00 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Nov 04 2021 12:26:59 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
