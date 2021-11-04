@@ -688,7 +688,7 @@ function removeKey(category, id) {
  * Validates the state structure configuration against the state schema
  * @private
  * @param {Object} [stateData] the complete state
- * @returns {array} validation errors, empty if no errors
+ * @returns {Array} validation errors, empty if no errors
  */
 function validateState(stateData = _wfState) {
     let stateErrors = [];
@@ -735,10 +735,7 @@ function extractState(stateObject) {
     } else {
         stateDataStr = stateObject.state;
     }
-    let stateData = checkState(JSON.parse(stateDataStr));
-
-    // Return state
-    return stateData;
+    return checkState(JSON.parse(stateDataStr));
 }
 
 /**
@@ -748,57 +745,15 @@ function extractState(stateObject) {
  */
 function checkState(stateData) {
     // Check for complete object structure and add new properties as required
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'blockchains')) stateData.blockchains = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'originators')) stateData.originators = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'queue')) stateData.queue = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'initVectors')) stateData.queue.initVectors = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'blockDepths')) stateData.queue.blockDepths = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'crypto')) stateData.crypto = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'blockchainKeys')) stateData.crypto.blockchainKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'ecdhPrivateKeys')) stateData.crypto.ecdhPrivateKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'negotiatedKeys')) stateData.crypto.negotiatedKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'presharedKeys')) stateData.crypto.presharedKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'authTokens')) stateData.crypto.authTokens = [];
-
-    // Put old private keys in keystore
-    const blockchains = Object.keys(stateData.blockchains);
-    for (let b = 0; b &lt; blockchains.length; b++) {
-        if (Object.prototype.hasOwnProperty.call(stateData.blockchains[blockchains[b]], 'accounts')) {
-            const accounts = stateData.blockchains[blockchains[b]].accounts;
-            for (let a = 0; a &lt; accounts.length; a++) {
-                if (Object.prototype.hasOwnProperty.call(accounts[a], 'privateKey')) {
-                    const id = hash(blockchains[b] + accounts[a].address, KEYIDLENGTH);
-                    const index = stateData.crypto.blockchainKeys.findIndex(
-                        item => item.id.toLowerCase() === id.toLowerCase()
-                    );
-                    const data = encryptKey(accounts[a].privateKey, id);
-                    if (index &lt; 0) {
-                        stateData.crypto.blockchainKeys.push({
-                            id: id,
-                            secret: data
-                        });
-                    } else {
-                        stateData.crypto.blockchainKeys[index] = {
-                            id: id,
-                            secret: data
-                        };
-                    }
-                    accounts[a].privateKey = undefined;
-                }
-            }
-        }
-    }
-    // Checks for unique values in originator authentication messages
-    stateData.originators.forEach(originator => {
-        if (Array.isArray(originator.authenticationMessages)) {
-            originator.authenticationMessages = [...new Set(originator.authenticationMessages)];
-        }
-    });
-    // Validate against schema
+    stateData =
+        checkStateDataOriginators(
+            checkStateDataBlockchains(
+                checkStateDataStructure(stateData)
+            )
+        );
+    // Finally, validate against schema
     let stateErrors = validateState();
     if (stateErrors.length > 0) throw new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));
-
-    // Return checked data
     return stateData;
 }
 
@@ -954,6 +909,104 @@ function generateKEK(id) {
     const info = Buffer.from('KEK-' + id);
     return hkdf(ikm, salt, info, KEKLENGTH);
 }
+
+
+// STATE STRUCTURE CORRECTIONS //
+/**
+ * Check for complete object structure and add new properties as required
+ * @private
+ * @param {Object} stateData the state data object
+ * @returns {Object} the checked and corrected state data object
+ */
+function checkStateDataStructure(stateData) {
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'blockchains')) stateData.blockchains = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'originators')) stateData.originators = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'queue')) stateData.queue = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'initVectors')) stateData.queue.initVectors = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'blockDepths')) stateData.queue.blockDepths = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData, 'crypto')) stateData.crypto = {};
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'blockchainKeys')) stateData.crypto.blockchainKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'ecdhPrivateKeys')) stateData.crypto.ecdhPrivateKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'negotiatedKeys')) stateData.crypto.negotiatedKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'presharedKeys')) stateData.crypto.presharedKeys = [];
+    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'authTokens')) stateData.crypto.authTokens = [];
+    return stateData;
+}
+
+/**
+ * Checks and corrects blockchain state data
+ * @private
+ * @param {Object} stateData the state data object
+ * @returns {Object} the checked and corrected state data object
+ */
+function checkStateDataBlockchains(stateData) {
+    // Check blockchains
+    for (const blockchain in stateData.blockchains) {
+        // Check blockchain accounts
+        if (Object.prototype.hasOwnProperty.call(stateData.blockchains[blockchain], 'accounts')) {
+            let accounts = stateData.blockchains[blockchain].accounts;
+            for (const index in accounts) {
+                // Remove invalid account entry with a non-string address
+                if (Object.prototype.hasOwnProperty.call(accounts[index], 'address')) {
+                    if (typeof accounts[index].address !== 'string') {
+                        accounts.splice(index, 1);
+                        continue;
+                    }
+                }
+                // Move naked private keys in acoount to keystore
+                stateData = upgradeStateDataKeyStorage(stateData, blockchain, accounts[index]);
+            }
+        }
+    }
+    return stateData;
+}
+
+/**
+ * Upgrades state by putting naked private keys in keystore
+ * @private
+ * @param {Object} stateData the state data object
+ * @param {string} blockchain the blockchain name
+ * @param {Object} account the account data
+ * @returns {Object} the checked and corrected state data object
+ */
+function upgradeStateDataKeyStorage(stateData, blockchain, account) {
+    if (Object.prototype.hasOwnProperty.call(account, 'privateKey')) {
+        const id = hash(blockchain + account.address, KEYIDLENGTH);
+        const index = stateData.crypto.blockchainKeys.findIndex(
+            item => item.id.toLowerCase() === id.toLowerCase()
+        );
+        const data = encryptKey(account.privateKey, id);
+        if (index &lt; 0) {
+            stateData.crypto.blockchainKeys.push({
+                id: id,
+                secret: data
+            });
+        } else {
+            stateData.crypto.blockchainKeys[index] = {
+                id: id,
+                secret: data
+            };
+        }
+        account.privateKey = undefined;
+    }
+    return stateData;
+}
+
+/**
+ * Checks and corrects originator state data
+ * @private
+ * @param {Object} stateData the state data object
+ * @returns {Object} the checked and corrected state data object
+ */
+function checkStateDataOriginators(stateData) {
+    // Checks for unique values in originator authentication messages
+    stateData.originators.forEach(originator => {
+        if (Array.isArray(originator.authenticationMessages)) {
+            originator.authenticationMessages = [...new Set(originator.authenticationMessages)];
+        }
+    });
+    return stateData;
+}
 </code></pre>
         </article>
     </section>
@@ -964,13 +1017,13 @@ function generateKEK(id) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Mon May 24 2021 22:55:33 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Nov 04 2021 12:26:59 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -6,7 +6,7 @@
 
 [confirmation]
 enabled = true
-interval = 6000
+interval = 12000
 maxBlockDepth = 8
 updateEachBlock = false
 
@@ -24,10 +24,33 @@ blockMaxRetries = 0
 transactionBatchSize = 64
 transactionValue = "0"
 traceRawTransaction = false
-rpcTimeout = 2000
+rpcTimeout = 10000
 rpcProtocol = "http"
 rpcHost = "localhost"
 rpcPort = "8545"
+rpcPath = ""
+username = ""
+password = ""
+
+[[blockchains]]
+name = "bitcoin-testnet"
+module = "bitcoin"
+testnet = true
+active = false
+createAccount = false
+blockRetrievalInterval = 60000
+blockRetrievalStart = 0
+blockRetrievalEnd = 0
+blockRetrievalRestart = 20
+blockMaxRetries = 0
+transactionBatchSize = 128
+transactionFee = 1000
+transactionPriority = 0
+traceRawTransaction = false
+rpcTimeout = 10000
+rpcProtocol = "http"
+rpcHost = "localhost"
+rpcPort = "8332"
 rpcPath = ""
 username = ""
 password = ""

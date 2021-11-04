@@ -353,7 +353,7 @@
         "/blockchains": {
             "get": {
                 "tags": [ "Blockchains", "State" ],
-                "description": "Returns an array with all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
+                "description": "Returns an array with the names of all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
                 "operationId": "getAllBlockchains",
                 "responses": {
                     "200": {
@@ -398,7 +398,7 @@
         "/blockchains/{blockchain}/accounts": {
             "get": {
                 "tags": [ "Blockchains", "Accounts", "State" ],
-                "description": "Returns the accounts of the specified blockchain. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all account addresses of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getAccounts",
                 "responses": {
                     "200": {
@@ -576,13 +576,13 @@
             "post": {
                 "tags": [ "Blockchains", "Accounts" ],
                 "description": "Transfers value to another blockchain account. This operation may be disabled in the configuration.",
-                "operationId": "transferValue",
+                "operationId": "transferFunds",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/transferValue"
+                    "$ref": "#/components/requestBodies/transferFunds"
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/transferValue"
+                        "$ref": "#/components/responses/transferFunds"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -822,7 +822,7 @@
         "/originators/tokens": {
             "post": {
                 "tags": [ "Authentication", "Originators", "State" ],
-                "description": "Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, both used for authentication method 2. This operation may be disabled in the configuration.",
+                "description": "Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, used for authentication method 2. This operation may be disabled in the configuration.",
                 "operationId": "storeAuthToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/storeAuthToken"
@@ -898,7 +898,7 @@
         "/token/create": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Creates the non-secret Whiteflag authentication token for authentication method 2. This token is to be used as verification data in an `A2` authentication message by the specified blockchain account. This operation may be disabled in the configuration.",
+                "description": "Creates the non-secret Whiteflag verification token for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.",
                 "operationId": "createToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfAuthToken"
@@ -1235,7 +1235,7 @@
                             "title": "Whiteflag Authentication Token request body",
                             "description": "Whiteflag Authentication Token request body",
                             "type": "object",
-                            "required": [ "blockchain", "address", "authToken" ],
+                            "required": [ "blockchain", "address", "secret" ],
                             "properties": {
                                 "blockchain": {
                                     "description": "The name of the blockchain used by the originator",
@@ -1245,7 +1245,7 @@
                                     "description": "The address of the originator blockchain account with which the token is used",
                                     "type": "string"
                                 },
-                                "authToken": {
+                                "secret": {
                                     "description": "A pre-shared secret authentication token in raw hexadecimal format",
                                     "type": "string"
                                 }
@@ -1254,7 +1254,7 @@
                     }
                 }
             },
-            "transferValue": {
+            "transferFunds": {
                 "description": "Data required to transfer value to another blockchain account",
                 "content": {
                     "application/json": {
@@ -1345,7 +1345,7 @@
                         "schema": {
                             "description": "Authentication token data object",
                             "type": "object",
-                            "required": [ "name", "blockchain", "authToken" ],
+                            "required": [ "name", "blockchain", "secret" ],
                             "properties": {
                                 "name": {
                                     "description": "The name of the orginator",
@@ -1359,7 +1359,7 @@
                                     "description": "The blockchain address of the originator, if already known",
                                     "type": "string"
                                 },
-                                "authToken": {
+                                "secret": {
                                     "description": "A pre-shared secret authentication token in raw hexadecimal format",
                                     "type": "string"
                                 }
@@ -1451,7 +1451,7 @@
                 }
             },
             "wfMessage": {
-                "description": "Succesfully processed the Whiteflag message and returning the message with updated MetaHeader",
+                "description": "Successfully processed the Whiteflag message and returning the message with updated MetaHeader",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1491,7 +1491,7 @@
                 }
             },
             "wfSignature": {
-                "description": "Succesfully processed the Whiteflag authentication signature and returning the result",
+                "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1509,7 +1509,7 @@
                 }
             },
             "wfSignatureDecoded": {
-                "description": "Succesfully processed the Whiteflag authentication signature and returning the result",
+                "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1527,7 +1527,7 @@
                 }
             },
             "wfAuthToken": {
-                "description": "Succesfully created the Whiteflag authentication token verification data and returning the result",
+                "description": "Successfully created the Whiteflag authentication token verification data and returning the result",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1551,7 +1551,7 @@
                 }
             },
             "blockchainsState": {
-                "description": "Successfully retrieved and returning all blockchain configurations and states",
+                "description": "Successfully retrieved and returning the names of all configured blockchains",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1561,7 +1561,12 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "$ref": "protocol/state.schema.json#/properties/blockchains"
+                                    "description": "The names of the configured blockchains",
+                                    "type": "array",
+                                    "items": {
+                                        "description": "The name of the blockchain",
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
@@ -1587,7 +1592,7 @@
                 }
             },
             "blockchainAccounts": {
-                "description": "Successfully retrieved and returning all blockchain accounts",
+                "description": "Successfully retrieved and returning the addresses of the blockchain accounts",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1597,10 +1602,11 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "description": "Blockchain accounts",
+                                    "description": "The addresses of the blockchain accounts",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "protocol/state.schema.json#/definitions/blockchainAccountObject"
+                                        "description": "The blockchain address that identifies the account",
+                                        "type": "string"
                                     }
                                 }
                             }
@@ -1644,7 +1650,7 @@
                     }
                 }
             },
-            "transferValue": {
+            "transferFunds": {
                 "description": "Successfully transferred value to another blockchain account and returning the transaction hash",
                 "content": {
                     "application/json": {
