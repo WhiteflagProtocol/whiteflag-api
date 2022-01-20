@@ -1,0 +1,491 @@
+{
+	"info": {
+		"_postman_id": "70c62bce-910c-4c22-9923-fee19080c945",
+		"name": "Whiteflag API Dev Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Operations",
+			"item": [
+				{
+					"name": "getMessages",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5746/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getAllOriginators",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5746/originators",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"originators"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getBlockchainState",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5746/blockchains/ethereum-rinkeby",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"blockchains",
+								"ethereum-rinkeby"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "transferFunds",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"toAddress\": \"0000000000000000000000000000000000000000\",\n    \"value\": \"1\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/blockchains/ethereum-rinkeby/accounts/00000000/transfer",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"blockchains",
+								"ethereum-rinkeby",
+								"accounts",
+								"00000000",
+								"transfer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sendMessage A",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-rinkeby\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\"\n    },\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"0\",\n        \"DuressIndicator\": \"0\",\n        \"MessageCode\": \"A\",\n        \"ReferenceIndicator\": \"0\",\n        \"ReferencedMessage\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n    },\n    \"MessageBody\": {\n        \"VerificationMethod\": \"1\",\n        \"VerificationData\": \"https://organisation.org/signature1.json\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sendMessage F",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-rinkeby\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\"\n    },\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"1\",\n        \"DuressIndicator\": \"0\",\n        \"MessageCode\": \"F\",\n        \"ReferenceIndicator\": \"0\",\n        \"ReferencedMessage\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n    },\n    \"MessageBody\": {\n        \"Text\": \"Encryption test 1514\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sendMessage P",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-rinkeby\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\"\n    },\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"0\",\n        \"DuressIndicator\": \"0\",\n        \"MessageCode\": \"S\",\n        \"ReferenceIndicator\": \"0\",\n        \"ReferencedMessage\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n    },\n    \"MessageBody\": {\n        \"SubjectCode\": \"10\",\n        \"DateTime\": \"2018-01-01T00:00:00Z\",\n        \"Duration\": \"P00D00H00M\",\n        \"ObjectType\": \"11\",\n        \"ObjectLatitude\": \"+50.00000\",\n        \"ObjectLongitude\": \"+005.00000\",\n        \"ObjectSizeDim1\": \"0000\",\n        \"ObjectSizeDim2\": \"0000\",\n        \"ObjectOrientation\": \"000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sendMessage S",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-ropsten\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\"\n    },\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"0\",\n        \"DuressIndicator\": \"0\",\n        \"MessageCode\": \"S\",\n        \"ReferenceIndicator\": \"0\",\n        \"ReferencedMessage\": \"4c1b8331ba07cf644d4d5065f5c954fe1370e3b0fa0cab37f3b87261f153673d\"\n    },\n    \"MessageBody\": {\n        \"SubjectCode\": \"10\",\n        \"DateTime\": \"2018-01-01T00:00:00Z\",\n        \"Duration\": \"P00D00H00M\",\n        \"ObjectType\": \"11\",\n        \"ObjectLatitude\": \"+50.00000\",\n        \"ObjectLongitude\": \"+005.00000\",\n        \"ObjectSizeDim1\": \"0000\",\n        \"ObjectSizeDim2\": \"0000\",\n        \"ObjectOrientation\": \"000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/send",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "encodeMessage",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-rinkeby\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\",\n        \"recipientAddress\": \"0000000000000000000000000000000000000000\",\n        \"encryptionKeyInput\": \"213612a4a7141d69e87d0ebe516a55b9e8aefb8c287df3b80532a0999f85bc26\"\n    },\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"0\",\n        \"DuressIndicator\": \"1\",\n        \"MessageCode\": \"T\",\n        \"ReferenceIndicator\": \"4\",\n        \"ReferencedMessage\": \"3efb4e0cfa83122b242634254c1920a769d615dfcc4c670bb53eb6f12843c3ae\"\n    },\n    \"MessageBody\": {\n        \"PseudoMessageCode\": \"M\",\n        \"PseudoMessageBody\": {\n            \"SubjectCode\": \"80\",\n            \"DateTime\": \"2018-01-01T00:00:00Z\",\n            \"Duration\": \"P00D00H00M\",\n            \"ObjectType\": \"22\",\n            \"ObjectLatitude\": \"+50.00000\",\n            \"ObjectLongitude\": \"+005.00000\",\n            \"ObjectSizeDim1\": \"0000\",\n            \"ObjectSizeDim2\": \"0000\",\n            \"ObjectOrientation\": \"000\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/encode",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"encode"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "decodeMessage",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {\n        \"blockchain\": \"ethereum-rinkeby\",\n        \"originatorAddress\": \"0000000000000000000000000000000000000000\",\n        \"recipientAddress\": \"0000000000000000000000000000000000000000\",\n        \"encryptionKeyInput\": \"213612a4a7141d69e87d0ebe516a55b9e8aefb8c287df3b80532a0999f85bc26\",\n        \"formatValid\": true,\n        \"encodedMessage\": \"\",\n        \"encryptionInitVector\": \"\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/decode",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"decode"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "validateMessage",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"MetaHeader\": {},\n    \"MessageHeader\": {\n        \"Prefix\": \"WF\",\n        \"Version\": \"1\",\n        \"EncryptionIndicator\": \"0\",\n        \"DuressIndicator\": \"0\",\n        \"MessageCode\": \"A\",\n        \"ReferenceIndicator\": \"0\",\n        \"ReferencedMessage\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n    },\n    \"MessageBody\": {\n        \"VerificationMethod\": \"1\",\n        \"VerificationData\": \"https://organisation.org/signature1.json\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/messages/validate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"messages",
+								"validate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createSignature",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"addr\": \"0000000000000000000000000000000000000000\",\n    \"orgname\": \"Organisation\",\n    \"url\": \"https://organisation.org/signature1.json\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/blockchains/ethereum-rinkeby/accounts/00000000/sign",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"blockchains",
+								"ethereum-rinkeby",
+								"accounts",
+								"00000000",
+								"sign"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "decodeSignature",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"protected\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9\",\n    \"payload\": \"eyJhZGRyIjoiYTc0Mzc3REMwMWM1NzJkZTc2ZUM3YzM5MDJFODJjNTY5NDk3QWExYSIsIm9yZ25hbWUiOiJPcmdhbmlzYXRpb24iLCJ1cmwiOiJodHRwczovL29yZ2FuaXNhdGlvbi5vcmcvc2lnbmF0dXJlMS5qc29uIiwiaWF0IjoxNjA0ODUzNDA0fQ\",\n    \"signature\": \"MhBH0mqruQ_fNGqjpvxeEnPwNK7BB0OJJTy5DD00wuVXjcsi0dsUdxI2EaVeWP_0xNxDsCyjumE2wwFOQpPSAA\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/signature/decode",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"signature",
+								"decode"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "storeAuthToken",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Organisation\",\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"secret\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/originators/tokens",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"originators",
+								"tokens"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createToken",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"blockchain\": \"ethereum-rinkeby\",\r\n    \"address\": \"0000000000000000000000000000000000000000\",\r\n    \"secret\": \"a43f8d93e491efc248f8bd83be025d72e965e79d42d7795a05b6f325ed29f2b2\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5746/token/create",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5746",
+							"path": [
+								"token",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f4d5c847-514f-47e6-a8bd-03b09b9ae4b0",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "67dbacd5-4d64-4dca-aace-9b3e34771412",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

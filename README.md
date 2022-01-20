@@ -62,8 +62,8 @@ not part of this distribution and may be licenced differently.
 To deploy the Whiteflag API, make sure the following prerequisite software
 is installed:
 
-* [Node.js](https://nodejs.org/en/about/) including [NPM](https://www.npmjs.com/get-npm)
-* [MongoDB](https://www.mongodb.com/what-is-mongodb)
+* [Node.js](https://nodejs.org/en/about/) [version 16 or higher](https://nodejs.org/en/about/releases/), including [NPM](https://www.npmjs.com/get-npm)
+* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only tested with legacy [verson 3.6](https://www.mongodb.com/evolved#mdbthreesix)
 
 ### Deployment and Testing
 

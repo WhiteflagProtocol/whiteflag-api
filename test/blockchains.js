@@ -9,14 +9,13 @@
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 
-// Project modules required for test //
-// const wfApiBlockchains = require('../../lib/blockchains');
-
-// Set logger to log only fatal conditions //
+// Whiteflag common functions and classes //
+const { ignore } = require('../lib/common/processing');
 const log = require('../lib/common/logger');
 log.setLogLevel(1, ignore);
 
-// Constants //
+// Project modules required for test //
+// const wfApiBlockchains = require('../../lib/blockchains');
 
 // TEST SCRIPT //
 testCase('Whiteflag API blockchains module', function() {
@@ -31,11 +30,3 @@ testCase('Whiteflag API blockchains module', function() {
  * No specific blockchain functions are currently unit tested here.
  * Blockchain functions are assumed to be online end-to-end tested
  */
-
-// PRIVATE TEST FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}
-

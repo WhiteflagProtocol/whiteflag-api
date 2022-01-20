@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Tutorial: bitcoin</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Tutorial: bitcoin</h1>
+
+    <section>
+
+<header>
+    
+
+    <h2>bitcoin</h2>
+</header>
+
+<article>
+    <h1>Whiteflag API Connector for Bitcoin</h1>
+<p>The Whiteflag API natively supports the <a href="https://bitcoin.org/">Bitcoin</a>
+blockchain.</p>
+<h2>Accounts</h2>
+<p>Note that Bitcoin lacks the concept of an account, whereas Whiteflag assumes
+an identifiable originator that has an account on a blockchain. Such a
+blockchain account is nothing else than a key pair for signing blockchain
+transactions, with some related information, e.g. an address, balance etc.
+Therefore, what the API calls an account is nothing else than what sometimes
+is referred to as a &quot;wallet&quot;.</p>
+<p>For the purposes of (testing) Whiteflag, the same account, i.e. Bitcoin
+address, is reused. This is not a good practice for several reasons, such as
+anonimity. However, for Whiteflag it is necessary that different transactions
+can be linked to the same originator. Therefore, it is strongly recommended
+NOT to use the Whiteflag account for anything else, such as payments or
+transfers.</p>
+<h2>Bitcoin configuration</h2>
+<p>The blockchains configuration file <code>config/blockchains.toml</code> should contain
+the Bitcoin specific parameters in one of its <code>[[blockchains]]</code> sections.</p>
+<ul>
+<li><code>name</code>: the name according to the naming convention: <code>{name}-{network}</code>, e.g. <code>bitcoin-main</code> or <code>bitcoin-testnet</code></li>
+<li><code>module</code>: the Bitcoin module in <code>lib/blockchains</code>, which should be &quot;bitcoin&quot;</li>
+<li><code>testnet</code>: whether the Bitcoin testnet is used insted of the main network</li>
+<li><code>active</code>: whether the blockchain is active or should be ignored</li>
+</ul>
+<p>These parameters manage Bitcoin blockchain accounts (i.e. wallets):</p>
+<ul>
+<li><code>createAccount</code>: whether to automatically create an account if none exists; default is <code>false</code></li>
+</ul>
+<p>For retrieving transactions containing Whiteflag messages from the blockchain,
+these parameters may be provided, otherwise default values are used:</p>
+<ul>
+<li><code>blockRetrievalInterval</code>: the time in milliseconds between data retrieval intervals; the default is <code>60000</code> ms</li>
+<li><code>blockRetrievalStart</code>: the starting block from where to retrieve transactions; if <code>0</code> (default) the API resumes a number of blocks before the highest block as configured below</li>
+<li><code>blockRetrievalEnd</code>: the last block from where to retrieve transactions; if <code>0</code> (default) the API catches up with the highest block on the node</li>
+<li><code>blockRetrievalRestart</code>: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period</li>
+<li><code>blockMaxRetries</code>: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is <code>0</code>, which means unlimited retries</li>
+<li><code>transactionBatchSize</code>: how many transactions from a single block the API may process in parallel; default is <code>128</code></li>
+<li><code>transactionFee</code>: the (minimum) value of a transaction fee when sending a Whiteflag message, used if the fee cannot be estimated or if the estimated fee is lower; default is 1000 satoshis</li>
+<li><code>transactionPriority</code>: the priority used to estimate the transaction fee and defined by the number of blocks by which confirmation is desired: <code>1</code> is highest priority, but also a higher transaction fee, if <code>0</code> the fixed transaction fee is used</li>
+<li><code>traceRawTransaction</code>: whether to show each individual transaction when the loglevel is set to <code>6</code> (trace); default is <code>false</code> because this results in massive logging</li>
+</ul>
+<p>To send and receive Whiteflag messages, the API must be connected to a Bitcoin
+node exposing the standard Bitcoin RPC interface. These parameters are used to
+configure the connection:</p>
+<ul>
+<li><code>rpcTimeout</code>: the timeout for an RPC request in milliseconds; the default is <code>10000</code></li>
+<li><code>rpcProtocol</code>: the protocol via which the RPC interface is available, usually <code>http</code> or <code>https</code></li>
+<li><code>rpcHost</code>: the hostname of the Bitcoin node</li>
+<li><code>rpcPort</code>: the port on which the RPC interface is exposed</li>
+<li><code>rpcPath</code>: optional path to reach the RPC interface</li>
+<li><code>username</code>: an optional username for basic http authorization</li>
+<li><code>password</code>: an optional password for basic http authorization</li>
+</ul>
+</article>
+
+</section>
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Jan 20 2022 04:03:47 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

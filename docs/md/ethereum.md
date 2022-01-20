@@ -17,10 +17,10 @@ These parameters manage Ethereum blockchain accounts:
 
 * `createAccount`: whether to automatically create an account if none exists; default is `false`
 
-For retrieving transactions containing Whiteflag messages, these parameters
-may be provided, otherwise default are used:
+For retrieving transactions containing Whiteflag messages from the blockchain,
+these parameters may be provided, otherwise default values are used:
 
-* `blockRetrievalInterval`: the time in milliseconds between data retrioeval intervals
+* `blockRetrievalInterval`: the time in milliseconds between data retrieval intervals; the default is `6000` ms
 * `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API resumes a number of blocks before the highest block as configured below
 * `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the highest block on the node
 * `blockRetrievalRestart`: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period
@@ -29,9 +29,11 @@ may be provided, otherwise default are used:
 * `transactionValue`: the value of a transaction when sending a Whiteflag message; default is `0` ether
 * `traceRawTransaction`: whether to show each individual transaction when the loglevel is set to `6` (trace); default is `false` because this results in massive logging
 
-To connect to a node exposing the standard Ethereum RPC interface, these
-parameters must be set:
+To send and receive Whiteflag messages, the API must be connected to a Ethereum
+node exposing the standard Ethereum RPC interface. These parameters are used to
+configure the connection:
 
+* `rpcTimeout`: the timeout for an RPC request in milliseconds; the default is `10000`
 * `rpcProtocol`: the protocol via which the RPC interface is available, usually `http` or `https`
 * `rpcHost`: the hostname of the Ethereum node
 * `rpcPort`: the port on which the RPC interface is exposed

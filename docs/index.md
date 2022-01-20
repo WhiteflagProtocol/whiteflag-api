@@ -35,6 +35,7 @@ The Whiteflag Protocol and API specifications are also available at
 
 ## Blockchain Implementations
 
+* [Bitcoin](md/bitcoin.md)
 * [Ethereum](md/ethereum.md)
 
 ## Source Code Description

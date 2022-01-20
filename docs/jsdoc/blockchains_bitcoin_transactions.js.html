@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchains/bitcoin/transactions.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchains/bitcoin/transactions.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/blockchains/bitcoin/transactions
+ * @summary Whiteflag API Bitcoin transaction module
+ * @description Module to process Bitcoin transactions for Whiteflag
+ */
+module.exports = {
+    // Bitcoin transaction functions
+    init: initTransactions,
+    send: sendTransaction,
+    get: getTransaction,
+    extractMessage
+};
+
+// Node.js core and external modules //
+const bitcoin = require('bitcoinjs-lib');
+
+// Whiteflag common functions and classes //
+const log = require('../../common/logger');
+const { hash } = require('../../common/crypto');
+const { ProcessingError } = require('../../common/errors');
+
+// Whiteflag modules //
+const wfState = require('../../protocol/state');
+
+// Bitcoin sub-modules //
+const bcRpc = require('./rpc');
+const bcAccounts = require('./accounts');
+
+// Module constants //
+const BINENCODING = 'hex';
+const WFINDENTIFIER = '5746';
+const SCRIPTIDENTIFIER = 'OP_RETURN';
+const OPRETURNSIZE = 80;
+const KEYIDLENGTH = 12;
+const KILOBYTE = 1024;
+const SATOSHI = 100000000;
+const P2PKHTXBYTES = 30;
+const P2PKHOUTPUTBYTES = 33;
+const P2PKHINPUTBUTES = 146;
+
+// Module variables //
+let _blockchainName;
+let _bcState;
+let _transactionFee = 1000;
+let _transactionPriority = 0;
+let _traceRawTransaction = false;
+
+/**
+ * Initialises Bitcoin transactions processing
+ * @function initTransactions
+ * @alias module:lib/blockchains/bitcoin/transactions.init
+ * @param {Object} bcConfig the Bitcoin blockchain configuration
+ * @param {Object} bcState the Bitcoin blockchain state
+ * @returns {Promise} resolves if completed
+ */
+function initTransactions(bcConfig, bcState) {
+    _blockchainName = bcConfig.name;
+    _bcState = bcState;
+    log.trace(_blockchainName, 'Initialising Bitcoin transaction processing...');
+
+    // Get configuration paramters
+    if (bcConfig.transactionValue) _transactionFee = bcConfig.transactionValue;
+    if (bcConfig.transactionPriority) _transactionPriority = bcConfig.transactionPriority;
+    if (bcConfig.traceRawTransaction) _traceRawTransaction = bcConfig.traceRawTransaction;
+
+    // Succesfully completed initialisation
+    return Promise.resolve();
+}
+
+/**
+ * Sends an transaction with an embedded Whiteflag message on the Bitcoin blockchain
+ * @function sendTransaction
+ * @alias module:lib/blockchains/bitcoin/transactions.sendTransaction
+ * @param {Object} account the account used to send the transaction
+ * @param {string} toAddress the address to send the transaction to
+ * @param {string} amount the amount of funds to be transfered with the transaction
+ * @param {Buffer} data the data to be embedded in the OP_RETURN of the transaction
+ * @returns {Promise} resolves to transaction hash
+ */
+function sendTransaction(account, toAddress, amount, data = null) {
+    log.trace(_blockchainName, `Sending transaction from account: ${account.address}`);
+    return new Promise((resolve, reject) => {
+        // Check transaction data
+        if (data &amp;&amp; data.length > OPRETURNSIZE) {
+            return reject(new ProcessingError(`Encoded message size of ${data.length} bytes exceeds maximum size of ${OPRETURNSIZE} bytes`, null, 'WF_API_BAD_REQUEST'));
+        }
+        // Get inputs and create transaction
+        const inputValue = (Math.max(_transactionFee, (Math.ceil(_bcState.status.feerate * SATOSHI * (500 / KILOBYTE)) + +amount)));
+        const inputs = getUtxosForTransaction(account, inputValue);
+        createTransaction(account, toAddress, inputs, +amount, data)
+        .then(transaction => {
+            return signTransaction(account, transaction, _bcState.parameters.network);
+        })
+        .then(signedTransaction => {
+            log.trace(_blockchainName, `Sending signed transaction: ${JSON.stringify(signedTransaction)}`);
+            const rawTransaction = signedTransaction.toHex();
+            return bcRpc.sendRawTransaction(rawTransaction);
+        })
+        .then(transactionHash => {
+            if (transactionHash === null) return reject(new Error('Transaction not processed by node'), null);
+            bcAccounts.updateUtxosSpent(account, inputs);
+            resolve(transactionHash);
+        })
+        .catch(err => reject(new Error(`Error processing transaction: ${err.message}`)));
+    });
+}
+
+/**
+ * Gets a transaction by transaction hash and checks for Whiteflag message
+ * @private
+ * @param {string} transactionHash
+ * @returns {Promise} resolves to a Whiteflag message
+ */
+function getTransaction(transactionHash) {
+    log.trace(_blockchainName, `Retrieving transaction: ${transactionHash}`);
+    return new Promise((resolve, reject) => {
+        bcRpc.getRawTransaction(transactionHash)
+        .then(transaction => {
+            if (!transaction) {
+                return reject(new Error(`No data received for transaction hash: ${transactionHash}`));
+            }
+            resolve(transaction);
+        })
+        .catch(err => reject(err));
+    });
+}
+
+/**
+ * Extracts Whiteflag message from Bitcoin transaction data
+ * @param {Object} transaction
+ * @param {number} blockNumber the block number
+ * @param {number} timestamp the block or transaction time
+ * @returns {Promise} resolves to a Whiteflag message
+ */
+function extractMessage(transaction, blockNumber, timestamp) {
+    if (_traceRawTransaction) log.trace(_blockchainName, `Extracting Whiteflag message from transaction: ${transaction.hash}`);
+    return new Promise((resolve, reject) => {
+        for (let vout of transaction.vout) {
+            // Check for opreturn
+            const asm = vout.scriptPubKey.asm;
+            if (!asm.startsWith(SCRIPTIDENTIFIER)) continue;
+
+            // Check for Whiteflag message identifier
+            const data = asm.substring(SCRIPTIDENTIFIER.length + 1);
+            if (!data.startsWith(WFINDENTIFIER)) continue;
+
+            // Get transaction time
+            let transactionTime;
+            if (Object.prototype.hasOwnProperty.call(transaction, 'time')) {
+                transactionTime = new Date(transaction.time * 1000).toISOString();
+            } else {
+                transactionTime = new Date(timestamp * 1000).toISOString();
+            }
+            // Get originator address and public key
+            const publicKey = transaction.vin[0].scriptSig.asm.split('[ALL] ')[1];
+            const { address } = bitcoin.payments.p2pkh({
+                pubkey: Buffer.from(publicKey, BINENCODING),
+                network: _bcState.parameters.network
+            });
+            // Return a new Whiteflag message object
+            return resolve({
+                MetaHeader: {
+                    blockchain: _blockchainName,
+                    blockNumber: blockNumber,
+                    transactionHash: transaction.hash,
+                    transactionTime: transactionTime,
+                    originatorAddress: address,
+                    originatorPubKey: publicKey,
+                    encodedMessage: data
+                }
+            });
+        }
+        return reject(new ProcessingError(`No Whiteflag message data found in transaction: ${transaction.hash}`, null, 'WF_API_NO_DATA'));
+    });
+}
+
+// PRIVATE MODULE FUNCTIONS //
+/**
+ * Creates a new Bitcoin transaction
+ * @private
+ * @param {Object} account the account used to send the transaction
+ * @param {string} toAddress the address to send the transaction to
+ * @param {string} amount the amount of funds to be transfered with the transaction
+ * @param {Buffer} data the data to be embedded in the OP_RETURN of the transaction
+ * @returns {Promise} returns to the newly create transaction
+ */
+function createTransaction(account, toAddress, inputs, amount, data = null) {
+    return new Promise((resolve, reject) => {
+        let outputLength = P2PKHOUTPUTBYTES;
+        let inputValue = sumUtxos(inputs);
+        let transaction = new bitcoin.TransactionBuilder(_bcState.parameters.network);
+        try {
+            // Transaction inputs
+            for (let utxo of inputs) {
+                transaction.addInput(utxo.txid, +utxo.index);
+            }
+            // Embed data in transaction
+            if (data !== null) {
+                const embed = bitcoin.payments.embed({ data: [data] });
+                transaction.addOutput(embed.output, 0);
+                outputLength += 2 + data.length;
+            }
+            // Aamount to transfer to other address
+            if (account.address !== toAddress) {
+                transaction.addOutput(toAddress, amount);
+                outputLength += P2PKHOUTPUTBYTES;
+            }
+        } catch(err) {
+            return reject(new Error(`Could not create transaction: ${err.message}`));
+        }
+        // Unspent funds go back to account address, minus transaction fee
+        const transactionSize = (inputs.length * P2PKHINPUTBUTES) + (outputLength) + P2PKHTXBYTES;
+        calculateTransactionFee(transactionSize)
+        .then(transactionFee => {
+            const returnValue = (inputValue - (amount + transactionFee));
+            // This should not happen, but double check if not enough inputs value
+            if (returnValue &lt; 0) {
+                return reject(new ProcessingError(`Could not create transaction: expected transaction fee of ${transactionFee} satoshis is too high for the selected input UTXOs`), null, 'WF_API_RESOURCE_CONFLICT');
+            }
+            // Only add output if return value is larger than 0
+            if (returnValue > 0) {
+                transaction.addOutput(account.address, returnValue);
+            }
+            return resolve(transaction);
+        })
+        .catch(err => reject(new Error(`Could not create transaction: ${err.message}`)));
+    });
+}
+
+/**
+ * Signs a transacton
+ * @private
+ * @param {Object} transaction the transaction to sign
+ * @param {Object} account the account making the transaction
+ * @param {Object} bcNetwork the Bitcoin network parameters
+ * @returns {Promise} resolves to the signed raw transaction
+ */
+ function signTransaction(account, transaction, bcNetwork) {
+    return new Promise((resolve, reject) => {
+        const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
+        wfState.getKey('blockchainKeys', privateKeyId, function bcGetKeyCb(err, privateKey) {
+            if (err) return reject(err);
+
+            // Get keys in the correct encoding and sign inputs
+            const privateKeyBuffer = Buffer.from(privateKey, 'hex');
+            const keyPair = bitcoin.ECPair.fromPrivateKey(privateKeyBuffer, { network: bcNetwork });
+            for (let i = 0; i &lt; transaction.__TX.ins.length; i++) {
+                transaction.sign(i, keyPair);
+            }
+            return resolve(transaction.build());
+        });
+    });
+}
+
+/**
+ * Determines the fee for a new transaction in satoshis
+ * @private
+ * @param {string} transactionHash
+ * @returns {Promise} resolves to transaction fee
+ */
+ function calculateTransactionFee(transactionSize) {
+    // Use fixed rate if no priority given
+    if (!_transactionPriority) {
+        return Promise.resolve(_transactionFee);
+    }
+    // Try to estimate fee based on priority
+    return bcRpc.getFeeRate(_transactionPriority)
+    .then(estimate => {
+        const estimatedFee = Math.ceil((estimate.feerate * SATOSHI) * (transactionSize / KILOBYTE));
+
+        // Use estimated fee if higher than configured transaction fee
+        return Promise.resolve(Math.max(_transactionFee, estimatedFee));
+    })
+    .catch(err => {
+        // Try to estimate with previously retrieved fee rate, and use that if higher than configured fee
+        log.warn(_blockchainName, `Could not determine actual transaction fee rate: ${err.message}`);
+        const estimatedFee = Math.ceil((_bcState.status.feerate * SATOSHI) * (transactionSize / KILOBYTE));
+        return Promise.resolve(Math.max(_transactionFee, estimatedFee));
+    });
+}
+
+/**
+ * Returns the total value of an UTXO list
+ * @private
+ * @param {Array} utxoInputList list of UTXOs
+ * @returns {number} the total value of the UTXOs in the list
+ */
+function sumUtxos(utxoList) {
+    return utxoList.reduce((accumulator, utxo) => {
+        return accumulator + utxo.value;
+    }, 0);
+}
+
+/**
+ * Returns a list of unspent UTXOs of the specified account that meets or exceeds the required amount
+ * @private
+ * @param {Object} account the account making the transaction
+ * @param {number} transactionValue the total value of the transaction including expected fee
+ * @returns {Array} list of unspent UTXOs providing the required amount
+ */
+function getUtxosForTransaction(account, transactionValue) {
+    let unspentUtxos = [];
+    let totalValue = 0;
+    for (let utxo of account.utxos) {
+        if (!utxo.spent) unspentUtxos.push(utxo);
+        totalValue += utxo.value;
+    }
+    if (totalValue &lt; transactionValue || unspentUtxos.length &lt; 1) {
+        throw new ProcessingError(`There are only ${totalValue} satoshis available, but the transaction requires ${transactionValue}`, null, 'WF_API_RESOURCE_CONFLICT');
+    }
+    unspentUtxos.sort((a, b) => {
+        return a.value - b.value;
+    });
+    return getUtxoInputs(unspentUtxos, transactionValue);
+}
+
+/**
+ * Returns a subset of the provided unspent UTXOs that meets or exceeds the required amount
+ * @private
+ * @param {Array} unspentUtxos list of unspent UTXOs
+ * @param {number} transactionValue the total value of the transaction including expected fee
+ * @returns {Array} list of unspent UTXOs providing the required amount
+ */
+function getUtxoInputs(unspentUtxos, transactionValue) {
+    let utxoInputs = [];
+    let totalInput = 0;
+    for (let utxo of unspentUtxos) {
+        utxoInputs.push(utxo);
+        totalInput += utxo.value;
+        if (totalInput >= transactionValue) {
+            return utxoInputs;
+        }
+    }
+    return utxoInputs;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Jan 20 2022 04:03:46 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

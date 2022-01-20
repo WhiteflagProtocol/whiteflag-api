@@ -57,11 +57,11 @@ const https = require('https');
 const cors = require('cors');
 const express = require('express');
 const auth = require('express-basic-auth');
-const parser = require('body-parser');
-const Socket = require('socket.io');
+const socket = require('socket.io');
 
 // Whiteflag common functions and classes //
 const log = require('./common/logger');
+const { ignore } = require('./common/processing');
 const { ProcessingError } = require('./common/errors');
 const response = require('./common/httpres');
 
@@ -141,16 +141,25 @@ function startServer(callback) {
     }
     // Create socket
     if (_wfApiConfig.socket.enable) {
+        // Socket configuration
+        let socketConfig = {
+            path: SOCKETPATH
+        };
+        if (_wfApiConfig.http.enableCors) {
+            socketConfig.cors = {
+                origin: hostname,
+                methods: ['GET', 'POST']
+            };
+        }
+        // Open socket
         try {
-            _wfSocket = new Socket(
-                _wfServer,
-                { path: SOCKETPATH }
-            );
+            _wfSocket = socket(_wfServer, socketConfig);
         } catch(err) {
             return callback(err, url + SOCKETPATH);
         }
         log.info(MODULELOG, `Initialised socket for clients to listen for incoming messages on ${url + SOCKETPATH}`);
     }
+
     // Static content
     _wfApi.use('/', express.static('./static'));
     _wfApi.use('/docs', express.static('./docs/jsdoc'));
@@ -178,12 +187,13 @@ function startServer(callback) {
     } else {
         log.warn(MODULELOG, 'No authentication enabled because no basic http authorization configured');
     }
+
     // Middleware
     if (_wfApiConfig.http.enableCors) {
         _wfApi.use(cors());
         log.info(MODULELOG, 'Enabled HTTP Cross-Origin Resource Sharing (CORS)');
     }
-    _wfApi.use(parser.json());
+    _wfApi.use(express.json());
     _wfApi.use(errorHandler);
 
     // Start listener on the port
@@ -253,15 +263,15 @@ function createEndpoints(endpointCb, callback) {
         endpoints.forEach(function endpointsCb(endpoint) {
             if (!Object.prototype.hasOwnProperty.call(_wfApiConfig.endpoints, endpoint[OPERATIONID])
                 || _wfApiConfig.endpoints[endpoint[OPERATIONID]]) {
-                log.trace(MODULELOG, `Creating endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
+                log.debug(MODULELOG, `Creating endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
                 createEndpoint(endpoint[PATH], endpoint[METHOD], endpoint[OPERATIONID], endpoint[HANDLER], endpointCb);
             } else {
-                log.trace(MODULELOG, `Disabled endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
+                log.info(MODULELOG, `Disabled endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
                 createEndpoint(endpoint[PATH], endpoint[METHOD], endpoint[OPERATIONID], forbiddenHandler, endpointCb);
             }
         });
         // Catch-all endpoint; MUST be last one to call
-        log.trace(MODULELOG, 'Creating endpoint for all undefined routs and methods');
+        log.trace(MODULELOG, 'Creating endpoint for all undefined routes and methods');
         createEndpoint('*', '_all', 'undefined', undefinedHandler, endpointCb);
     } catch(err) {
         return callback(err);
@@ -277,7 +287,7 @@ function createEndpoints(endpointCb, callback) {
  */
 function sendSocket(data) {
     if (!_wfSocket) {
-        return log.trace(MODULELOG, 'Could not send data: Socket not initialised');
+        return log.debug(MODULELOG, 'Could not send data: Socket not initialised');
     }
     _wfSocket.sockets.emit('message', data);
 }
@@ -316,12 +326,6 @@ function monitorSocket(callback) {
 }
 
 // PRIVATE MODULE FUNCTIONS //
-/**
- * Ignores its arguments
- * @private
- */
-function ignore() {}
-
 /**
  * Creates an endpoint
  * @private
@@ -370,7 +374,7 @@ function createEndpoint(route, method, operationId, handler, endpointCb) {
             break;
         }
         default: {
-            throw new Error(`Internal Coding Error: wrong HTTP method provided for endpoint ${route}: ${method}`);
+            throw new Error(`Internal Coding Error: Wrong HTTP method provided for endpoint ${route}: ${method}`);
         }
     }
 }
@@ -425,7 +429,7 @@ function errorHandler(err, req, res, next) {
     ignore(next);
 
     // Log the error
-    log.debug(MODULELOG, `Could not process request: ${JSON.stringify(resBody)}`);
+    log.warn(MODULELOG, `Could not process request: ${JSON.stringify(resBody)}`);
 }
 
 /**
@@ -444,7 +448,7 @@ function unauthorizedResponse(req) {
 /**
  * Returns endpoints to be created
  * @private
- * @returns {array} endpoints
+ * @returns {Array} endpoints
  */
 function getEndpoints() {
     return [
@@ -473,7 +477,7 @@ function getEndpoints() {
 
         // Blockchain account signature and transfer value endpoints
         [ '/blockchains/:blockchain/accounts/:account/sign', 'POST', 'createSignature', wfApiBlockchainsHandler.createSignature ],
-        [ '/blockchains/:blockchain/accounts/:account/transfer', 'POST', 'transferValue', wfApiBlockchainsHandler.transferValue ],
+        [ '/blockchains/:blockchain/accounts/:account/transfer', 'POST', 'transferFunds', wfApiBlockchainsHandler.transferFunds ],
         [ '/originators', 'GET', 'getAllOriginators', wfApiOriginatorsHandler.getOriginators ],
         [ '/originators/:address', 'GET', 'getOriginator', wfApiOriginatorsHandler.getOriginator ],
         [ '/originators/:address', 'PATCH', 'updateOriginator', wfApiOriginatorsHandler.updateOriginator ],
@@ -491,6 +495,8 @@ function getEndpoints() {
         [ '/signature/decode', 'POST', 'decodeSignature', wfApiSignaturesHandler.decode ],
         [ '/signature/verify', 'POST', 'verifySignature', wfApiSignaturesHandler.verify ],
         [ '/token/create', 'POST', 'createToken', wfApiTokensHandler.create ],
+
+        // Queue
         [ '/queues/:queue', 'GET', 'getQueue', wfApiQueueHandler.getQueue ]
     ];
 }
@@ -498,7 +504,7 @@ function getEndpoints() {
 /**
  * Gets openapi endpoint definitions
  * @private
- * @returns {array} endpoints
+ * @returns {Array} endpoints
  */
 function getOpenApiEndpoints() {
     const openapi = JSON.parse(fs.readFileSync(OPENAPIFILE)).paths;
@@ -522,13 +528,13 @@ function getOpenApiEndpoints() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Wed Aug 19 2020 18:19:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Jan 20 2022 04:03:46 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

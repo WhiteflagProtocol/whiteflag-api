@@ -57,7 +57,7 @@ const { type } = require('../common/protocol');
 const { ProcessingError, ProtocolError } = require('../common/errors');
 
 // Whiteflag modules //
-const wfApiBlockchain = require('../blockchains');
+const wfApiBlockchains = require('../blockchains');
 const wfCrypto = require('./crypto');
 const wfState = require('./state');
 
@@ -193,7 +193,7 @@ function generateToken(authToken, address, blockchain, callback) {
     authToken = undefined;
 
     // Get blockchain address is binary
-    wfApiBlockchain.getBinaryAddress(address, blockchain, function authGetAddressCb(err, addressBuffer) {
+    wfApiBlockchains.getBinaryAddress(address, blockchain, function authGetAddressCb(err, addressBuffer) {
         if (err) return callback(err, null);
 
         // Generate authentication token and compare with message
@@ -224,7 +224,7 @@ function generateToken(authToken, address, blockchain, callback) {
  * @property {string} addr The blockchain address used to send the corresponding `A1` message and of which the corresponding private key is used to create the signature
  * @property {string} orgname The name of the originator, which can be chosen freely
  * @property {string} url The same URL as in the `VerificationData` field of the corresponding `A1` message
- * @property {String} extpubkey The serialised extended parent public key from which the child public keys and addresses used by this originator can be derived (currently not supported)
+ * @property {string} extpubkey The serialised extended parent public key from which the child public keys and addresses used by this originator can be derived (currently not supported)
  */
 
 /**
@@ -251,7 +251,7 @@ function createSignature(signPayload = {}, address, blockchain, callback) {
         return callback(new ProtocolError('Invalid Whiteflag authentication signature request', signErrors, 'WF_SIGN_ERROR'), null);
     }
     // Get signature for the appropriate blockchain
-    wfApiBlockchain.requestSignature(signPayload, blockchain, function authRequestSignatureCb(err, wfSignature) {
+    wfApiBlockchains.requestSignature(signPayload, blockchain, function authRequestSignatureCb(err, wfSignature) {
         if (err) return callback(err);
 
         // Check signature before returning response
@@ -331,11 +331,11 @@ function verifySignature(wfExtSignature, callback) {
         + '.' + wfExtSignature.wfSignature.signature;
 
     // Get keys and verify signature
-    wfApiBlockchain.requestKeys(wfExtSignature.originatorPubKey, wfExtSignature.blockchain, function authRequestKeysCb(err, originatorKeys) {
+    wfApiBlockchains.requestKeys(wfExtSignature.originatorPubKey, wfExtSignature.blockchain, function authRequestKeysCb(err, originatorKeys) {
             if (err) return callback(err);
 
             // Call verification function and check for errors
-            jwt.verify(signatureToken, originatorKeys.pemkey, function authVerifySignatureCb(err, wfSignatureDecoded) {
+            jwt.verify(signatureToken, originatorKeys.publicKey.pem, function authVerifySignatureCb(err, wfSignatureDecoded) {
                 if (err) {
                     if (err.name === 'JsonWebTokenError'
                         || err.name === 'TokenExpiredError'
@@ -483,7 +483,7 @@ function wfAuthentication2(wfAuthMessage, callback) {
     /**
      * Tries to match a known authentication token with the received authentication message
      * @private
-     * @param {array} authTokenIds Identifiers of all known authentication tokens
+     * @param {Array} authTokenIds Identifiers of all known authentication tokens
      * @param {number} t Token counter
      */
     function iterateAuthTokens(authTokenIds = [], t = 0) {
@@ -567,7 +567,7 @@ function getSignature(authURL, callback) {
         }
         default: {
             // Method does not exist
-            errorHandler(new ProcessingError(`Unsupported protocol for retrieving signature: ${authURL.protocol}`), null, 'WF_API_NOT_IMPLEMENTED');
+            errorHandler(new ProcessingError(`Unsupported protocol for retrieving signature: ${authURL.protocol}`, null, 'WF_API_NOT_IMPLEMENTED'));
         }
     }
     /**
@@ -612,13 +612,13 @@ function getSignature(authURL, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Wed Aug 19 2020 18:19:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Jan 20 2022 04:03:46 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
