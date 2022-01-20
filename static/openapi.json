@@ -2,7 +2,7 @@
     "openapi": "3.0.1",
     "info": {
         "title": "Whiteflag API",
-        "version": "1.0.0-beta.2-dev",
+        "version": "1.0.0-beta.2",
         "description": "This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/) software implementation of the API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains. It acts as a message transceiver between one or more blockchains and one or more end-user applications.\n\nThis API is a so called Minumum Viable Product (MVP), which means that it only supports the core features of the Whiteflag protocol for development and testing purposes. As such, it serves as the reference implementation of the Whiteflag protocol, but it is not designed and tested for secure usage and performance in a production environment.\n\nThis definition documents the API in [OpenAPI format](https://swagger.io/specification/).\n\nTwo methods are available for interaction with the API: 1. a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) for originators to provide Whiteflag message to be sent on the blockchain, and 2. a [socket.io](https://socket.io/) [web socket](https://en.wikipedia.org/wiki/WebSocket) variant available on `/socket` for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on [/listen](/listen) and the documented source code at [/docs](/docs).\n\nAll response bodies are structured as `{meta, data, errors}`, based on the [JSON API Specification](https://jsonapi.org/format/), which has been used as a guideline (and as a guideline only).",
         "x-logo": {
             "url": "wflogo.png",
