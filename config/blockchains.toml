@@ -11,9 +11,10 @@ maxBlockDepth = 8
 updateEachBlock = false
 
 [[blockchains]]
-name = "ethereum-rinkeby"
+name = "ethereum-sepolia"
 module = "ethereum"
-chainID = 4 # Rinkeby
+testnet = true
+chainID = 11155111  # Sepolia
 active = false
 createAccount = false
 blockRetrievalInterval = 6000
