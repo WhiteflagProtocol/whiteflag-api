@@ -136,7 +136,9 @@ blockchain module, such as connection details to a full node.
 ### Datastores configuration
 
 This datastores configuration file allows to define which datastores should be
-used to store data. Multiple stores may be defined with multiple
+used to store data. The embedded datastore is the default.
+
+Multiple stores may be defined with multiple
 `[[databases]]` sections. At a minumum, the following parameters must be defined
 for each datastore as detailed in `./lib/datastores/static/datastores.config.schema.json`.
 Additional parameters may be added depending on the database.

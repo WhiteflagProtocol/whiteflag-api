@@ -5,10 +5,19 @@
 #
 
 [[databases]]
-name = "mongodb"
-module = "mongodb"
+name = "embedded-db"
+module = "embeddb"
 active = true
 primary = true
+directory = "/var/lib/whiteflag"
+rxStoreEvent = ["messageProcessed", "messageUpdated"]
+txStoreEvent = ["messageProcessed", "messageUpdated"]
+
+[[databases]]
+name = "mongodb"
+module = "mongodb"
+active = false
+primary = false
 dbProtocol = "mongodb"
 dbHost = "localhost"
 dbPort = "27017"
