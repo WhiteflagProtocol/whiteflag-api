@@ -6,7 +6,7 @@
 
 [state]
 masterKey = "b5a758b037a0c3a05b943d6215709f8920e62c4104018b4983ca0f2e0c36a255"
-encryption = true
+encryption = false
 saveToFile = false
 file = "/var/lib/whiteflag/whiteflag.state"
 
