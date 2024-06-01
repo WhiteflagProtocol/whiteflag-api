@@ -75,8 +75,6 @@ The `[state]` section parameters control the storage of the Whiteflag state:
 
 * `masterKey`: hex representation of the 256 bit key used for encrytpion of keys and state data
 * `encryption`: boolean indicating if the state needs to be encrypted
-* `saveToFile`: boolean indicating if the state needs to be saced to file
-* `file`: filename with path of the state file
 
 The `[tx]` section contains message transmit behaviour parameters:
 
@@ -141,7 +139,6 @@ used to store data. The embedded datastore is the default.
 Multiple stores may be defined with multiple
 `[[databases]]` sections. At a minumum, the following parameters must be defined
 for each datastore as detailed in `./lib/datastores/static/datastores.config.schema.json`.
-Additional parameters may be added depending on the database.
 
 * `name`: the name by which the datastore is identified in the software and in loggings
 * `module`: module that implements the specific logic of the datastore; modules are located in `./lib/datastores` and to minimally implement the module methods as described in `./lib/datastores/static/datastore-template.js`
@@ -149,3 +146,6 @@ Additional parameters may be added depending on the database.
 * `primary`: indicates if this is the primary datastore for queries and state information; only one (1) datastore should be used to prevent duplicates
 * `rxStoreEvent`: array of rx events on which a message should be stored in datastore, normally `["messageProcessed"]`
 * `txStoreEvent`: array of tx events on which a message should be stored in datastore, normally `["messageProcessed"]`
+
+Additional parameters may be rquired depending on the database, as shown in the
+default configuration file.

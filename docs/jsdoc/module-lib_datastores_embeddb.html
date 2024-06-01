@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/blockchains/common</title>
+    <title>JSDoc: Module: lib/datastores/embeddb</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/blockchains/common</h1>
+    <h1 class="page-title">Module: lib/datastores/embeddb</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Module for common blockchain functions</p></div>
+            <div class="description"><p>Module to use an embedded datastore</p></div>
         
 
         
@@ -87,7 +87,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_common.js.html">blockchains/common.js</a>, <a href="blockchains_common.js.html#line2">line 2</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line2">line 2</a>
     </li></ul></dd>
     
 
@@ -144,7 +144,7 @@
     
 
     
-    <h4 class="name" id="~createSignature"><span class="type-signature">(inner) </span>createSignature<span class="signature">(payload, privateKeyType, signKeyType, signAlgorithm)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~closeDatastore"><span class="type-signature">(inner) </span>closeDatastore<span class="signature">(callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -152,7 +152,7 @@
 
 
 <div class="description">
-    <p>Creates a JSON Web Signature (JWS) with a private blockchain key</p>
+    <p>Closes the database</p>
 </div>
 
 
@@ -188,7 +188,144 @@
 
         <tr>
             
-                <td class="name"><code>payload</code></td>
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">datastoreCloseCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function to be called after initialising the datastore</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line91">line 91</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getMessages"><span class="type-signature">(inner) </span>getMessages<span class="signature">(wfQuery, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Gets all Whiteflag messages from the database that match the query in an array</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>wfQuery</code></td>
             
 
             <td class="type">
@@ -204,20 +341,20 @@
 
             
 
-            <td class="description last"><p>the payload to be signed</p></td>
+            <td class="description last"><p>the properties of the messages to look up</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>privateKeyType</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">datastoreGetMessagesCb</span>
 
 
             
@@ -227,53 +364,7 @@
 
             
 
-            <td class="description last"><p>the hexadecimal private blockchain key</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>signKeyType</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the type of privatye blockchain key</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>signAlgorithm</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the siging algorithm</p></td>
+            <td class="description last"><p>function to be called after retrieving Whiteflag messages</p></td>
         </tr>
 
     
@@ -314,7 +405,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_common.js.html">blockchains/common.js</a>, <a href="blockchains_common.js.html#line71">line 71</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -350,7 +441,7 @@
     
 
     
-    <h4 class="name" id="~determineStartingBlock"><span class="type-signature">(inner) </span>determineStartingBlock<span class="signature">(highestBlock, currentBlock, startingBlock, rewindBlocks)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    <h4 class="name" id="~getState"><span class="type-signature">(inner) </span>getState<span class="signature">(callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -358,7 +449,7 @@
 
 
 <div class="description">
-    <p>Determines the starting block for a blockchain listener</p>
+    <p>Gets Whiteflag state from the database</p>
 </div>
 
 
@@ -394,13 +485,13 @@
 
         <tr>
             
-                <td class="name"><code>highestBlock</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">number</span>
+<span class="param-type">datastoreGetStateCb</span>
 
 
             
@@ -410,76 +501,7 @@
 
             
 
-            <td class="description last"><p>the highest known block of the blockchain</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>currentBlock</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the block currently being the latest processed</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>startingBlock</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the block  where the listener should start</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>rewindBlocks</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the number of blocks to look back from highest block</p></td>
+            <td class="description last"><p>function to be called after getting the Whiteflag state</p></td>
         </tr>
 
     
@@ -520,7 +542,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_common.js.html">blockchains/common.js</a>, <a href="blockchains_common.js.html#line34">line 34</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line185">line 185</a>
     </li></ul></dd>
     
 
@@ -545,28 +567,6 @@
 
 
 
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>the starting block</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
@@ -578,7 +578,7 @@
     
 
     
-    <h4 class="name" id="~getEmptyState"><span class="type-signature">(inner) </span>getEmptyState<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="~initDatastore"><span class="type-signature">(inner) </span>initDatastore<span class="signature">(dbConfig, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -586,7 +586,7 @@
 
 
 <div class="description">
-    <p>Returns an empty blockchain state</p>
+    <p>Initialises the database</p>
 </div>
 
 
@@ -597,150 +597,40 @@
 
 
 
-
-
-
-
-<dl class="details">
-
+    <h5>Parameters:</h5>
     
 
-    
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_common.js.html">blockchains/common.js</a>, <a href="blockchains_common.js.html#line21">line 21</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
+        <th>Type</th>
 
         
-<div class="param-desc">
-    <p>An empty blockchain state</p>
-</div>
 
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
         
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>dbConfig</code></td>
+            
+
+            <td class="type">
+            
+                
 <span class="param-type">Object</span>
 
 
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~logStartingBlock"><span class="type-signature">(inner) </span>logStartingBlock<span class="signature">(blockCursor, highestBlock)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Logs where the listener will start next</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>blockCursor</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
             
             </td>
 
@@ -748,20 +638,20 @@
 
             
 
-            <td class="description last"><p>block pointer</p></td>
+            <td class="description last"><p>datastore configuration parameters</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>highestBlock</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">number</span>
+<span class="param-type">datastoreInitCb</span>
 
 
             
@@ -771,7 +661,7 @@
 
             
 
-            <td class="description last"><p>the highest known block</p></td>
+            <td class="description last"><p>function to be called after initialising the datastore</p></td>
         </tr>
 
     
@@ -812,7 +702,327 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_common.js.html">blockchains/common.js</a>, <a href="blockchains_common.js.html#line54">line 54</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line38">line 38</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~storeMessage"><span class="type-signature">(inner) </span>storeMessage<span class="signature">(wfMessage, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stores a Whiteflag message in the database</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>wfMessage</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">wfMessage</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the whiteflag message to be stored</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">datastoreStoreMessageCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function to be called after storing the Whiteflag message</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line103">line 103</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~storeState"><span class="type-signature">(inner) </span>storeState<span class="signature">(stateObject, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stores Whiteflag state in the database</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>stateObject</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>state data enclosed in a storage / encryption container</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">datastoreStoreStateCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function to be called after storing the Whiteflag state</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line169">line 169</a>
     </li></ul></dd>
     
 
