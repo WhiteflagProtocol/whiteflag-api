@@ -14,7 +14,7 @@ The rx and tx events are used by the blockchains, datastores and protocol
 modules to bind handlers to incoming and outgoing Whiteflag message processing
 steps. This is useful given the complex processing flows, especially for cases
 such as encryption, authentication, etc. that require different handling paths
-for each messages.
+for each message.
 
 Specifically, the `lib/protocol/receive.js` and `lib/protocol/transmit.js`
 modules chain the appropriate events to create the processing chains for

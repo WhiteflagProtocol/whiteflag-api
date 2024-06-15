@@ -14,15 +14,9 @@ All state configuration parameters are in the `[state]` section of the
 ## State preservation
 
 To preserve the state across restarts of the API, the state object is stored in
-the primary datastore. The state may also be written to file, if the
-`saveToFile` parameter is set to `true`. The absolute file name inlcuding path
-must then be defined with the `file` parameter.
-
-When the API starts and initialises the state, the state is restored from file
-if the file exists (regardless whether the `saveToFile` parameter is set to
-`true` or not). If the file does not exist, the state is restored from the
-primary datastore. If no state is found in either a file or datastore, the API
-starts with an empty state.
+the primary datastore. When the API starts and initialises the state, the state
+is restored from the primary datastore. If no state is found in the datastore,
+the API starts with an empty state.
 
 ## State encryption
 
@@ -43,4 +37,4 @@ Key (DEK) which is also derived from the MEK.
 
 Currently it is not possible to change the MEK without losing the state. Also,
 please be aware that losing the MEK results in unobtainable keys, including
-private blockchain keys and pre-shared encryption keys!!
+private blockchain keys and pre-shared encryption keys!

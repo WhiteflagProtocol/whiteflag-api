@@ -191,7 +191,7 @@ function shutdown() {
      * @callback timeout
      */
     function timeoutCb() {
-        log.warn(MODULELOG, 'Taking to much time to close down everything. Exiting now.');
+        log.warn(MODULELOG, 'Taking too much time to close down everything. Exiting now.');
         return process.exit(1);
     }
 }

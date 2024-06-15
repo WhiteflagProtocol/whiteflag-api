@@ -55,7 +55,10 @@ testCase('Whiteflag authentication tests', function() {
             + '.' + testVector[1].signature.signature;
 
             // Call verification function and check for errors
-            jwt.verify(signatureToken, pemkey, function authVerifySignatureCb(err, signatureDecoded) {
+            jwt.verify(signatureToken,
+                       pemkey,
+                       { allowInvalidAsymmetricKeyTypes: true },
+                       function authVerifySignatureCb(err, signatureDecoded) {
                 if (err) {
                     if (err.name === 'JsonWebTokenError'
                         || err.name === 'TokenExpiredError'

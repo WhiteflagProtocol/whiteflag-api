@@ -28,6 +28,7 @@ The API should demonstrate blockchain agnosticy of the protocol by
 interfacing with at least two blockchains, namely:
 
 * ethereum (v0.8)
+* bitcoin (v1.0)
 
 The API is able to read Whiteflag history from the blockchain into database.
 
@@ -63,7 +64,6 @@ The API supports:
 The following functionality is in scope, but currently not implemented:
 
 * message and area concatenation with reference code 3 - issue #2
-* Bitcoin blockchain support
 
 ## Outside scope
 

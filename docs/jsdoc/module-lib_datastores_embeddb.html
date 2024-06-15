@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/common/logger</title>
+    <title>JSDoc: Module: lib/datastores/embeddb</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/common/logger</h1>
+    <h1 class="page-title">Module: lib/datastores/embeddb</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Module for logging events of the Whiteflag API</p></div>
+            <div class="description"><p>Module to use an embedded datastore</p></div>
         
 
         
@@ -87,19 +87,10 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line2">line 2</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line2">line 2</a>
     </li></ul></dd>
     
 
-    
-    <dt class="tag-tutorial">Tutorials:</dt>
-    <dd class="tag-tutorial">
-        <ul>
-            <li><a href="tutorial-modules.html">modules</a></li>
-        
-            <li><a href="tutorial-logging.html">logging</a></li>
-        </ul>
-    </dd>
     
 
     
@@ -143,82 +134,6 @@
     
 
     
-        <h3 class="subsection-title">Members</h3>
-
-        
-            
-<h4 class="name" id="~levels"><span class="type-signature">(inner, constant) </span>levels<span class="type-signature"> :Object</span></h4>
-
-
-
-
-<div class="description">
-    <p>Defines the logging levels</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line23">line 23</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-    
 
     
         <h3 class="subsection-title">Methods</h3>
@@ -229,7 +144,7 @@
     
 
     
-    <h4 class="name" id="~debug"><span class="type-signature">(inner) </span>debug<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~closeDatastore"><span class="type-signature">(inner) </span>closeDatastore<span class="signature">(callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -237,487 +152,7 @@
 
 
 <div class="description">
-    <p>Logs debug events (level 5)</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>module</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>name of the module that makes the log</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>message</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the message to log</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line119">line 119</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~error"><span class="type-signature">(inner) </span>error<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Logs error events (level 2)</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>module</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>name of the module that makes the log</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>message</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the message to log</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line80">line 80</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~fatal"><span class="type-signature">(inner) </span>fatal<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Logs fatal events (level 1)</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>module</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>name of the module that makes the log</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>message</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the message to log</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line67">line 67</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~getLogLevel"><span class="type-signature">(inner) </span>getLogLevel<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Returns current loglevel</p>
+    <p>Closes the database</p>
 </div>
 
 
@@ -759,7 +194,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">datastoreCloseCb</span>
 
 
             
@@ -769,7 +204,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>function to be called after initialising the datastore</p></td>
         </tr>
 
     
@@ -810,7 +245,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line56">line 56</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line91">line 91</a>
     </li></ul></dd>
     
 
@@ -846,7 +281,7 @@
     
 
     
-    <h4 class="name" id="~info"><span class="type-signature">(inner) </span>info<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getMessages"><span class="type-signature">(inner) </span>getMessages<span class="signature">(wfQuery, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -854,7 +289,7 @@
 
 
 <div class="description">
-    <p>Logs informational events (level 4)</p>
+    <p>Gets all Whiteflag messages from the database that match the query in an array</p>
 </div>
 
 
@@ -890,13 +325,13 @@
 
         <tr>
             
-                <td class="name"><code>module</code></td>
+                <td class="name"><code>wfQuery</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">Object</span>
 
 
             
@@ -906,20 +341,20 @@
 
             
 
-            <td class="description last"><p>name of the module that makes the log</p></td>
+            <td class="description last"><p>the properties of the messages to look up</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>message</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">datastoreGetMessagesCb</span>
 
 
             
@@ -929,7 +364,7 @@
 
             
 
-            <td class="description last"><p>the message to log</p></td>
+            <td class="description last"><p>function to be called after retrieving Whiteflag messages</p></td>
         </tr>
 
     
@@ -970,7 +405,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line106">line 106</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -1006,7 +441,7 @@
     
 
     
-    <h4 class="name" id="~trace"><span class="type-signature">(inner) </span>trace<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getState"><span class="type-signature">(inner) </span>getState<span class="signature">(callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1014,7 +449,7 @@
 
 
 <div class="description">
-    <p>Logs trace events (level 6)</p>
+    <p>Gets Whiteflag state from the database</p>
 </div>
 
 
@@ -1050,13 +485,13 @@
 
         <tr>
             
-                <td class="name"><code>module</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">datastoreGetStateCb</span>
 
 
             
@@ -1066,30 +501,7 @@
 
             
 
-            <td class="description last"><p>name of the module that makes the log</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>message</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the message to log</p></td>
+            <td class="description last"><p>function to be called after getting the Whiteflag state</p></td>
         </tr>
 
     
@@ -1130,7 +542,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line132">line 132</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line185">line 185</a>
     </li></ul></dd>
     
 
@@ -1166,7 +578,7 @@
     
 
     
-    <h4 class="name" id="~warn"><span class="type-signature">(inner) </span>warn<span class="signature">(module, message)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~initDatastore"><span class="type-signature">(inner) </span>initDatastore<span class="signature">(dbConfig, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1174,7 +586,7 @@
 
 
 <div class="description">
-    <p>Logs warning events (level 3)</p>
+    <p>Initialises the database</p>
 </div>
 
 
@@ -1210,13 +622,13 @@
 
         <tr>
             
-                <td class="name"><code>module</code></td>
+                <td class="name"><code>dbConfig</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">Object</span>
 
 
             
@@ -1226,20 +638,20 @@
 
             
 
-            <td class="description last"><p>name of the module that makes the log</p></td>
+            <td class="description last"><p>datastore configuration parameters</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>message</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">datastoreInitCb</span>
 
 
             
@@ -1249,7 +661,7 @@
 
             
 
-            <td class="description last"><p>the message to log</p></td>
+            <td class="description last"><p>function to be called after initialising the datastore</p></td>
         </tr>
 
     
@@ -1290,7 +702,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line93">line 93</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line38">line 38</a>
     </li></ul></dd>
     
 
@@ -1321,33 +733,101 @@
 
 
         
+            
+
+    
+
+    
+    <h4 class="name" id="~storeMessage"><span class="type-signature">(inner) </span>storeMessage<span class="signature">(wfMessage, callback)</span><span class="type-signature"></span></h4>
     
 
     
-        <h3 class="subsection-title">Type Definitions</h3>
-
-        
-                
-<h4 class="name" id="~loglevel">loglevel</h4>
-
 
 
 
 <div class="description">
-    <p>Sets new logging level</p>
+    <p>Stores a Whiteflag message in the database</p>
 </div>
 
 
 
-    <h5>Type:</h5>
-    <ul>
-        <li>
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
             
-<span class="param-type">number</span>
+                <td class="name"><code>wfMessage</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">wfMessage</span>
 
 
-        </li>
-    </ul>
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the whiteflag message to be stored</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">datastoreStoreMessageCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function to be called after storing the Whiteflag message</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
 
 
 
@@ -1382,7 +862,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_logger.js.html">common/logger.js</a>, <a href="common_logger.js.html#line39">line 39</a>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line103">line 103</a>
     </li></ul></dd>
     
 
@@ -1398,7 +878,183 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
             
+
+    
+
+    
+    <h4 class="name" id="~storeState"><span class="type-signature">(inner) </span>storeState<span class="signature">(stateObject, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stores Whiteflag state in the database</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>stateObject</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>state data enclosed in a storage / encryption container</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">datastoreStoreStateCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function to be called after storing the Whiteflag state</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="datastores_embeddb.js.html">datastores/embeddb.js</a>, <a href="datastores_embeddb.js.html#line169">line 169</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
     
 
     
