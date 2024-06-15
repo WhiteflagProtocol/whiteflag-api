@@ -67,7 +67,7 @@ is installed:
 Since version 1.0.1, the Whiteflag API has a lightweight embedded datastore,
 making MongoDB an optional dependency:
 
-* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only tested with legacy [verson 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
+* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only fullt tested with legacy [verson 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
 
 ### Deployment and Testing
 
@@ -177,13 +177,12 @@ following NPM command in the project root:
 npm test
 ```
 
-In addition, the following tools are useful for manual testing:
-
-* [Postman](https://www.getpostman.com/) for testing of POST and GET method on the endpoints
-* an example for testing from the command line:
+Any REST client, such as [Postman](https://www.getpostman.com/) or [cURL](https://everything.curl.dev/cmdline/options.html)
+can be used for manual testing. This is a simple example using cURL from the
+command line, sending an `A1` message from a file:
 
 ```shell
-curl http://localhost:3000/messages/send -X POST -H "Content-Type:application/json" -d @A1.message.json
+curl http://localhost:5746/messages/send -X POST -H "Content-Type:application/json" -d @A1.message.json
 ```
 
 The API also exposes a webpage with an embedded client side socket listener
