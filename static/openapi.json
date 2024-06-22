@@ -721,7 +721,7 @@
                 },
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorAccepted"
+                        "$ref": "#/components/responses/originatorUpdated"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -737,7 +737,7 @@
                 "operationId": "deleteOriginator",
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorAccepted"
+                        "$ref": "#/components/responses/originatorDeleted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -1712,7 +1712,43 @@
                 }
             },
             "originatorAccepted": {
-                "description": "Successfully retrieved and returning known Whiteflag originators",
+                "description": "Successfully created new Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorUpdated": {
+                "description": "Successfully accepted the update request for the Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorDeleted": {
+                "description": "Successfully accepted the delete request for the Whiteflag originator",
                 "content": {
                     "application/json": {
                         "schema": {
