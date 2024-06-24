@@ -11,6 +11,28 @@ maxBlockDepth = 8
 updateEachBlock = false
 
 [[blockchains]]
+name = "fennel-solonet"
+module = "fennel"
+testnet = true
+active = false
+createAccount = false
+blockRetrievalInterval = 6000
+blockRetrievalStart = 0
+blockRetrievalEnd = 0
+blockRetrievalRestart = 100
+blockMaxRetries = 0
+transactionBatchSize = 64
+transactionValue = "0"
+traceRawTransaction = false
+rpcTimeout = 10000
+rpcProtocol = "ws"
+rpcHost = "localhost"
+rpcPort = "9944"
+rpcPath = ""
+username = ""
+password = ""
+
+[[blockchains]]
 name = "ethereum-sepolia"
 module = "ethereum"
 testnet = true
