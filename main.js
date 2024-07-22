@@ -169,8 +169,8 @@ function shutdown() {
      */
     wfStateEvent.once('closed', function apiStateCloseCb() {
         log.info(MODULELOG, 'Whiteflag protocol state closed');
-        wfApiDatastores.close(function apiDatastoresCloseCb(err) {
-            if (err) log.error(MODULELOG, err.message);
+        wfApiDatastores.close(function apiDatastoresCloseCb(err, primaryDatastore) {
+            datastoresCloseCb(err, primaryDatastore);
 
             // All done
             clearTimeout(timer);
@@ -266,6 +266,19 @@ function datastoresInitCb(err, primaryDatastore) {
         return process.exit(1);
     }
     log.info(MODULELOG, `Primary datastore initialised: ${primaryDatastore}`);
+}
+
+/**
+ * Callback to log datatstore closure
+ * @callback datastoresCloseCb
+ * @param {Error} err error object if any error
+ */
+function datastoresCloseCb(err, primaryDatastore) {
+    if (err) {
+        log.error(MODULELOG, `Primary datastore did not properly close: ${err.message}`);
+    } else {
+        log.info(MODULELOG, `Primary datastore closed: ${primaryDatastore}`);
+    }
 }
 
 /**
