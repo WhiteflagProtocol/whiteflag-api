@@ -16,8 +16,8 @@ txStoreEvent = ["messageProcessed", "messageUpdated"]
 [[databases]]
 name = "mongodb"
 module = "mongodb"
-active = true
-primary = true
+active = false
+primary = false
 dbProtocol = "mongodb"
 dbHost = "localhost"
 dbPort = "27017"
