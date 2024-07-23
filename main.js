@@ -265,7 +265,7 @@ function datastoresInitCb(err, primaryDatastore) {
         }
         return process.exit(1);
     }
-    log.info(MODULELOG, `Primary datastore initialised: ${primaryDatastore}`);
+    log.info(MODULELOG, `Primary datastore: ${primaryDatastore}`);
 }
 
 /**
@@ -277,7 +277,7 @@ function datastoresCloseCb(err, primaryDatastore) {
     if (err) {
         log.error(MODULELOG, `Primary datastore did not properly close: ${err.message}`);
     } else {
-        log.info(MODULELOG, `Primary datastore closed: ${primaryDatastore}`);
+        log.info(MODULELOG, `Primary datastore ${primaryDatastore} closed`);
     }
 }
 
