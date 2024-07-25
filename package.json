@@ -10,7 +10,7 @@
     ],
     "license": "CC0-1.0",
     "dependencies": {
-        "bitcoinjs-lib": "^6.1.5",
+        "bitcoinjs-lib": "^6.1.6",
         "body-parser": "^1.20.2",
         "bs58": "^5.0.0",
         "cors": "^2.8.5",
@@ -23,7 +23,7 @@
         "keccak": "3.0.4",
         "key-encoder": "^2.0.3",
         "mongodb": "^3.6.12",
-        "@polkadot/api": "^12.2.1",
+        "@polkadot/api": "^12.2.2",
         "simpl.db": "^2.13.0",
         "socket.io": "^4.7.5",
         "toml": "^3.0.0",
@@ -31,11 +31,11 @@
     },
     "devDependencies": {
         "cloc": "^2.9.0",
-        "eslint": "^8.7.0",
+        "eslint": "^9.7.0",
         "jsdoc": "^4.0.3",
         "license-checker": "^25.0.1",
-        "mocha": "^10.4.0",
-        "semver": "^7.6.2",
+        "mocha": "^10.7.0",
+        "semver": "^7.6.3",
         "widdershins": "^4.0.1"
     },
     "resolutions": {
