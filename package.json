@@ -12,7 +12,7 @@
     "dependencies": {
         "bitcoinjs-lib": "^6.1.7",
         "body-parser": "^2.2.0",
-        "bs58": "^5.0.0",
+        "bs58": "^6.0.0",
         "cors": "^2.8.5",
         "ethereumjs-tx": "^2.1.2",
         "ethereumjs-util": "^7.1.5",
@@ -23,7 +23,7 @@
         "keccak": "3.0.4",
         "key-encoder": "^2.0.3",
         "mongodb": "^3.7.4",
-        "@polkadot/api": "^13.2.1",
+        "@polkadot/api": "^16.4.4",
         "simpl.db": "^2.13.0",
         "socket.io": "^4.8.1",
         "toml": "^3.0.0",
