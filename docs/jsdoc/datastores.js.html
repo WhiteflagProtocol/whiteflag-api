@@ -60,6 +60,7 @@ const wfRxEvent = require('./protocol/events').rxEvent;
 const wfTxEvent = require('./protocol/events').txEvent;
 
 // Module constants //
+const NOTSET = '(uninitialsed)';
 const MODULELOG = 'datastores';
 const WFCONFDIR = process.env.WFCONFDIR || './config';
 const DSCONFFILE = WFCONFDIR + '/datastores.toml';
@@ -70,7 +71,7 @@ const wfDatastoresConfigSchema = JSON.parse(fs.readFileSync('./lib/datastores/st
 // Module variables //
 let _datastores = [];
 let _datastoresConfig = [];
-let _primaryDatastore = '';
+let _primaryDatastore = NOTSET;
 let _storeEventRegister = {
     rx: [],
     tx: []
@@ -97,30 +98,10 @@ function initDatastores(callback) {
 
         // Get array of names of configured datastores
         _datastores = array.pluck(_datastoresConfig, 'name');
-        log.info(MODULELOG, `Configured datastores in ${DSCONFFILE}: ` + JSON.stringify(_datastores));
+        log.debug(MODULELOG, `Configured datastores in ${DSCONFFILE}: ` + JSON.stringify(_datastores));
 
-        _datastoresConfig.forEach(dbConfig => {
-            // Get configuration and call init function for this datastore
-            if (dbConfig &amp;&amp; dbConfig._enabled) {
-                /**
-                 * Callback after initialising the datastore
-                 * @callback datastoreInitCb
-                 * @param {Error} err error object if any error
-                 */
-                 if (dbConfig.primary) _primaryDatastore = dbConfig.name;
-                dbConfig._moduleImpl.init(dbConfig, function datastoreInitCb(err) {
-                    if (err) {
-                        // Only call callback with error for primary datastore
-                        if (dbConfig.primary) return callback(err);
-                        log.error(MODULELOG, `Error connecting to ${dbConfig.name}: ${err.message}`);
-                    } else {
-                        dbConfig.initialised = true;
-                        log.info(MODULELOG, `Connected to datastore: ${dbConfig.name}`);
-                        if (dbConfig.primary) return callback(null, _primaryDatastore);
-                    }
-                });
-            }
-        });
+        // Pass result of initialization to callback
+        return initDbConfig(callback);
     } else {
         return callback(new Error(`Could not parse configuration in ${DSCONFFILE}`));
     }
@@ -136,26 +117,21 @@ function initDatastores(callback) {
 function closeDatastores(callback) {
     _datastoresConfig.forEach(dbConfig => {
         // Get configuration and call init function for this datastore
-        if (dbConfig &amp;&amp; dbConfig._enabled) {
+        if (dbConfig?._enabled) {
             /**
              * Callback after closing the datastore
              * @callback datastoreInitCb
              * @param {Error} err error object if any error
              */
             dbConfig._moduleImpl.close(function datastoreCloseCb(err) {
-                dbConfig.initialised = false;
+                dbConfig._initialised = false;
                 if (err) {
-                    // Only call callback with error for primary datastore
-                    if (dbConfig.primary) return callback(err);
                     log.error(MODULELOG, `Error closing ${dbConfig.name}: ${err.message}`);
                 } else {
-                    if (dbConfig.primary) {
-                        log.info(MODULELOG, `Closed primary datastore: ${dbConfig.name}`);
-                        return callback(null);
-                    } else {
-                        log.info(MODULELOG, `Closed datastore: ${dbConfig.name}`);
-                    }
+                    log.info(MODULELOG, `Closed datastore: ${dbConfig.name}`);
                 }
+                // Only callback for primary datastore
+                if (dbConfig?.primary) return callback(err, _primaryDatastore);
             });
         }
     });
@@ -171,7 +147,7 @@ function closeDatastores(callback) {
 function storeMessage(wfMessage = {}, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled) {
+        if (dbConfig?._initialised) {
             /**
              * Callback after storing the Whiteflag message
              * @callback datastoreStoreMessageCb
@@ -182,7 +158,7 @@ function storeMessage(wfMessage = {}, callback) {
                 if (err) log.error(MODULELOG, `Could not store message in ${dbConfig.name}: ${err.message}`);
 
                 // Only call callback for primary datastore
-                if (dbConfig.primary) {
+                if (dbConfig?.primary) {
                     if (err) return callback(err, null);
                     return callback(null, result);
                 }
@@ -201,7 +177,7 @@ function storeMessage(wfMessage = {}, callback) {
 function getMessages(wfQuery = {}, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled &amp;&amp; dbConfig.primary) {
+        if (dbConfig?._initialised &amp;&amp; dbConfig.primary) {
             dbConfig._moduleImpl.getMessages(wfQuery, datastoreGetMessagesCb);
         }
     });
@@ -232,7 +208,7 @@ function getMessages(wfQuery = {}, callback) {
 function storeState(stateObject, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled &amp;&amp; dbConfig.primary) {
+        if (dbConfig?._initialised &amp;&amp; dbConfig.primary) {
             dbConfig._moduleImpl.storeState(stateObject, datastoreStoreStateCb);
         }
     });
@@ -258,7 +234,7 @@ function storeState(stateObject, callback) {
 function getState(callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled &amp;&amp; dbConfig.primary) {
+        if (dbConfig?._initialised &amp;&amp; dbConfig.primary) {
             dbConfig._moduleImpl.getState(datastoreGetStateCb);
         }
     });
@@ -284,7 +260,7 @@ function getState(callback) {
  */
 function parseConfig(datastoresConfig) {
     // Check if any databases defined in datastores config
-    if (datastoresConfig &amp;&amp; datastoresConfig.databases) {
+    if (datastoresConfig?.databases) {
         // Validate config file based on schema
         let datastoresConfigErrors = validateConfig(datastoresConfig);
         if (datastoresConfigErrors &amp;&amp; datastoresConfigErrors.length > 0) {
@@ -323,29 +299,29 @@ function validateConfig(datastoresConfig) {
  */
 function enableDbConfig(dbConfig) {
     // CHeck if datastore is set to active
-    if (!dbConfig.active) return false;
+    if (!dbConfig?.active) return false;
 
     // Assure parameters are configured
-    if (dbConfig.primary !== undefined) {
+    if (dbConfig?.primary !== undefined) {
         // Try loading the module to assure it exists
         try {
             dbConfig._moduleImpl = require(DSMODULEDIR + dbConfig.module);
-            dbConfig.initialised = false;
+            dbConfig._initialised = false;
         } catch(err) {
             log.error(MODULELOG, `Module ${dbConfig.module} cannot be loaded: ${err.message}`);
             return false;
         }
         // Primary datastore requires 'messageProcessed' tx and rx events configured
-        if (dbConfig.rxStoreEvent.length > -1 &amp;&amp; dbConfig.txStoreEvent.length > -1) {
-            if (dbConfig.primary) {
+        if (dbConfig?.rxStoreEvent.length > -1 &amp;&amp; dbConfig?.txStoreEvent.length > -1) {
+            if (dbConfig?.primary) {
                 requiredEvents.forEach(event => {
                     if (dbConfig.rxStoreEvent.indexOf(event) &lt; 0) {
                         dbConfig.rxStoreEvent.push(event);
-                        log.info(MODULELOG, `Auto configured primary datastore ${dbConfig.name} to store message on '${event}' RX events`);
+                        log.debug(MODULELOG, `Auto configured primary datastore ${dbConfig.name} to store message on '${event}' RX events`);
                     }
                     if (dbConfig.txStoreEvent.indexOf(event) &lt; 0) {
                         dbConfig.txStoreEvent.push(event);
-                        log.info(MODULELOG, `Auto configured primary datastore ${dbConfig.name} to store message on '${event}' TX events`);
+                        log.debug(MODULELOG, `Auto configured primary datastore ${dbConfig.name} to store message on '${event}' TX events`);
                     }
                 });
             }
@@ -381,6 +357,42 @@ function enableDbConfig(dbConfig) {
 }
 
 /**
+ * Calls init function for each datastore
+ * @private
+ * @param {function} callback
+ */
+function initDbConfig(callback) {
+    // Get configuration and call init function for each datastore
+    _datastoresConfig.forEach(dbConfig => {
+        if (dbConfig._enabled) {
+            /**
+             * Callback after initialising the datastore
+             * @callback datastoreInitCb
+             * @param {Error} err error object if any error
+             */
+            dbConfig._moduleImpl.init(dbConfig, function datastoreInitCb(err) {
+                if (err) {
+                    log.error(MODULELOG, `Error initialising ${dbConfig.name}: ${err.message}`);
+                } else {
+                    dbConfig._initialised = true;
+                    log.info(MODULELOG, `Initialised datastore: ${dbConfig.name}`);
+                }
+                // Ensure only one datastore is primary
+                if (_primaryDatastore !== NOTSET) {
+                    dbConfig.primary = false;
+                    log.warn(MODULELOG, `Ignoring ${dbConfig.name} as primary, because ${_primaryDatastore} already is; please update ${DSCONFFILE}`);
+                }
+                // Only invoke callback if primary
+                if (dbConfig.primary &amp;&amp; _primaryDatastore === NOTSET) {
+                    _primaryDatastore = dbConfig.name;
+                    return callback(err, _primaryDatastore);
+                }
+            });
+        }
+    });
+}
+
+/**
  * Checks each enabled datastore whether message needs to be stored at tx event
  * @private
  * @param {string} event the tx event to be checked with each enabled datastore
@@ -388,7 +400,7 @@ function enableDbConfig(dbConfig) {
  */
 function txStoreMessage(event, wfMessage) {
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled &amp;&amp; dbConfig.txStoreEvent.indexOf(event) > -1) {
+        if (dbConfig?._initialised &amp;&amp; dbConfig.txStoreEvent.indexOf(event) > -1) {
             log.trace(MODULELOG, `Storing message in ${dbConfig.name} upon tx event '${event}': ${wfMessage.MetaHeader.transactionHash}`);
             dbConfig._moduleImpl.storeMessage(wfMessage, datastoreTxStoreMessageCb);
         }
@@ -413,7 +425,7 @@ function txStoreMessage(event, wfMessage) {
  */
 function rxStoreMessage(event, wfMessage) {
     _datastoresConfig.forEach(dbConfig => {
-        if (dbConfig &amp;&amp; dbConfig._enabled &amp;&amp; dbConfig.rxStoreEvent.indexOf(event) > -1) {
+        if (dbConfig?._initialised &amp;&amp; dbConfig.rxStoreEvent.indexOf(event) > -1) {
             log.trace(MODULELOG, `Storing message in ${dbConfig.name} upon rx event '${event}': ${wfMessage.MetaHeader.transactionHash}`);
             dbConfig._moduleImpl.storeMessage(wfMessage, datastoreRxStoreMessageCb);
         }
@@ -439,13 +451,13 @@ function rxStoreMessage(event, wfMessage) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Aug 16 2025 12:40:46 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
