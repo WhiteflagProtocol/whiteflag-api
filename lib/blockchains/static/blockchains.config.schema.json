@@ -8,6 +8,34 @@
         "blockchains"
     ],
     "properties": {
+        "confirmation": {
+            "type": "object",
+            "required": [
+                "enabled",
+                "interval",
+                "maxBlockDepth",
+                "updateEachBlock"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "description": "Indicated whether to track block depth of message for confirmation",
+                    "type": "boolean"
+                },
+                "interval": {
+                    "description": "Interval in miliseconds to check blockdepth of message",
+                    "type": "number"
+                },
+                "maxBlockDepth": {
+                    "description": "Block depth after which a message is confirmed and not tracked anymore",
+                    "type": "number"
+                },
+                "updateEachBlock": {
+                    "description": "Indicates if block depth should be updated in data store for each block, otherwise only when confirmed",
+                    "type": "boolean"
+                }
+            }
+        },
         "blockchains": {
             "type": "array",
             "items": {
@@ -15,7 +43,8 @@
                 "required": [
                     "name",
                     "module",
-                    "active"
+                    "active",
+                    "createAccount"
                 ],
                 "additionalProperties": true,
                 "properties": {
@@ -31,8 +60,44 @@
                         "description": "Indicates whether the blockchain is active or can be ignored",
                         "type": "boolean"
                     },
-                    "node": {
-                        "description": "Indicates whether a full node is avaialble for queries and retrieval of transactions from the blockchain",
+                    "testnet": {
+                        "description": "Indicates whether the blockchain network is used for testing",
+                        "type": "boolean"
+                    },
+                    "createAccount": {
+                        "description": "Indicates whether an account for the blockchain should be autiomatically created if none exists",
+                        "type": "boolean"
+                    },
+                    "blockRetrievalInterval": {
+                        "description": "The time in miliseconds before the blockchain listener tries to retireve the next block",
+                        "type": "number"
+                    },
+                    "blockRetrievalStart": {
+                        "description": "The block number from which to start scanning blocks for Whiteflag messages; if 0 the blockchain will be scanned from the beginning",
+                        "type": "number"
+                    },
+                    "blockRetrievalEnd": {
+                        "description": "The block number to which to scan blocks for Whiteflag messages; if 0 the blockchain will be scanned to the end",
+                        "type": "number"
+                    },
+                    "blockRetrievalRestart": {
+                        "description": "The maximum number of blocks to look back at startup if behind the highest block",
+                        "type": "number"
+                    },
+                    "blockMaxRetries": {
+                        "description": "The number of retries if a specific block cannot be retrieved before going to the next block",
+                        "type": "number"
+                    },
+                    "transactionBatchSize": {
+                        "description": "The number of transactions in a block to be processed in parallel",
+                        "type": "number"
+                    },
+                    "transactionValue": {
+                        "description": "The standard value of a Whietflag message transaction",
+                        "type": "string"
+                    },
+                    "traceRawTransaction": {
+                        "description": "Indicates if trace logs should include all steps of the prcessing of a single transaction",
                         "type": "boolean"
                     },
                     "rpcProtocol": {
@@ -40,19 +105,19 @@
                         "type": "string"
                     },
                     "rpcHost": {
-                        "description": "The hostname of the blockchain node",
+                        "description": "The hostname of the blockchain node to make an RPC connection",
                         "type": "string"
                     },
                     "rpcPort": {
-                        "description": "The network port used by the blockchain node",
+                        "description": "The network port used by the blockchain node to make an RPC connection",
                         "type": "string"
                     },
-                    "username": {
-                        "description": "The username required to connect to the blockchain node",
+                    "rpcUsername": {
+                        "description": "The username required to connect to the blockchain node to make an RPC connection",
                         "type": "string"
                     },
-                    "password": {
-                        "description": "The password required to connect to the blockchain node",
+                    "rpcPassword": {
+                        "description": "The password required to connect to the blockchain node to make an RPC connection",
                         "type": "string"
                     }
                 }

@@ -25,12 +25,12 @@ transactionBatchSize = 64
 transactionValue = "0"
 traceRawTransaction = false
 rpcTimeout = 10000
-rpcProtocol = "http"
+rpcProtocol = "ws"
 rpcHost = "localhost"
 rpcPort = "9944"
 rpcPath = ""
-username = ""
-password = ""
+rpcUsername = ""
+rpcPassword = ""
 
 [[blockchains]]
 name = "ethereum-sepolia"
@@ -52,8 +52,8 @@ rpcProtocol = "http"
 rpcHost = "localhost"
 rpcPort = "8545"
 rpcPath = ""
-username = ""
-password = ""
+rpcUsername = ""
+rpcPassword = ""
 
 [[blockchains]]
 name = "bitcoin-testnet"
@@ -75,5 +75,5 @@ rpcProtocol = "http"
 rpcHost = "localhost"
 rpcPort = "8332"
 rpcPath = ""
-username = ""
-password = ""
+rpcUsername = ""
+rpcPassword = ""
