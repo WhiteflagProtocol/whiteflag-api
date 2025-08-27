@@ -31,9 +31,10 @@ const wfTxEvent = require('./lib/protocol/events').txEvent;
 const wfStateEvent = require('./lib/protocol/events').stateEvent;
 
 // Module constants //
-const MODULELOG = 'api';
+const MODULELOG = 'main';
 const SHUTDOWNTIMEOUT = 10000;
 
+// PROCESS CONTROL //
 /*
  * Gracefully crash if an uncaught exception occurs and
  * ensure proper shutdown when process is stopped
@@ -41,6 +42,13 @@ const SHUTDOWNTIMEOUT = 10000;
 process.on('uncaughtException', uncaughtExceptionCb);
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+/*
+ * Send any uncontrolled output to stdout and stderr to the debug logger
+ * to avoid submodules that do not properly report errors flooding the log
+ */
+log.redirectStream(process.stdout, log.trace);
+log.redirectStream(process.stderr, log.debug);
 
 // EXECUTE MAIN PROCESS FUNCTION //
 main(function mainCb(err) {

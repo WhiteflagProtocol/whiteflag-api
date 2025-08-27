@@ -23,7 +23,7 @@
         "keccak": "3.0.4",
         "key-encoder": "^2.0.3",
         "mongodb": "^3.7.4",
-        "@polkadot/api": "^16.4.4",
+        "@polkadot/api": "^16.4.6",
         "simpl.db": "^2.13.0",
         "socket.io": "^4.8.1",
         "toml": "^3.0.0",
@@ -31,7 +31,7 @@
     },
     "devDependencies": {
         "cloc": "^2.9.0",
-        "eslint": "^9.33.0",
+        "eslint": "^9.34.0",
         "jsdoc": "^4.0.4",
         "license-checker": "^25.0.1",
         "mocha": "^11.7.1",
