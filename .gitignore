@@ -5,6 +5,7 @@
 .idea
 .vscode/
 launch.json
+jsconfig.json
 
 ## Gitignore for NodeJS
 
