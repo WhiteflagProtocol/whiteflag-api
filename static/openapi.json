@@ -1289,8 +1289,8 @@
                             "description": "Blockchain account creation data object",
                             "type": "object",
                             "properties": {
-                                "privateKey": {
-                                    "description": "Optional private key in raw hexadecimal format to create account with",
+                                "secret": {
+                                    "description": "Optional blockchain dependent secret (e.g. private key, wif or seed) to create account with",
                                     "type": "string",
                                     "pattern": "[a-fA-F0-9]"
                                 }

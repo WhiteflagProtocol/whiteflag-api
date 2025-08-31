@@ -34,22 +34,24 @@
  */
 module.exports = {
     init: initRpc,
-    getSystemName,
-    getSystemVersion,
-    getNodeRoles,
-    getChainType,
-    getRuntimeVersion,
-    getSystemHealth,
-    getPeerCount,
-    getSyncState,
-    isSyncing,
-    getHighestBlock,
-    getBlockHash,
+    getBalance,
+    getBlock,
     getBlockByNumber,
     getBlockByHash,
-    getBlock,
+    getBlockHash,
     getBlockHeader,
-    getFullBlock
+    getChainType,
+    getFullBlock,
+    getHighestBlock,
+    getNodeRoles,
+    getPeerCount,
+    getRuntimeVersion,
+    getSyncState,
+    getSystemHealth,
+    getSystemName,
+    getSystemVersion,
+    getTransactionCount,
+    isSyncing,
 };
 
 // External modules //
@@ -64,15 +66,16 @@ const wfState = require('../../protocol/state');
 
 // Whiteflag common blockchain functions //
 const { rpcCall, getFullURL } = require('../common/rpc');
+const { ProcessingError } = require('../../common/errors');
 
 // Module constants //
 const STATUSINTERVAL = 60000; // Every minute
 const INFOINTERVAL = 3600000; // Every hour
 
 // Module variables //
-let _blockchainName;
-let _fennelState;
-let _fennelApi;
+let _fnlName = 'fennel';
+let _fnlState;
+let _fnlApi;
 let _websocket = false;
 let _rpcTimeout = 10000;
 let _rpcAuthURL;
@@ -83,70 +86,70 @@ let _rpcPass;
  * Initialises Fennel RPC
  * @function initRpc
  * @alias module:lib/blockchains/fennel/rpc.init
- * @param {Object} fennelConfig the Fennel blockchain configuration
- * @param {Object} fennelState the Fennel blockchain state
+ * @param {Object} fnlConfig the Fennel blockchain configuration
+ * @param {Object} fnlState the Fennel blockchain state
  * @returns {Promise} resolve if succesfully initialised
  */
-function initRpc(fennelConfig, fennelState) {
-    _blockchainName = fennelConfig.name;
-    _fennelState = fennelState;
+function initRpc(fnlConfig, fnlState) {
+    _fnlName = fnlConfig.name;
+    _fnlState = fnlState;
 
     // RPC timeout period
-    if (fennelConfig.rpcTimeout &amp;&amp; fennelConfig.rpcTimeout > 500) {
-        _rpcTimeout = fennelConfig.rpcTimeout;
+    if (fnlConfig.rpcTimeout &amp;&amp; fnlConfig.rpcTimeout > 500) {
+        _rpcTimeout = fnlConfig.rpcTimeout;
     }
-    log.info(_blockchainName, `Timeout for remote calls to the Fennel node: ${_rpcTimeout} ms`);
+    log.info(_fnlName, `Timeout for remote calls to the Fennel node: ${_rpcTimeout} ms`);
 
     // Get Node URL and credentials
-    _fennelState.parameters.rpcURL = getFullURL(fennelConfig, true);    // no credentials
-    _rpcAuthURL = getFullURL(fennelConfig, false);                      // include credentials
-    _rpcUser = fennelConfig.rpcUsername;
-    _rpcPass = fennelConfig.rpcPassword;
+    _fnlState.parameters.rpcURL = getFullURL(fnlConfig, true);    // no credentials
+    _rpcAuthURL = getFullURL(fnlConfig, false);                      // include credentials
+    _rpcUser = fnlConfig.rpcUsername;
+    _rpcPass = fnlConfig.rpcPassword;
 
     // Connect to Fennel node
     return new Promise((resolve, reject) => {
-        switch (fennelConfig.rpcProtocol) {
+        switch (fnlConfig.rpcProtocol) {
             // Connect using websocket
             case 'ws':
             case 'wss': {
-                log.trace(_blockchainName, `Initialising Fennel web socket RPC connection with: ${_fennelState.parameters.rpcURL}`);
+                log.trace(_fnlName, `Initialising Fennel web socket RPC connection with: ${_fnlState.parameters.rpcURL}`);
                 _websocket = true;
 
                 const wsProvider = new WsProvider(_rpcAuthURL);
                 timeoutPromise(ApiPromise.create({ provider: wsProvider }), _rpcTimeout)
                 .then(api => {
                     // We have a connection
-                    _fennelApi = api;
-                    log.info(_blockchainName, `Connected to ${_fennelApi.runtimeVersion.specName} through node: ${_fennelState.parameters.rpcURL}`);
+                    _fnlApi = api;
+                    log.info(_fnlName, `Connected to ${_fnlApi.runtimeVersion.specName} through node: ${_fnlState.parameters.rpcURL}`);
 
                     // Initialise node status monitoring
                     updateNodeInfo(); setInterval(updateNodeInfo, INFOINTERVAL);
                     updateNodeStatus(); setInterval(updateNodeStatus, STATUSINTERVAL);
 
                     // Succesfully completed initialisation
-                    return resolve(_fennelApi);
+                    return resolve(_fnlApi);
                 })
                 .catch(err => {
                     wsProvider.disconnect();
-                    return reject(new Error(`Could not make a web socket connection with Fennel node: ${err.message}`), _blockchainName);
+                    return reject(new Error(`Could not make a web socket connection with Fennel node: ${err.message}`), _fnlName);
                 });
                 break;
             }
             // Connect via http
             case 'http':
             case 'https': {
-                log.trace(_blockchainName, `Initialising Fennel http RPC connection with: ${_fennelState.parameters.rpcURL}`);
+                log.trace(_fnlName, `Initialising Fennel http RPC connection with: ${_fnlState.parameters.rpcURL}`);
                 
                 getRuntimeVersion()
-                .then(fennelRuntime => {
+                .then(fnlRuntime => {
                     // We have a connection
-                    log.info(_blockchainName, `Connected to ${fennelRuntime.specName} through node: ${_fennelState.parameters.rpcURL}`);
+                    log.info(_fnlName, `Connected to ${fnlRuntime.specName} through node: ${_fnlState.parameters.rpcURL}`);
 
                     // RPC timeout period
-                    if (fennelConfig.rpcTimeout &amp;&amp; fennelConfig.rpcTimeout > 500) {
-                        _rpcTimeout = fennelConfig.rpcTimeout;
+                    if (fnlConfig.rpcTimeout &amp;&amp; fnlConfig.rpcTimeout > 500) {
+                        _rpcTimeout = fnlConfig.rpcTimeout;
                     }
-                    log.info(_blockchainName, `Timeout for remote calls to the Fennel node: ${_rpcTimeout} ms`);
+                    log.info(_fnlName, `Timeout for remote calls to the Fennel node: ${_rpcTimeout} ms`);
 
                     // Initialise node status monitoring
                     updateNodeInfo(); setInterval(updateNodeInfo, INFOINTERVAL);
@@ -155,12 +158,12 @@ function initRpc(fennelConfig, fennelState) {
                     // Succesfully completed initialisation
                     return resolve();
                 })
-                .catch(err => reject(new Error(`Could not make web connection with Fennel node: ${err.message}`), _blockchainName));
+                .catch(err => reject(new Error(`Could not make web connection with Fennel node: ${err.message}`), _fnlName));
                 break;
             }
             // Unknown protocol
             default: {
-                return reject(new Error(`Unknown protocol to connect with Fennel node: ${fennelConfig.rpcProtocol}`), _blockchainName);
+                return reject(new Error(`Unknown protocol to connect with Fennel node: ${fnlConfig.rpcProtocol}`), _fnlName);
             }
         }
     });
@@ -168,176 +171,15 @@ function initRpc(fennelConfig, fennelState) {
 
 // RPC CALL WRAPPER FUNCTIONS //
 /**
- * Gets the system name
- * @function getSystemName
- * @alias module:lib/blockchains/fennel/rpc.getSystemName
- * @returns {Promise} resolves to system name
+ * Gets the balance of the specified Fennel blockchain account
+ * @function getBalance
+ * @alias module:lib/blockchains/fennel/rpc.getBalance
+ * @param {string} address
+ * @returns {Promise}
  */
-function getSystemName() {
-    if (_websocket) return _fennelApi.rpc.system.name();
-    return rpc('system_name');
-}
-
-/**
- * Gets the system version
- * @function getSystemVersion
- * @alias module:lib/blockchains/fennel/rpc.getSystemVersion
- * @returns {Promise} resolves to connection count
- */
-function getSystemVersion() {
-    if (_websocket) return _fennelApi.rpc.system.version();
-    return rpc('system_version');
-}
-
-/**
- * Gets the node roles
- * @function getNodeRoles
- * @alias module:lib/blockchains/fennel/rpc.getNodeRoles
- * @returns {Promise} resolves to array with node roles
- */
-function getNodeRoles() {
-    // WORKORUND: websocket does not return does not return correct value
-    // if (_websocket) return _fennelApi.rpc.system.nodeRoles();
-    return rpc('system_nodeRoles');
-}
-
-/**
-* Gets the chain type
-* @function getChainType
-* @alias module:lib/blockchains/fennel/rpc.getChainType
-* @returns {Promise} resolves to chain type
-*/
-function getChainType() {
-    // WORKORUND: websocket does not return does not return correct value
-    // if (_websocket) return _fennelApi.rpc.system.chainType();
-    return rpc('system_chainType');
- }
-
-/**
-* Gets the runtime version information
-* @function getRuntimeVersion
-* @alias module:lib/blockchains/fennel/rpc.getRuntimeVersion
-* @returns {Promise} resolves to version info
-*/
-function getRuntimeVersion() {
-    if (_websocket) return _fennelApi.rpc.state.getRuntimeVersion();
-    return rpc('state_getRuntimeVersion');
-}
-
-/**
- * Gets the node health
- * @function getSystemHealth
- * @alias module:lib/blockchains/fennel/rpc.getPeerCount
- * @returns {Promise} resolves to the node's system health
- */
-function getSystemHealth() {
-    if (_websocket) return _fennelApi.rpc.system.health();
-    return rpc('system_health');
-}
-
-/**
- * Gets the number of peers
- * @function getPeerCount
- * @alias module:lib/blockchains/fennel/rpc.getPeerCount
- * @returns {Promise} resolves to the number of peers
- */
-function getPeerCount() {
-    return getSystemHealth()
-    .then(result => {
-        if (result instanceof Map) return Promise.resolve(result.get('peers'));
-        return Promise.resolve(result.peers);
-    })
-    .catch(err => {
-        return Promise.reject(err);
-    });
-}
-
-/**
- * Checks if the node is syncing
- * @function isSyncing
- * @alias module:lib/blockchains/fennel/rpc.isSyncing
- * @returns {Promise} resolves to syncing infomration
- */
-function isSyncing() {
-    return getSystemHealth()
-    .then(result => {
-        if (result instanceof Map) return Promise.resolve(result.get('isSyncing'));
-        return Promise.resolve(result.isSyncing);
-    })
-    .catch(err => {
-        return Promise.reject(err);
-    });
-}
-
-/**
- * Gets the system synchronisation state
- * @function getSyncState
- * @alias module:lib/blockchains/fennel/rpc.getSyncState
- * @returns {Promise} resolves to connection count
- */
-function getSyncState() {
-    if (_websocket) return _fennelApi.rpc.system.syncState();
-    return rpc('system_syncState');
-}
-
-/**
- * Gets the highest block, i.e. the current block count of the longest chains
- * @function getHighestBlock
- * @alias module:lib/blockchains/fennel/rpc.getHighestBlock
- * @returns {Promise} resolves to highest known block number
- */
-function getHighestBlock() {
-    return getSyncState()
-    .then(result => {
-        if (result instanceof Map) return Promise.resolve(result.get('highestBlock'));
-        return Promise.resolve(result.highestBlock);
-    })
-    .catch(err => {
-        return Promise.reject(err);
-    });
-}
-
-/**
- * Gets the hash of the block specified by its block number
- * @function getBlockHash
- * @alias module:lib/blockchains/fennel/rpc.getBlockHash
- * @param {Object} blockNumber
- * @returns {Promise} resolves to block hash
- */
-function getBlockHash(blockNumber) {
-    if (_websocket) return _fennelApi.rpc.chain.getBlockHash(blockNumber);
-    return rpc('chain_getBlockHash', [ blockNumber ]);
-}
-
-/**
- * Gets a block by its number including transaction data
- * @function getBlockByNumber
- * @alias module:lib/blockchains/fennel/rpc.getBlockByNumber
- * @param {Object} blockNumber
- * @param {boolean} extrinsics get the block including all extrinsics
- * @returns {Promise} resolves to block including extrinsics
- */
-function getBlockByNumber(blockNumber, extrinsics = false) {
-    return getBlockHash(blockNumber)
-    .then(blockHash => {
-        return getBlockByHash(blockHash, extrinsics);
-    })
-    .catch(err => {
-        return Promise.reject(err);
-    });
-}
-
-/**
- * Gets a block by its hash
- * @function getBlockByHash
- * @alias module:lib/blockchains/fennel/rpc.getBlockByHash
- * @param {string} blockHash
- * @param {boolean} extrinsics get the block including all extrinsics
- * @returns {Promise} resolves to a JSON representation of the block
- */
-function getBlockByHash(blockHash, extrinsics = false) {
-    if (extrinsics) return getBlock(blockHash);
-    return getBlockHeader(blockHash);
+function getBalance(address) {
+    ignore(address);
+    return Promise.reject(new ProcessingError('No method implemented to get balance for an account' ,null , 'WF_API_NOT_IMPLEMENTED'));
 }
 
 /**
@@ -359,6 +201,49 @@ function getBlock(blockHash) {
 }
 
 /**
+ * Gets the hash of the block specified by its block number
+ * @function getBlockHash
+ * @alias module:lib/blockchains/fennel/rpc.getBlockHash
+ * @param {Object} blockNumber
+ * @returns {Promise} resolves to block hash
+ */
+function getBlockHash(blockNumber) {
+    if (_websocket) return _fnlApi.rpc.chain.getBlockHash(blockNumber);
+    return rpc('chain_getBlockHash', [ blockNumber ]);
+}
+
+/**
+ * Gets a block by its hash
+ * @function getBlockByHash
+ * @alias module:lib/blockchains/fennel/rpc.getBlockByHash
+ * @param {string} blockHash
+ * @param {boolean} extrinsics get the block including all extrinsics
+ * @returns {Promise} resolves to a JSON representation of the block
+ */
+function getBlockByHash(blockHash, extrinsics = false) {
+    if (extrinsics) return getBlock(blockHash);
+    return getBlockHeader(blockHash);
+}
+
+/**
+ * Gets a block by its number including transaction data
+ * @function getBlockByNumber
+ * @alias module:lib/blockchains/fennel/rpc.getBlockByNumber
+ * @param {Object} blockNumber
+ * @param {boolean} extrinsics get the block including all extrinsics
+ * @returns {Promise} resolves to block including extrinsics
+ */
+function getBlockByNumber(blockNumber, extrinsics = false) {
+    return getBlockHash(blockNumber)
+    .then(blockHash => {
+        return getBlockByHash(blockHash, extrinsics);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
+}
+
+/**
  * Gets a block header by its hash
  * @function getBlockHeader
  * @alias module:lib/blockchains/fennel/rpc.getBlockHeader
@@ -366,8 +251,20 @@ function getBlock(blockHash) {
  * @returns {Promise} resolves to a JOSN representation of the block header
  */
 function getBlockHeader(blockHash) {
-    if (_websocket) return _fennelApi.rpc.chain.getHeader(blockHash);
+    if (_websocket) return _fnlApi.rpc.chain.getHeader(blockHash);
     return rpc('chain_getHeader', [ blockHash ]);
+}
+
+/**
+* Gets the chain type
+* @function getChainType
+* @alias module:lib/blockchains/fennel/rpc.getChainType
+* @returns {Promise} resolves to chain type
+*/
+function getChainType() {
+    // WORKORUND: websocket does not return does not return correct value
+    // if (_websocket) return _fnlApi.rpc.system.chainType();
+    return rpc('system_chainType');
 }
 
 /**
@@ -378,8 +275,138 @@ function getBlockHeader(blockHash) {
  * @returns {Promise} resolves to a JOSN representation of the block
  */
 function getFullBlock(blockHash) {
-    if (_websocket) return _fennelApi.rpc.chain.getBlock(blockHash);
+    if (_websocket) return _fnlApi.rpc.chain.getBlock(blockHash);
     return rpc('chain_getBlock', [ blockHash ]);
+}
+
+/**
+ * Gets the highest block, i.e. the current block count of the longest chains
+ * @function getHighestBlock
+ * @alias module:lib/blockchains/fennel/rpc.getHighestBlock
+ * @returns {Promise} resolves to highest known block number
+ */
+function getHighestBlock() {
+    return getSyncState()
+    .then(result => {
+        if (result instanceof Map) return Promise.resolve(result.get('highestBlock'));
+        return Promise.resolve(result.highestBlock);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
+}
+
+/**
+ * Gets the node roles
+ * @function getNodeRoles
+ * @alias module:lib/blockchains/fennel/rpc.getNodeRoles
+ * @returns {Promise} resolves to array with node roles
+ */
+function getNodeRoles() {
+    // WORKORUND: websocket does not return does not return correct value
+    // if (_websocket) return _fnlApi.rpc.system.nodeRoles();
+    return rpc('system_nodeRoles');
+}
+
+/**
+ * Gets the number of peers
+ * @function getPeerCount
+ * @alias module:lib/blockchains/fennel/rpc.getPeerCount
+ * @returns {Promise} resolves to the number of peers
+ */
+function getPeerCount() {
+    return getSystemHealth()
+    .then(result => {
+        if (result instanceof Map) return Promise.resolve(result.get('peers'));
+        return Promise.resolve(result.peers);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
+}
+
+/**
+* Gets the runtime version information
+* @function getRuntimeVersion
+* @alias module:lib/blockchains/fennel/rpc.getRuntimeVersion
+* @returns {Promise} resolves to version info
+*/
+function getRuntimeVersion() {
+    if (_websocket) return _fnlApi.rpc.state.getRuntimeVersion();
+    return rpc('state_getRuntimeVersion');
+}
+
+/**
+ * Gets the system synchronisation state
+ * @function getSyncState
+ * @alias module:lib/blockchains/fennel/rpc.getSyncState
+ * @returns {Promise} resolves to connection count
+ */
+function getSyncState() {
+    if (_websocket) return _fnlApi.rpc.system.syncState();
+    return rpc('system_syncState');
+}
+
+/**
+ * Gets the node health
+ * @function getSystemHealth
+ * @alias module:lib/blockchains/fennel/rpc.getPeerCount
+ * @returns {Promise} resolves to the node's system health
+ */
+function getSystemHealth() {
+    if (_websocket) return _fnlApi.rpc.system.health();
+    return rpc('system_health');
+}
+
+/**
+ * Gets the system name
+ * @function getSystemName
+ * @alias module:lib/blockchains/fennel/rpc.getSystemName
+ * @returns {Promise} resolves to system name
+ */
+function getSystemName() {
+    if (_websocket) return _fnlApi.rpc.system.name();
+    return rpc('system_name');
+}
+
+/**
+ * Gets the system version
+ * @function getSystemVersion
+ * @alias module:lib/blockchains/fennel/rpc.getSystemVersion
+ * @returns {Promise} resolves to connection count
+ */
+function getSystemVersion() {
+    if (_websocket) return _fnlApi.rpc.system.version();
+    return rpc('system_version');
+}
+
+/**
+ * Gets the balance of the specified Fennel blockchain account
+ * @function getTransactionCount
+ * @alias module:lib/blockchains/fennel/rpc.getTransactionCount
+ * @param {string} address
+ * @returns {Promise}
+ */
+function getTransactionCount(address) {
+    ignore(address);
+    return Promise.reject(new ProcessingError('No method implemented to get transaction count for an account' ,null , 'WF_API_NOT_IMPLEMENTED'));
+}
+
+/**
+ * Checks if the node is syncing
+ * @function isSyncing
+ * @alias module:lib/blockchains/fennel/rpc.isSyncing
+ * @returns {Promise} resolves to syncing infomration
+ */
+function isSyncing() {
+    return getSystemHealth()
+    .then(result => {
+        if (result instanceof Map) return Promise.resolve(result.get('isSyncing'));
+        return Promise.resolve(result.isSyncing);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
 }
 
 // PRIVATE BLOCKCHAIN STATUS FUNCTIONS //
@@ -390,33 +417,33 @@ function getFullBlock(blockHash) {
 async function updateNodeInfo() {
     // Get system name
     await getSystemName()
-    .then(systemName => (_fennelState.parameters.systemName = systemName  || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get system name from node: ${err.message}`));
+    .then(systemName => (_fnlState.parameters.systemName = systemName  || ''))
+    .catch(err => log.warn(_fnlName, `Could not get system name from node: ${err.message}`));
 
     // Get system version info
     await getSystemVersion()
-    .then(systemVersion => (_fennelState.parameters.systemVersion = systemVersion  || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get system version from node: ${err.message}`));
+    .then(systemVersion => (_fnlState.parameters.systemVersion = systemVersion  || ''))
+    .catch(err => log.warn(_fnlName, `Could not get system version from node: ${err.message}`));
 
     // Get chain runtime info
     await getRuntimeVersion()
-    .then(fennelRuntime => {
-        _fennelState.parameters.specName = fennelRuntime.specName || '';
-        _fennelState.parameters.specVersion = fennelRuntime.specVersion || '';
-        _fennelState.parameters.implName = fennelRuntime.implName || '';
-        _fennelState.parameters.implVersion = fennelRuntime.implVersion || '';
+    .then(fnlRuntime => {
+        _fnlState.parameters.specName = fnlRuntime.specName || '';
+        _fnlState.parameters.specVersion = fnlRuntime.specVersion || '';
+        _fnlState.parameters.implName = fnlRuntime.implName || '';
+        _fnlState.parameters.implVersion = fnlRuntime.implVersion || '';
     })
-    .catch(err => log.warn(_blockchainName, `Could not get chain runtime information from node: ${err.message}`));
+    .catch(err => log.warn(_fnlName, `Could not get chain runtime information from node: ${err.message}`));
 
     // Get node roles
     await getChainType()
-    .then(chainType => (_fennelState.parameters.chainType = chainType || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get chain type from node: ${err.message}`));
+    .then(chainType => (_fnlState.parameters.chainType = chainType || ''))
+    .catch(err => log.warn(_fnlName, `Could not get chain type from node: ${err.message}`));
 
     // Get node roles
     await getNodeRoles()
-    .then(nodeRoles => (_fennelState.parameters.nodeRoles = nodeRoles || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get roles from node: ${err.message}`));
+    .then(nodeRoles => (_fnlState.parameters.nodeRoles = nodeRoles || ''))
+    .catch(err => log.warn(_fnlName, `Could not get roles from node: ${err.message}`));
 }
 
 /**
@@ -424,26 +451,26 @@ async function updateNodeInfo() {
  * @private
  */
 async function updateNodeStatus() {
-    _fennelState.status.updated = new Date().toISOString();
+    _fnlState.status.updated = new Date().toISOString();
 
     // Get peer status
     await getPeerCount()
-    .then(peers => (_fennelState.status.peers = peers  || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get peer status: ${err.message}`));
+    .then(peers => (_fnlState.status.peers = peers  || ''))
+    .catch(err => log.warn(_fnlName, `Could not get peer status: ${err.message}`));
 
     // Get synchronisation status
     await isSyncing()
-    .then(syncing => (_fennelState.status.syncing = syncing  || ''))
-    .catch(err => log.warn(_blockchainName, `Could not get synchronisation status: ${err.message}`));
+    .then(syncing => (_fnlState.status.syncing = syncing  || ''))
+    .catch(err => log.warn(_fnlName, `Could not get synchronisation status: ${err.message}`));
 
     // Get synchronisation status
     await getSyncState()
     .then(syncState => {
-        _fennelState.status.startingBlock = syncState.startingBlock || '';
-        _fennelState.status.currentBlock = syncState.currentBlock || '';
-        _fennelState.status.highestBlock = syncState.highestBlock || '';
+        _fnlState.status.startingBlock = syncState.startingBlock || '';
+        _fnlState.status.currentBlock = syncState.currentBlock || '';
+        _fnlState.status.highestBlock = syncState.highestBlock || '';
     })
-    .catch(err => log.warn(_blockchainName, `Could not get synchronisation status: ${err.message}`));
+    .catch(err => log.warn(_fnlName, `Could not get synchronisation status: ${err.message}`));
 
     // Log node status
     saveNodeStatus();
@@ -454,8 +481,8 @@ async function updateNodeStatus() {
  * @private
  */
 function saveNodeStatus() {
-    wfState.updateBlockchainData(_blockchainName, _fennelState);
-    log.info(_blockchainName, `Status: {${JSON.stringify(_fennelState.parameters)}, ${JSON.stringify(_fennelState.status)}}`);
+    wfState.updateBlockchainData(_fnlName, _fnlState);
+    log.info(_fnlName, `Status: {${JSON.stringify(_fnlState.parameters)}, ${JSON.stringify(_fnlState.status)}}`);
 }
 
 // PRIVATE RPC FUNCTIONS //
@@ -480,13 +507,13 @@ function rpc(method, params = []) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 27 2025 18:17:01 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 31 2025 17:53:10 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

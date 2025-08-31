@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: blockchains/ethereum/accounts.js</title>
+    <title>JSDoc: Source: blockchains/fennel/accounts.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: blockchains/ethereum/accounts.js</h1>
+    <h1 class="page-title">Source: blockchains/fennel/accounts.js</h1>
 
     
 
@@ -28,9 +28,9 @@
         <article>
             <pre class="prettyprint source linenums"><code>'use strict';
 /**
- * @module lib/blockchains/ethereum/accounts
- * @summary Whiteflag API Ethereum accounts module
- * @description Module for managing Ethereum accounts for Whiteflag
+ * @module lib/blockchains/fennel/accounts
+ * @summary Whiteflag API Fennel accounts module
+ * @description Module for managing Fennel accounts for Whiteflag
  */
 module.exports = {
     init: initAccounts,
@@ -42,7 +42,7 @@ module.exports = {
 
 // Node.js core and external modules //
 const crypto = require('crypto');
-const ethUtil = require('ethereumjs-util');
+const fnlCrypto = require('@polkadot/util-crypto');
 
 // Whiteflag common functions and classes //
 const log = require('../../common/logger');
@@ -54,8 +54,8 @@ const { ProcessingError } = require('../../common/errors');
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
 
-// Ethereum sub-modules //
-const ethRpc = require('./rpc');
+// Fennel sub-modules //
+const fnlRpc = require('./rpc');
 const { withHexPrefix,
         noKeyHexPrefix,
         noAddressHexPrefix,
@@ -66,93 +66,94 @@ const { withHexPrefix,
 const STATUSINTERVAL = 60000; // Every minute
 const BINENCODING = 'hex';
 const KEYIDLENGTH = 12;
+const SEEDBYTELENGTH = 32;
 
 // Module variables //
-let _ethName = 'ethereum';
-let _ethState;
-let _ethApi;
+let _fnlName = 'fennel';
+let _fnlState;
 
 /**
- * Initialises Ethereum accounts management
+ * Initialises Fennel accounts management
  * @function initAccounts
- * @alias module:lib/blockchains/ethereum/accounts.init
- * @param {Object} ethConfig the Ethereum blockchain configuration
- * @param {Object} ethState the Ethereum blockchain state
- * @param {Object} ethApi the Ethereum Web3 API instance
+ * @alias module:lib/blockchains/fennel/accounts.init
+ * @param {Object} fnlConfig the Fennel blockchain configuration
+ * @param {Object} fnlState the Fennel blockchain state
+ * @param {Object} fnlApi the Fennel API instance
  * @returns {Promise} resolves if succesfully initialised
  */
-async function initAccounts(ethConfig, ethState, ethApi) {
-    _ethName = ethConfig.name;
-    _ethState = ethState;
-    _ethApi = ethApi;
-    log.trace(_ethName, 'Initialising Ethereum accounts management...');
+async function initAccounts(fnlConfig, fnlState) {
+    _fnlName = fnlConfig.name;
+    _fnlState = fnlState;
+    log.trace(_fnlName, 'Initialising Fennel accounts management...');
 
     // If configured, create new account if none exists
-    if (ethConfig.createAccount &amp;&amp; _ethState.accounts.length === 0) {
+    if (fnlConfig.createAccount &amp;&amp; _fnlState.accounts.length === 0) {
         createAccount(null)
         .then(account => {
-            log.info(_ethName, `Ethereum account created automatically: ${account.address}`);
+            log.info(_fnlName, `Fennel account created automatically: ${account.address}`);
         })
-        .catch(err => log.warn(_ethName, err.message));
+        .catch(err => log.warn(_fnlName, err.message));
     }
     // Periodically update account balances
-    updateAccounts(); setInterval(updateAccounts, STATUSINTERVAL);
+    // WIP: updateAccounts(); setInterval(updateAccounts, STATUSINTERVAL);
 
     // Succesfully completed initialisation
     return Promise.resolve();
 }
 
 /**
- * Gets Ethereum account from the blockchain state by address
+ * Gets Fennel account from the blockchain state by address
  * @function getAccount
- * @alias module:lib/blockchains/ethereum/accounts.get
+ * @alias module:lib/blockchains/fennel/accounts.get
  * @param {string} address the account address
  * @returns {Promise} resolves to the requested account
  */
 function getAccount(address = null) {
     return new Promise((resolve, reject) => {
-        let account = _ethState.accounts.find(item => item.address === address);
+        let account = _fnlState.accounts.find(item => item.address === address);
         if (!account) {
-            return reject(new ProcessingError(`No existing ${_ethName} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`No existing ${_fnlName} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         resolve(account);
     });
 }
 
 /**
- * Creates a new Ethereum blockchain account
+ * Creates a new Fennel blockchain account
  * @function createAccount
- * @alias module:lib/blockchains/ethereum.createAccount
- * @param {string} [privateKey] hexadecimal string with private key (without 0x prefix)
+ * @alias module:lib/blockchains/fennel.createAccount
+ * @param {string} [seed] hexadecimal encoded secret seed
  * @returns {Promise} resolves to newly created account
  */
-function createAccount(privateKey = null) {
+function createAccount(seed = null) {
     return new Promise((resolve, reject) => {
         let account;
         try {
-            if (privateKey) {
-                log.trace(_ethName, 'Creating Ethereum account from existing private key');
-                account = createAccountEntry(_ethApi.eth.accounts.privateKeyToAccount(withHexPrefix(privateKey)));
-                updateAccountBalance(account);
-                updateAccountTransactions(account);
+            if (seed) {
+                log.trace(_fnlName, 'Creating Fennel account from existing private key');
+                const seedBuffer = Buffer.from(seed, BINENCODING);
+                account = createAccountEntry(fnlCrypto.sr25519PairFromSeed(seedBuffer));
+                // WIP: updateAccountBalance(account);
+                // WIP: updateAccountTransactions(account);
             } else {
-                log.trace(_ethName, 'Creating new Ethereum account with generated keys');
-                account = createAccountEntry(_ethApi.eth.accounts.create(crypto.randomBytes(64)));
+                log.trace(_fnlName, 'Creating new Fennel account with generated secret key');
+                const seedBuffer = crypto.randomBytes(SEEDBYTELENGTH);
+                account = createAccountEntry(fnlCrypto.sr25519PairFromSeed(seedBuffer));
                 account.balance = 0;
                 account.transactionCount = 0;
             }
             // Hopefully the garbage collector will do its work
-            privateKey = undefined;
+            seed = undefined;
         } catch(err) {
-            privateKey = undefined;
-            log.error(_ethName, `Error while creating new Ethereum account: ${err.message}`);
+            seed = undefined;
+            log.error(_fnlName, `Error while creating new Fennel account: ${err.message}`);
             return reject(err);
         }
         // Check for existing account and store account
         getAccount(account.address)
         .then(existingAccount => {
             if (existingAccount.address === account.address) {
-                return reject(new ProcessingError(`The ${_ethName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
+                return reject(new ProcessingError(`The ${_fnlName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
             }
         })
         .catch(err => ignore(err)); // all good if account does not yet exist
@@ -164,27 +165,27 @@ function createAccount(privateKey = null) {
 }
 
 /**
- * Updates Ethereum blockchain account attributes
+ * Updates Fennel blockchain account attributes
  * @function updateAccount
- * @alias module:lib/blockchains/ethereum.updateAccount
+ * @alias module:lib/blockchains/fennel.updateAccount
  * @param {Object} account the account information including address to be updated
  * @returns {Promise} resolves to updated account
  */
 function updateAccount(account) {
-    log.trace(_ethName, `Updating Ethereum account: ${account.address}`);
+    log.trace(_fnlName, `Updating Fennel account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Update only if account exists
         getAccount(account.address)
         .then(existingAccount => {
             // Double check addresses
             if (existingAccount.address !== account.address) {
-                return reject(new Error(`Address of ${_ethName} account in state does not correspond with updated account data address`));
+                return reject(new Error(`Address of ${_fnlName} account in state does not correspond with updated account data address`));
             }
             // Upsert updated account data
             try {
                 upsertAccount(account);
             } catch(err) {
-                return reject(new Error(`Could not update ${_ethName} account: ${err.message}`));
+                return reject(new Error(`Could not update ${_fnlName} account: ${err.message}`));
             }
             return resolve(account);
         })
@@ -193,27 +194,27 @@ function updateAccount(account) {
 }
 
 /**
- * Deletes Ethereum blockchain account
+ * Deletes Fennel blockchain account
  * @function deleteAccount
- * @alias module:lib/blockchains/ethereum.deleteAccount
+ * @alias module:lib/blockchains/fennel.deleteAccount
  * @param {string} address the address of the account to be deleted
  * @returns {Promise} resolves to updated account
  */
 function deleteAccount(address) {
-    log.trace(_ethName, `Deleting Ethereum account: ${address}`);
+    log.trace(_fnlName, `Deleting Fennel account: ${address}`);
     return new Promise((resolve, reject) => {
         // Get index of account
-        const index = _ethState.accounts.findIndex(item => item.address === address);
+        const index = _fnlState.accounts.findIndex(item => item.address === address);
         if (index &lt; 0) {
-            return reject(new ProcessingError(`Could not find ${_ethName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`Could not find ${_fnlName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         // Remove account from state after double check
-        const account = _ethState.accounts[index];
+        const account = _fnlState.accounts[index];
         if (account.address === address) {
-            _ethState.accounts.splice(index, 1);
-            wfState.updateBlockchainData(_ethName, _ethState);
+            _fnlState.accounts.splice(index, 1);
+            wfState.updateBlockchainData(_fnlName, _fnlState);
         } else {
-            return reject(new Error(`Could not not delete ${_ethName} account: ${address}`));
+            return reject(new Error(`Could not not delete ${_fnlName} account: ${address}`));
         }
         // Log and return result
         return resolve(account);
@@ -222,91 +223,90 @@ function deleteAccount(address) {
 
 // PRIVATE ACCOUNT FUNCTIONS //
 /**
- * Updates all Ethereum blockchain accounts
+ * Updates all Fennel blockchain accounts
  * @private
  */
 function updateAccounts() {
-    _ethState.accounts.forEach(account => {
+    _fnlState.accounts.forEach(account => {
         Promise.all([
             updateAccountBalance(account),
             updateAccountTransactions(account)
         ])
         .then(() => {
-            wfState.updateBlockchainData(_ethName, _ethState);
+            wfState.updateBlockchainData(_fnlName, _fnlState);
         });
     });
 }
 
 /**
- * Updates the balance of an Ethereum blockchain account
+ * Updates the balance of a Fennel blockchain account
  * @private
  * @param {Object} account
  * @returns {Promise}
  */
 function updateAccountBalance(account) {
     log.trace(_fnlName, `Updating balance of account: ${account.address}`);
-    return ethRpc.getBalance(account.address)
+    return fnlRpc.getBalance(account.address)
     .then(balance => {
-        account.balance = _ethApi.utils.fromWei(balance, 'ether');
+        account.balance = balance;
         return Promise.resolve(account.balance);
     })
-    .catch(err => log.warn(_ethName, `Could not update balance for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(_fnlName, `Could not update balance for account ${account.address}: ${err.message}`));
 }
 
  /**
- * Updates the number of transactions of an Ethereum blockchain account
+ * Updates the number of transactions of a Fennel blockchain account
  * @private
  * @param {Object} account
  * @returns {Promise}
  */
 function updateAccountTransactions(account) {
     log.trace(_fnlName, `Updating transaction count of account: ${account.address}`);
-    return ethRpc.getTransactionCount(account.address)
+    return fnlRpc.getTransactionCount(account.address)
     .then(transactionCount => {
         account.transactionCount = transactionCount;
         return Promise.resolve(account.transactionCount);
     })
-    .catch(err => log.warn(_ethName, `Could not update transaction count for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(_fnlName, `Could not update transaction count for account ${account.address}: ${err.message}`));
 }
 
 /**
- * Updates or inserts an Ethereum account in the blockchain state
+ * Updates or inserts an Fennel account in the blockchain state
  * @private
- * @param {Object} account Ethereum account to be upserted
+ * @param {Object} account Fennel account to be upserted
  */
 function upsertAccount(account) {
     // Securely store the private key in state
     if (Object.prototype.hasOwnProperty.call(account, 'privateKey')) {
-        const privateKeyId = hash(_ethName + account.address, KEYIDLENGTH);
+        const privateKeyId = hash(_fnlName + account.address, KEYIDLENGTH);
         wfState.upsertKey('blockchainKeys', privateKeyId, noKeyHexPrefix(account.privateKey));
         delete account.privateKey;
     }
     // Inserting or updating
-    let existingAccount = _ethState.accounts.find(item => item.address === account.address);
+    let existingAccount = _fnlState.accounts.find(item => item.address === account.address);
     if (!existingAccount) {
         // Insert new account
-        _ethState.accounts.push(account);
-        log.trace(_ethName, `New Ethereum account added to state: ${account.address}`);
+        _fnlState.accounts.push(account);
+        log.trace(_fnlName, `New Fennel account added to state: ${account.address}`);
     } else {
         // Update account
         object.update(account, existingAccount);
-        log.trace(_ethName, `Ethereum account updated in state: ${account.address}`);
+        log.trace(_fnlName, `Fennel account updated in state: ${account.address}`);
     }
-    wfState.updateBlockchainData(_ethName, _ethState);
+    wfState.updateBlockchainData(_fnlName, _fnlState);
 }
 
 /**
- * Create account entry from Ethereum keypair/account
+ * Create account entry from Fennel keypair
  * @private
- * @param {Object} ethAccount an Ethereum keypair/account
+ * @param {Object} keypair an sr25519 keypair for Fennel
  * @returns {Object} the account data
  */
- function createAccountEntry(ethAccount) {
-    const publicKey = ethUtil.privateToPublic(Buffer.from(noKeyHexPrefix(ethAccount.privateKey), BINENCODING));
+ function createAccountEntry(keypair) {
     return {
-        address: noAddressHexPrefix(ethAccount.address),
-        publicKey: noPubkeyHexPrefix(publicKey.toString(BINENCODING)),
-        privateKey: noKeyHexPrefix(ethAccount.privateKey),
+        address: fnlCrypto.encodeAddress(keypair.publicKey),
+        publicKey: noPubkeyHexPrefix(Buffer.from(keypair.publicKey).toString('hex')),
+        privateKey: noKeyHexPrefix(Buffer.from(keypair.secretKey).toString('hex')),
         balance: null,
         transactionCount: null
     };

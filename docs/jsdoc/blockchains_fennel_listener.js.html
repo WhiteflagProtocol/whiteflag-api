@@ -49,8 +49,8 @@ const wfState = require('../../protocol/state');
 const { determineStartingBlock, logStartingBlock } = require('../common/state');
 
 // Fennel sub-modules //
-const fennelRpc = require('./rpc');
-const fennelTransactions = require('./transactions');
+const fnlRpc = require('./rpc');
+const fnlTransactions = require('./transactions');
 
 // Module constants //
 const BLOCKSTACKSIZE = 100;
@@ -58,8 +58,8 @@ const BLOCKRETRYDELAY = 10000;
 const BLOCKITERATIONDELAY = 5;
 
 // Module variables //
-let _blockchainName;
-let _fennelState;
+let _fnlName = 'fennel';
+let _fnlState;
 let _iterationCount = 0;
 let _discoveredBlock = 0;
 let _blockCursor = 0;
@@ -77,56 +77,56 @@ let _transactionBatchSize = 128;
  * Initiates the listener for Fennel blockchain transactions
  * @function initListener
  * @alias module:lib/blockchains/fennel/listener.init
- * @param {Object} fennelConfig the Fennel blockchain configuration
- * @param {Object} fennelState the Fennel blockchain state
+ * @param {Object} fnlConfig the Fennel blockchain configuration
+ * @param {Object} fnlState the Fennel blockchain state
  * @returns {Promise} resolve if succesfully initialised
  */
-async function initListener(fennelConfig, fennelState) {
-    _blockchainName = fennelConfig.name;
-    _fennelState = fennelState;
+async function initListener(fnlConfig, fnlState) {
+    _fnlName = fnlConfig.name;
+    _fnlState = fnlState;
 
-    log.trace(_blockchainName, 'Initialising listener for Fennel blockchain transactions...');
+    log.trace(_fnlName, 'Initialising listener for Fennel blockchain transactions...');
 
     // Block processing parameters
-    if (fennelConfig.blockMaxRetries) _blockMaxRetries = fennelConfig.blockMaxRetries;
-    if (_blockMaxRetries > 0) log.debug(_blockchainName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
-    if (fennelConfig.transactionBatchSize) _transactionBatchSize = fennelConfig.transactionBatchSize;
-    log.debug(_blockchainName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
+    if (fnlConfig.blockMaxRetries) _blockMaxRetries = fnlConfig.blockMaxRetries;
+    if (_blockMaxRetries > 0) log.debug(_fnlName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
+    if (fnlConfig.transactionBatchSize) _transactionBatchSize = fnlConfig.transactionBatchSize;
+    log.debug(_fnlName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
 
     // Block interval time
-    if (fennelConfig.blockRetrievalInterval &amp;&amp; fennelConfig.blockRetrievalInterval > 500) {
-        _blockInterval = fennelConfig.blockRetrievalInterval;
+    if (fnlConfig.blockRetrievalInterval &amp;&amp; fnlConfig.blockRetrievalInterval > 500) {
+        _blockInterval = fnlConfig.blockRetrievalInterval;
     }
-    log.info(_blockchainName, `Block retrieval interval is set to ${_blockInterval} ms`);
+    log.info(_fnlName, `Block retrieval interval is set to ${_blockInterval} ms`);
 
     // Determine block retrieval range
-    if (fennelConfig.blockRetrievalRestart) _blockRetrievalRestart = fennelConfig.blockRetrievalRestart;
-    if (fennelConfig.blockRetrievalStart &amp;&amp; fennelConfig.blockRetrievalStart > 0) {
-        log.info(_blockchainName, `Starting block specified in configuration: ${fennelConfig.blockRetrievalStart}`);
-        _blockRetrievalStart = fennelConfig.blockRetrievalStart;
+    if (fnlConfig.blockRetrievalRestart) _blockRetrievalRestart = fnlConfig.blockRetrievalRestart;
+    if (fnlConfig.blockRetrievalStart &amp;&amp; fnlConfig.blockRetrievalStart > 0) {
+        log.info(_fnlName, `Starting block specified in configuration: ${fnlConfig.blockRetrievalStart}`);
+        _blockRetrievalStart = fnlConfig.blockRetrievalStart;
     }
-    if (fennelConfig.blockRetrievalEnd &amp;&amp; fennelConfig.blockRetrievalEnd > 0) {
-        log.info(_blockchainName, `Ending block specified in configuration: ${fennelConfig.blockRetrievalEnd}`);
-        _blockRetrievalEnd = fennelConfig.blockRetrievalEnd;
+    if (fnlConfig.blockRetrievalEnd &amp;&amp; fnlConfig.blockRetrievalEnd > 0) {
+        log.info(_fnlName, `Ending block specified in configuration: ${fnlConfig.blockRetrievalEnd}`);
+        _blockRetrievalEnd = fnlConfig.blockRetrievalEnd;
     }
 
     // Determine starting block
     try {
-        _fennelState.status.highestBlock = await fennelRpc.getHighestBlock();
+        _fnlState.status.highestBlock = await fnlRpc.getHighestBlock();
         _blockCursor = determineStartingBlock(
-            _fennelState.status.highestBlock,
-            _fennelState.status.currentBlock,
+            _fnlState.status.highestBlock,
+            _fnlState.status.currentBlock,
             _blockRetrievalStart,
             _blockRetrievalRestart
         );
-        logStartingBlock(_blockchainName, _blockCursor, _fennelState.status.highestBlock);
+        logStartingBlock(_fnlName, _blockCursor, _fnlState.status.highestBlock);
     } catch(err) {
         if (err) return Promise.reject(err);
         return Promise.reject(new Error('Could not connect to Fennel node and determine starting block'));
     }
     // Schedule iterative block retrieval
     scheduleBlockIteration();
-    wfState.updateBlockchainData(_blockchainName, _fennelState);
+    wfState.updateBlockchainData(_fnlName, _fnlState);
     return Promise.resolve();
 }
 
@@ -136,7 +136,7 @@ async function initListener(fennelConfig, fennelState) {
  * @private
  */
 function scheduleBlockIteration() {
-    log.trace(_blockchainName, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
+    log.trace(_fnlName, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
     setTimeout(executeBlockIteration, _blockInterval);
 }
 
@@ -146,30 +146,30 @@ function scheduleBlockIteration() {
  */
 async function executeBlockIteration() {
     _iterationCount += 1;
-    log.trace(_blockchainName, `Starting block retrieval iteration ${_iterationCount}`);
+    log.trace(_fnlName, `Starting block retrieval iteration ${_iterationCount}`);
 
     // Get the actual Fennel blockchain height
-    fennelRpc.getHighestBlock()
+    fnlRpc.getHighestBlock()
     .then(highestBlock => {
         // Check if one more new block exists
-        if (highestBlock >  _fennelState.status.highestBlock) {
+        if (highestBlock >  _fnlState.status.highestBlock) {
             _discoveredBlock = highestBlock;
-            _fennelState.status.highestBlock = highestBlock;
-            log.trace(_blockchainName, `New highest block discovered on node is ${_discoveredBlock}`);
+            _fnlState.status.highestBlock = highestBlock;
+            log.trace(_fnlName, `New highest block discovered on node is ${_discoveredBlock}`);
         }
         // Check if highest block is already processed, and schedule next iteration
         if (highestBlock === _blockCursor) {
-            log.trace(_blockchainName, `Highest block ${highestBlock} has already been processed`);
+            log.trace(_fnlName, `Highest block ${highestBlock} has already been processed`);
             return Promise.reject(); // Stop this iteration without error
         }
         // Current block may be higher than highest block when node is resyncing
         if (_blockCursor > highestBlock) {
-            log.debug(_blockchainName, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
+            log.debug(_fnlName, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
             return Promise.reject(); // Stop this iteration withour error
         }
         // Do not immediately process highest block 
         if ((highestBlock - 1) === _blockCursor) {
-            log.trace(_blockchainName, `Waiting for new block before processing current highest block ${highestBlock}`);
+            log.trace(_fnlName, `Waiting for new block before processing current highest block ${highestBlock}`);
             return Promise.reject(); // Stop this iteration without error
         }
         // Retrieve until one before highest block or, if provided, end block
@@ -187,12 +187,12 @@ async function executeBlockIteration() {
             return Promise.resolve(); // This iteration is completed
         }
         // Provided end block is reached
-        log.info(_blockchainName, `Reached configured block retrieval end: ${_blockCursor}`);
+        log.info(_fnlName, `Reached configured block retrieval end: ${_blockCursor}`);
         _blockRetrievalEnd = 0;
 
         // Dtermine from where to proceed
-        _blockCursor = determineStartingBlock(_blockchainName, _fennelState.status.highestBlock, _blockCursor, _blockRetrievalEnd, _blockRetrievalRestart);
-        logStartingBlock(_blockchainName, _blockCursor, _fennelState.status.highestBlock);
+        _blockCursor = determineStartingBlock(_fnlName, _fnlState.status.highestBlock, _blockCursor, _blockRetrievalEnd, _blockRetrievalRestart);
+        logStartingBlock(_fnlName, _blockCursor, _fnlState.status.highestBlock);
         return Promise.resolve();
     })
     .then(() => {
@@ -202,7 +202,7 @@ async function executeBlockIteration() {
     .catch(err => {
         if (err) {
             // Schedule next iteration shortly to retry
-            log.warn(_blockchainName, `Could not complete retrieval of block ${_blockCursor} in iteration ${_iterationCount}: ${err.message}`);
+            log.warn(_fnlName, `Could not complete retrieval of block ${_blockCursor} in iteration ${_iterationCount}: ${err.message}`);
             return setTimeout(executeBlockIteration, BLOCKRETRYDELAY);
         }
         // Schedule next iteration based on configured block time
@@ -221,28 +221,28 @@ async function processBlocks(startBlock, endBlock) {
     // Stack callbacks to a maximum of 100
     _blockStackSize += 1;
     if (_blockStackSize > BLOCKSTACKSIZE) {
-        log.trace(_blockchainName, `Reached maximum block processing stack size: ${_blockStackSize}`);
+        log.trace(_fnlName, `Reached maximum block processing stack size: ${_blockStackSize}`);
         return Promise.resolve(); // Completed for now
     }
     // If current block is last block, then there is no new block to retrieve
     if (startBlock === endBlock) {
-        log.trace(_blockchainName, `Processed block ${startBlock} of ${endBlock}; no new block to retrieve`);
+        log.trace(_fnlName, `Processed block ${startBlock} of ${endBlock}; no new block to retrieve`);
         return Promise.resolve(); // Completed for now
     }
     // Block to be processed is the next block after starting block and skipped blocks
-    if (_skippedBlocks > 0) log.trace(_blockchainName, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
+    if (_skippedBlocks > 0) log.trace(_fnlName, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
     let thisBlock = startBlock + _skippedBlocks + 1;
 
     // Skip this block if the block has been retried too often
     if (_blockMaxRetries > 0 &amp;&amp; _blockRetryCount > _blockMaxRetries) {
-        log.warn(_blockchainName, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
+        log.warn(_fnlName, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
         thisBlock += 1;
         _blockRetryCount = 0;
         _skippedBlocks += 1;
     }
     // Log where we are with blocks
-    if (_blockRetryCount !== 0) log.info(_blockchainName, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
-    log.trace(_blockchainName, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
+    if (_blockRetryCount !== 0) log.info(_fnlName, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
+    log.trace(_fnlName, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
 
     // Retrieve new block
     try {
@@ -257,8 +257,8 @@ async function processBlocks(startBlock, endBlock) {
     _skippedBlocks = 0;
 
     // Update state
-    _fennelState.status.currentBlock = _blockCursor;
-    wfState.updateBlockchainData(_blockchainName, _fennelState);
+    _fnlState.status.currentBlock = _blockCursor;
+    wfState.updateBlockchainData(_fnlName, _fnlState);
 
     // Get next block if not yet at last block
     if (thisBlock &lt; endBlock) return processBlocks(_blockCursor, endBlock); // Process next block
@@ -275,7 +275,7 @@ async function processBlock(blockNumber) {
     // Get block from node
     let block;
     try {
-        block = await fennelRpc.getBlockByNumber(blockNumber, true); // Get full block inclusing transactions
+        block = await fnlRpc.getBlockByNumber(blockNumber, true); // Get full block inclusing transactions
     } catch(err) {
         return Promise.reject(new Error(`Could not retrieve block ${blockNumber}: ${err.message}`));
     }
@@ -283,15 +283,15 @@ async function processBlock(blockNumber) {
     let transactionCount = block.extrinsics.length;
     if (!block || transactionCount &lt; 1) {
         // Rare case, but a block may be empty
-        log.info(_blockchainName, `No transactions in block: ${blockNumber}`);
+        log.info(_fnlName, `No transactions in block: ${blockNumber}`);
         return Promise.resolve(); // Completed this block
     }
-    log.trace(_blockchainName, `Transactions discovered in block ${blockNumber}: ${transactionCount}`);
+    log.trace(_fnlName, `Transactions discovered in block ${blockNumber}: ${transactionCount}`);
 
     // Process transactions from block
     return processTransactions(blockNumber, 0, block.extrinsics, block.time)
     .then(() => {
-        log.info(_blockchainName, `Transactions processed from block ${blockNumber}: ${transactionCount} `);
+        log.info(_fnlName, `Transactions processed from block ${blockNumber}: ${transactionCount} `);
         return Promise.resolve(); // Completed this block
     })
     .catch(err => {
@@ -348,9 +348,9 @@ function createTransactionBatch(blockNumber, index, transactions, timestamp) {
         // Get a promise for the next transaction
         transactionBatch.push(
             new Promise((resolve, reject) => {
-                fennelTransactions.extractMessage(transactions[i], blockNumber, timestamp)
+                fnlTransactions.extractMessage(transactions[i], blockNumber, timestamp)
                 .then(wfMessage => {
-                    log.trace(_blockchainName, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
+                    log.trace(_fnlName, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
                     wfRxEvent.emit('messageReceived', wfMessage);
                     return resolve();
                 })
@@ -373,13 +373,13 @@ function createTransactionBatch(blockNumber, index, transactions, timestamp) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 27 2025 18:17:01 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 31 2025 17:53:10 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

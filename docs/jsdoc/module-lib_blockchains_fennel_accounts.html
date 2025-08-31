@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: lib/common/crypto</title>
+    <title>JSDoc: Module: lib/blockchains/fennel/accounts</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: lib/common/crypto</h1>
+    <h1 class="page-title">Module: lib/blockchains/fennel/accounts</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Module with synchronous cryptographic functions</p></div>
+            <div class="description"><p>Module for managing Fennel accounts for Whiteflag</p></div>
         
 
         
@@ -87,17 +87,10 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_crypto.js.html">common/crypto.js</a>, <a href="common_crypto.js.html#line2">line 2</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line2">line 2</a>
     </li></ul></dd>
     
 
-    
-    <dt class="tag-tutorial">Tutorials:</dt>
-    <dd class="tag-tutorial">
-        <ul>
-            <li><a href="tutorial-modules.html">modules</a></li>
-        </ul>
-    </dd>
     
 
     
@@ -151,7 +144,7 @@
     
 
     
-    <h4 class="name" id="~hash"><span class="type-signature">(inner) </span>hash<span class="signature">(data, lentgh<span class="signature-attributes">opt</span>, algorithm<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="~createAccount"><span class="type-signature">(inner) </span>createAccount<span class="signature">(seed<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -159,7 +152,7 @@
 
 
 <div class="description">
-    <p>Basic hashing function</p>
+    <p>Creates a new Fennel blockchain account</p>
 </div>
 
 
@@ -197,71 +190,7 @@
 
         <tr>
             
-                <td class="name"><code>data</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>data to hash</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>lentgh</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>output length in octets</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>algorithm</code></td>
+                <td class="name"><code>seed</code></td>
             
 
             <td class="type">
@@ -287,7 +216,7 @@
 
             
 
-            <td class="description last"><p>hash algorithm</p></td>
+            <td class="description last"><p>hexadecimal encoded secret seed</p></td>
         </tr>
 
     
@@ -328,7 +257,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_crypto.js.html">common/crypto.js</a>, <a href="common_crypto.js.html#line63">line 63</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line93">line 93</a>
     </li></ul></dd>
     
 
@@ -357,7 +286,7 @@
 
         
 <div class="param-desc">
-    <p>hexadecimal representation of the hash</p>
+    <p>resolves to newly created account</p>
 </div>
 
 
@@ -368,7 +297,7 @@
     </dt>
     <dd>
         
-<span class="param-type">string</span>
+<span class="param-type">Promise</span>
 
 
     </dd>
@@ -386,7 +315,7 @@
     
 
     
-    <h4 class="name" id="~hkdf"><span class="type-signature">(inner) </span>hkdf<span class="signature">(ikm, salt, info, keylen)</span><span class="type-signature"> &rarr; {buffer}</span></h4>
+    <h4 class="name" id="~deleteAccount"><span class="type-signature">(inner) </span>deleteAccount<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -394,7 +323,7 @@
 
 
 <div class="description">
-    <p>Hash-based Key Derivation Function using SHA-256 i.a.w. RFC 5869</p>
+    <p>Deletes Fennel blockchain account</p>
 </div>
 
 
@@ -430,13 +359,13 @@
 
         <tr>
             
-                <td class="name"><code>ikm</code></td>
+                <td class="name"><code>address</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">buffer</span>
+<span class="param-type">string</span>
 
 
             
@@ -446,76 +375,7 @@
 
             
 
-            <td class="description last"><p>input key material</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>salt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">buffer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>salt</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>info</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">buffer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>info</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>keylen</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">buffer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>output key length in octets</p></td>
+            <td class="description last"><p>the address of the account to be deleted</p></td>
         </tr>
 
     
@@ -556,7 +416,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_crypto.js.html">common/crypto.js</a>, <a href="common_crypto.js.html#line19">line 19</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line168">line 168</a>
     </li></ul></dd>
     
 
@@ -585,7 +445,7 @@
 
         
 <div class="param-desc">
-    <p>generated key</p>
+    <p>resolves to updated account</p>
 </div>
 
 
@@ -596,7 +456,7 @@
     </dt>
     <dd>
         
-<span class="param-type">buffer</span>
+<span class="param-type">Promise</span>
 
 
     </dd>
@@ -614,7 +474,7 @@
     
 
     
-    <h4 class="name" id="~zeroise"><span class="type-signature">(inner) </span>zeroise<span class="signature">(buffer)</span><span class="type-signature"> &rarr; {buffer}</span></h4>
+    <h4 class="name" id="~getAccount"><span class="type-signature">(inner) </span>getAccount<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -622,7 +482,7 @@
 
 
 <div class="description">
-    <p>Basic zeroisation function</p>
+    <p>Gets Fennel account from the blockchain state by address</p>
 </div>
 
 
@@ -658,13 +518,13 @@
 
         <tr>
             
-                <td class="name"><code>buffer</code></td>
+                <td class="name"><code>address</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">buffer</span>
+<span class="param-type">string</span>
 
 
             
@@ -674,7 +534,7 @@
 
             
 
-            <td class="description last"><p>buffer to zeroise</p></td>
+            <td class="description last"><p>the account address</p></td>
         </tr>
 
     
@@ -715,7 +575,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="common_crypto.js.html">common/crypto.js</a>, <a href="common_crypto.js.html#line78">line 78</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line76">line 76</a>
     </li></ul></dd>
     
 
@@ -744,7 +604,7 @@
 
         
 <div class="param-desc">
-    <p>the zeroised buffer</p>
+    <p>resolves to the requested account</p>
 </div>
 
 
@@ -755,7 +615,371 @@
     </dt>
     <dd>
         
-<span class="param-type">buffer</span>
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~initAccounts"><span class="type-signature">(inner) </span>initAccounts<span class="signature">(fnlConfig, fnlState, fnlApi)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Initialises Fennel accounts management</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fnlConfig</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Fennel blockchain configuration</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fnlState</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Fennel blockchain state</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fnlApi</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Fennel API instance</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line47">line 47</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>resolves if succesfully initialised</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~updateAccount"><span class="type-signature">(inner) </span>updateAccount<span class="signature">(account)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Updates Fennel blockchain account attributes</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>account</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the account information including address to be updated</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line139">line 139</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>resolves to updated account</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
 
 
     </dd>

@@ -801,7 +801,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 
 ```json
 {
-  "privateKey": "string"
+  "secret": "string"
 }
 ```
 
@@ -810,7 +810,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |body|body|object|false|Blockchain account data|
-|» privateKey|body|string|false|Optional private key in raw hexadecimal format to create account with|
+|» secret|body|string|false|Optional blockchain dependent secret (e.g. private key, wif or seed) to create account with|
 
 > Example responses
 

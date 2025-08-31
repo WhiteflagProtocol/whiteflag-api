@@ -78,7 +78,7 @@ const SIGNKEYTYPE = 'secp256k1';
 const BINENCODING = 'hex';
 
 // Module variables //
-let _blockchainName = 'bitcoin';
+let _btcName = 'bitcoin';
 let _btcState = {};
 let _transactionValue = 0;
 
@@ -90,39 +90,35 @@ let _transactionValue = 0;
  * @param {blockchainInitCb} callback function to be called after intitialising Bitcoin
  */
 function initBitcoin(btcConfig, callback) {
-    log.trace(_blockchainName, 'Initialising the Bitcoin blockchain');
-
-    // Preserve the name of the blockchain
-    _blockchainName = btcConfig.name;
+    _btcName = btcConfig.name;
+    log.trace(_btcName, 'Initialising the Bitcoin blockchain');
 
     // Get Bitcoin blockchain state
-    wfState.getBlockchainData(_blockchainName, function blockchainsGetStateDb(err, btcState) {
-        if (err) return callback(err, _blockchainName);
-
-        // Check and preserve Bitcoin state
+    wfState.getBlockchainData(_btcName, function blockchainsGetStateDb(err, btcState) {
+        if (err) return callback(err, _btcName);
         if (!btcState) {
-            log.info(_blockchainName, 'Creating new Bitcoin entry in internal state');
+            log.info(_btcName, 'Creating new Bitcoin entry in internal state');
             btcState = getEmptyState();
-            wfState.updateBlockchainData(_blockchainName, btcState);
+            wfState.updateBlockchainData(_btcName, btcState);
         }
         _btcState = btcState;
 
         // Determine network parameters
         if (btcConfig.testnet) {
             _btcState.parameters.network = bitcoin.networks.testnet;
-            log.info(_blockchainName, 'Configured to use the Bitcoin test network');
+            log.info(_btcName, 'Configured to use the Bitcoin test network');
         } else {
             _btcState.parameters.network = bitcoin.networks.bitcoin;
-            log.info(_blockchainName, 'Configured to use the Bitcoin main network');
+            log.info(_btcName, 'Configured to use the Bitcoin main network');
         }
         // Initialise sub-modules
         btcRpc.init(btcConfig, _btcState)
         .then(() => btcTransactions.init(btcConfig, _btcState))
         .then(() => btcListener.init(btcConfig, _btcState))
         .then(() => btcAccounts.init(btcConfig, _btcState))
-        .then(() => wfState.updateBlockchainData(_blockchainName, _btcState))
-        .then(() => callback(null, _blockchainName))
-        .catch(initErr => callback(initErr, _blockchainName));
+        .then(() => wfState.updateBlockchainData(_btcName, _btcState))
+        .then(() => callback(null, _btcName))
+        .catch(err => callback(err, _btcName));
     });
 }
 
@@ -143,7 +139,7 @@ function sendMessage(wfMessage, callback) {
     })
     .then(transactionHash => callback(null, transactionHash))
     .catch(err => {
-        log.error(_blockchainName, `Error sending Whiteflag message: ${err.message}`);
+        log.error(_btcName, `Error sending Whiteflag message: ${err.message}`);
         callback(err);
     });
 }
@@ -157,21 +153,17 @@ function sendMessage(wfMessage, callback) {
  */
 function getMessage(wfQuery, callback) {
     const transactionHash = wfQuery['MetaHeader.transactionHash'];
-    let transaction;
     btcTransactions.get(transactionHash)
-    .then(rawTransaction => {
-        transaction = rawTransaction;
-        return btcRpc.getBlockByHash(rawTransaction.blockhash);
-    })
-    .then(block => {
+    .then(transaction => {
+        const block = btcRpc.getBlockByHash(transaction.blockhash);
         return btcTransactions.extractMessage(transaction, block.height, block.time);
     })
     .then(wfMessage => callback(null, wfMessage))
     .catch(err => {
         if (err instanceof ProcessingError) {
-            log.debug(_blockchainName, `No Whiteflag message with transaction hash ${transactionHash} found: ${err.message}`);
+            log.debug(_btcName, `No Whiteflag message with transaction hash ${transactionHash} found: ${err.message}`);
         } else {
-            log.error(_blockchainName, `Error retrieving Whiteflag message with transaction hash ${transactionHash}: ${err.message}`);
+            log.error(_btcName, `Error retrieving Whiteflag message with transaction hash ${transactionHash}: ${err.message}`);
         }
         return callback(err, null);
     });
@@ -185,22 +177,22 @@ function getMessage(wfQuery, callback) {
  * @param {blockchainRequestSignatureCb} callback function to be called upon completion
  */
 function requestSignature(payload, callback) {
-    log.trace(_blockchainName, `Generating signature: ${JSON.stringify(payload)}`);
+    log.trace(_btcName, `Generating signature: ${JSON.stringify(payload)}`);
 
     // Get Ethereum account, address and private key
     btcAccounts.get(payload.addr)
     .then(account => {
         payload.addr = account.address;
-        const privateKeyId = hash(_blockchainName + account.address, KEYIDLENGTH);
-        wfState.getKey('blockchainKeys', privateKeyId, function bcGetKeyCb(keyErr, privateKey) {
-            if (keyErr) return callback(keyErr);
+        const privateKeyId = hash(_btcName + account.address, KEYIDLENGTH);
+        wfState.getKey('blockchainKeys', privateKeyId, function bcGetKeyCb(err, privateKey) {
+            if (err) return callback(err);
 
-            // Create JSON serialization of JWS token from array
+            // Create signature
             let wfSignature;
             try {
                 wfSignature = createSignature(payload, privateKey, SIGNKEYTYPE, SIGNALGORITHM);
             } catch(err) {
-                log.error(_blockchainName, `Could not not sign payload: ${err.message}`);
+                log.error(_btcName, `Could not not sign payload: ${err.message}`);
                 return callback(err);
             }
             // Callback with any error and signature
@@ -218,7 +210,7 @@ function requestSignature(payload, callback) {
  * @param {blockchainRequestKeysCb} callback function to be called upon completion
  */
 function requestKeys(publicKey, callback) {
-    log.trace(_blockchainName, `Getting address and encoded keys for public key: ${publicKey}`);
+    log.trace(_btcName, `Getting address and encoded keys for public key: ${publicKey}`);
 
     // Create data structure for requested keys
     let originatorKeys = {
@@ -242,7 +234,7 @@ function requestKeys(publicKey, callback) {
         });
         originatorKeys.address = address;
     } catch(err) {
-        log.error(_blockchainName, `Could not get key and address: ${err.message}`);
+        log.error(_btcName, `Could not get key and address: ${err.message}`);
         return callback(err);
     }
     return callback(null, originatorKeys);
@@ -273,7 +265,7 @@ function getBinaryAddress(address, callback) {
  * @todo Return blocknumber
  */
 function transferFunds(transfer, callback) {
-    log.trace(_blockchainName, `Transferring funds: ${JSON.stringify(transfer)}`);
+    log.trace(_btcName, `Transferring funds: ${JSON.stringify(transfer)}`);
     btcAccounts.check(transfer.fromAddress)
     .then(account => {
         const toAddress = transfer.toAddress;
@@ -282,7 +274,7 @@ function transferFunds(transfer, callback) {
     })
     .then(txHash => callback(null, txHash))
     .catch(err => {
-        log.error(_blockchainName, `Error transferring funds: ${err.message}`);
+        log.error(_btcName, `Error transferring funds: ${err.message}`);
         return callback(err);
     });
 }
@@ -297,7 +289,7 @@ function transferFunds(transfer, callback) {
 function createAccount(wif, callback) {
     btcAccounts.create(wif)
     .then(account => {
-        log.info(_blockchainName, `Bitcoin account created: ${account.address}`);
+        log.info(_btcName, `Bitcoin account created: ${account.address}`);
         return callback(null, account);
     })
     .catch(err => callback(err));
@@ -313,7 +305,7 @@ function createAccount(wif, callback) {
 function updateAccount(account, callback) {
     btcAccounts.update(account)
     .then(() => {
-        log.info(_blockchainName, `Bitcoin account updated: ${account.address}`);
+        log.info(_btcName, `Bitcoin account updated: ${account.address}`);
         return callback(null, account);
     })
     .catch(err => callback(err));
@@ -329,7 +321,7 @@ function updateAccount(account, callback) {
 function deleteAccount(address, callback) {
     btcAccounts.delete(address)
     .then(account => {
-        log.info(_blockchainName, `Bitcoin account deleted: ${account.address}`);
+        log.info(_btcName, `Bitcoin account deleted: ${account.address}`);
         return callback(null, account);
     })
     .catch(err => callback(err));
@@ -345,13 +337,13 @@ function deleteAccount(address, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 27 2025 18:17:01 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Aug 31 2025 17:53:10 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
