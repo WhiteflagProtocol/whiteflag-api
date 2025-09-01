@@ -1982,7 +1982,7 @@ Returns the requested queue in the Whiteflag state. The queues used by the API a
       "string"
     ]
   },
-  "data": {}
+  "data": null
 }
 ```
 

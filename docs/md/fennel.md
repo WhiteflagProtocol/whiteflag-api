@@ -1,6 +1,20 @@
 # Whiteflag API Connector for the Fennel parachain
 
-The Whiteflag API natively supports the Fennel parachain.
+The Whiteflag API natively supports the Fennel blockchain, which is based on
+the [Substrate/Polkadot SDK](https://polkadot.com/platform/sdk/).
+
+## Blockchain specifications
+
+Whiteflag message embedding:    (t.b.d.)		 	
+Maximum message length:         (t.b.d.) 
+Signature algorithm:            sr25519
+Transaction hash:               256 bits (64 hexadecimals)
+Address encoding:               SS58 address format
+Address prefix:                 42 (substrate)
+Secret for account creation:    32 byte seed
+
+The signature algorithm `sr25519` is not specified to be used with JWS for
+Whiteflag authentication method 1.
 
 ## Fennel configuration
 
