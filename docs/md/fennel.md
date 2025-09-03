@@ -5,13 +5,15 @@ the [Substrate/Polkadot SDK](https://polkadot.com/platform/sdk/).
 
 ## Blockchain specifications
 
-Whiteflag message embedding:    (t.b.d.)		 	
-Maximum message length:         (t.b.d.) 
-Signature algorithm:            sr25519
-Transaction hash:               256 bits (64 hexadecimals)
-Address encoding:               SS58 address format
-Address prefix:                 42 (substrate)
-Secret for account creation:    32 byte seed
+|                                |               |
+|--------------------------------|---------------|
+| Whiteflag message embedding:   | signal pallet |
+| Maximum message length:        | (t.b.d.)  |
+| Signature algorithm:           | sr25519   |
+| Transaction hash:              | 256 bits (64 hexadecimals) |
+| Address encoding:              | SS58 address format |
+| Address prefix:                | 42 (substrate) |
+| Secret for account creation:   | 32 byte seed   |
 
 The signature algorithm `sr25519` is not specified to be used with JWS for
 Whiteflag authentication method 1.
@@ -42,7 +44,7 @@ these parameters may be provided, otherwise default values are used:
 * `traceRawTransaction`: whether to show each individual transaction when the loglevel is set to `6` (trace); default is `false` because this results in massive logging
 
 To send and receive Whiteflag messages, the API must be connected to a Fennel
-parachain node exposing the [Substrate RPC](https://docs.substrate.io/build/remote-procedure-calls/)
+parachain node exposing the [Substrate/Polkadot RPC interface](https://docs.polkadot.com/develop/toolkit/parachains/rpc-calls/)
 interface. These parameters are used to configure the connection:
 
 * `rpcTimeout`: the timeout for an RPC request in milliseconds; the default is `10000`

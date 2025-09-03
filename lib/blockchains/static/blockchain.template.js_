@@ -27,9 +27,12 @@ const { getEmptyState } = require('./common/state');
 // Whiteflag modules //
 const wfState = require('../protocol/state');
 
+// Module constants //
+const MODULELOG = 'blockchain'
+
 // Module variables //
-let _blockchainName = 'someBlockchain';
-let _blockchainState = {};
+let _bcName = 'someBlockchain';
+let _bcState = {};
 
 // MAIN MODULE FUNCTIONS //
 /**
@@ -40,23 +43,23 @@ let _blockchainState = {};
  */
 function initBlockchain(bcConfig, callback) {
     // Preserve name of the blockchain
-    _blockchainName = bcConfig.name;
+    _bcName = bcConfig.name;
 
-    wfState.getBlockchainData(_blockchainName, function blockchainsGetStateDb(err, blockchainState) {
-        if (err) return callback(err, _blockchainName);
+    wfState.getBlockchainData(_bcName, function blockchainsGetStateDb(err, bcState) {
+        if (err) return callback(err, _bcName);
 
         // Check and preserve Ethereum state
-        if (!blockchainState) {
-            log.info(_blockchainName, 'Creating new blockchain entry in internal state');
-            blockchainState = getEmptyState();
-            wfState.updateBlockchainData(_blockchainName, blockchainState);
+        if (!bcState) {
+            log.info(MODULELOG, `Creating new ${_bcName} entry in internal state`);
+            bcState = getEmptyState();
+            wfState.updateBlockchainData(_bcName, bcState);
         }
-        _blockchainState = blockchainState;
+        _bcState = bcState;
 
         // TODO: Do stuff to initialise Blockchain and ensure the api state is updated
-        return callback(new ProcessingError('Blockchain not implemented for this blockchain', null, 'WF_API_NOT_IMPLEMENTED'));
+        return callback(new ProcessingError('Blockchain not implemented', null, 'WF_API_NOT_IMPLEMENTED'));
     });
-    wfState.updateBlockchainData(_blockchainName, _blockchainState);
+    wfState.updateBlockchainData(_bcName, _bcState);
 }
 
 /**
@@ -74,8 +77,8 @@ function sendMessage(wfMessage, callback) {
     if (!wfMessage.MetaHeader.encodedMessage) {
         return callback(new ProtocolError('No encoded message in metaheader', null, 'WF_METAHEADER_ERROR'));
     }
-    if (wfMessage.MetaHeader.blockchain !== _blockchainName) {
-        return callback(new ProcessingError(`Message metaheader contains wrong blockchain: ${wfMessage.MetaHeader.blockchain} instead of ${_blockchainName}`));
+    if (wfMessage.MetaHeader.blockchain !== _bcName) {
+        return callback(new ProcessingError(`Message metaheader contains wrong blockchain: ${wfMessage.MetaHeader.blockchain} instead of ${_bcName}`));
     }
     // TODO: Do stuff to send message on Blockchain
     ignore(wfMessage);
@@ -94,11 +97,11 @@ function sendMessage(wfMessage, callback) {
  */
 function getMessage(wfQuery, callback) {
     // Check query parameters
-    if (wfQuery['MetaHeader.blockchain'] !== _blockchainName) {
-        return callback(new ProcessingError(`${_blockchainName}: Wrong blockchain specified in query: ${wfQuery['MetaHeader.blockchain']}`));
+    if (wfQuery['MetaHeader.blockchain'] !== _bcName) {
+        return callback(new ProcessingError(`${_bcName}: Wrong blockchain specified in query: ${wfQuery['MetaHeader.blockchain']}`));
     }
     if (!wfQuery['MetaHeader.transactionHash']) {
-        return callback(new ProcessingError(`${_blockchainName}: Transaction hash not specified in query`));
+        return callback(new ProcessingError(`${_bcName}: Transaction hash not specified in query`));
     }
     // TODO: Do stuff to find message on blockchain
     ignore(wfMessage);

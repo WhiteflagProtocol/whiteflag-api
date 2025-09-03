@@ -3,13 +3,17 @@
 The Whiteflag API natively supports the [Ethereum](https://www.ethereum.org/)
 blockchain.
 
+**NOTE** - *The Ethereum module has not been maintained and needs updating.*
+
 ## Blockchain specifications
 
-Whiteflag message embedding:    `data` field		 	
-Maximum message length:         dynamic 
-Signature algorithm:            ECDSA secp256k1
-Transaction hash:               256 bits (64 hexadecimals)
-Secret for account creation:    private key
+|                                |              |
+|--------------------------------|--------------|
+| Whiteflag message embedding:   | `data` field |
+| Maximum message length:        | dynamic      |
+| Signature algorithm:           | ECDSA secp256k1 |
+| Transaction hash:              | 256 bits (64 hexadecimals) |
+| Secret for account creation:   | private key  |
 
 Note that curve `secp256k1` for the ECDSA signature algorthm is officially not
 specified to be used with JWS for Whiteflag authentication method 1. Instead,

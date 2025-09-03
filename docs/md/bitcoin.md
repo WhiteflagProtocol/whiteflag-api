@@ -3,13 +3,17 @@
 The Whiteflag API natively supports the [Bitcoin](https://bitcoin.org/)
 blockchain.
 
-## Blockchain specifications
+**NOTE** - *The Bitcoin module has not been maintained and needs updating.*
 
-Whiteflag message embedding:    `OP_RETURN`		 	
-Maximum message length:         80 bytes 
-Signature algorithm:            ECDSA secp256k1
-Transaction hash:               256 bits (64 hexadecimals)
-Secret for account creation:    Wallet Import Format (WIF)
+## Blockchain specifications
+|                              |             |
+|------------------------------|-------------|
+| Whiteflag message embedding: | `OP_RETURN` |
+| Maximum message length:      | 80 bytes    |
+| Signature algorithm:         | ECDSA secp256k1 |
+| Transaction hash:            | 256 bits (64 hexadecimals) |
+| Secret for account creation: | Wallet Import Format (WIF) |
+
 
 Note that curve `secp256k1` for the ECDSA signature algorthm is officially not
 specified to be used with JWS for Whiteflag authentication method 1. Instead,
