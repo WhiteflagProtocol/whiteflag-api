@@ -159,7 +159,7 @@
                     }
                 },
                 "accounts": {
-                    "description": "Account available on this blockchain",
+                    "description": "Accounts available on this blockchain",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/blockchainAccountObject"
