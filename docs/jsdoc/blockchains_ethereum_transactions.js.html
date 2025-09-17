@@ -45,9 +45,9 @@ const EthereumTx = require('ethereumjs-tx').Transaction;
 const ethUtil = require('ethereumjs-util');
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const { hash, zeroise } = require('../../common/crypto');
-const { ProcessingError } = require('../../common/errors');
+const log = require('../../_common/logger');
+const { hash, zeroise } = require('../../_common/crypto');
+const { ProcessingError } = require('../../_common/errors');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
@@ -58,16 +58,16 @@ const { withHexPrefix,
         noKeyHexPrefix,
         noAddressHexPrefix,
         noPubkeyHexPrefix
-    } = require('../common/format');
+    } = require('../_common/format');
 
 // Module constants //
+const MODULELOG = 'ethereum';
 const ETHHEXPREFIX = '0x';
 const WFINDENTIFIER = '5746';
-const BINENCODING = 'hex';
 const KEYIDLENGTH = 12;
 
 // Module variables //
-let _ethName = 'ethereum';
+let _ethChain = 'ethereum';
 let _ethState;
 let _ethApi;
 let _traceRaw = false;
@@ -78,14 +78,14 @@ let _traceRaw = false;
  * @alias module:lib/blockchains/ethereum/transactions.init
  * @param {Object} ethConfig the Ethereum blockchain configuration
  * @param {Object} ethState the Ethereum blockchain state
- * @param {Object} web3 the Ethereum Web3 instance
+ * @param {Object} ethApi the Ethereum Web3 instance
  * @returns {Promise} resolve if succesfully initialised
  */
-function initTransactions(ethConfig, ethState, web3) {
-    _ethName = ethConfig.name;
+function initTransactions(ethConfig, ethState, ethApi) {
+    log.trace(MODULELOG, 'Initialising Ethereum transaction processing');
+    _ethChain = ethConfig.name;
     _ethState = ethState;
-    _ethApi = web3;
-    log.trace(_ethName, 'Initialising Ethereum transaction processing...');
+    _ethApi = ethApi;
 
     // Trace all transactions if configured
     if (ethConfig.traceRawTransaction) _traceRaw = ethConfig.traceRawTransaction;
@@ -105,13 +105,13 @@ function initTransactions(ethConfig, ethState, web3) {
  * @returns {Promise} resolve to transaction hash and block number
  */
 function sendTransaction(account, toAddress, value, data) {
-    log.trace(_ethName, `Sending transaction from account: ${account.address}`);
+    log.trace(MODULELOG, `Sending transaction from ${_ethChain} account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Create transaction
         createTransaction(account, toAddress, value, data)
         .then(rawTransactionObject => {
             // Get the private key to sign the transaction
-            const privateKeyId = hash(_ethName + noAddressHexPrefix(account.address), KEYIDLENGTH);
+            const privateKeyId = hash(_ethChain + noAddressHexPrefix(account.address), KEYIDLENGTH);
             wfState.getKey('blockchainKeys', privateKeyId, function ethGetKeyCb(err, privateKey) {
                 if (err) return reject(err);
 
@@ -119,12 +119,12 @@ function sendTransaction(account, toAddress, value, data) {
                 let rawTransaction;
                 try {
                     const ethTransactionObject = new EthereumTx(rawTransactionObject, { chain: _ethState.parameters.chainID });
-                    const privateKeyBuffer = Buffer.from(privateKey, BINENCODING);
+                    const privateKeyBuffer = hexToBuffer(privateKey);
                     ethTransactionObject.sign(privateKeyBuffer);
                     zeroise(privateKeyBuffer);
 
                     const serializedTransaction = ethTransactionObject.serialize();
-                    rawTransaction = withHexPrefix(serializedTransaction.toString(BINENCODING));
+                    rawTransaction = withHexPrefix(bufferToHex(serializedTransaction));
                 } catch(err) {
                     return reject(new Error(`Could not create raw transaction: ${err.message}`));
                 }
@@ -147,11 +147,11 @@ function sendTransaction(account, toAddress, value, data) {
  * @returns {Promise} resolves to a blockchain transaction
  */
 function getTransaction(transactionHash) {
-    log.trace(_ethName, `Retrieving transaction: ${transactionHash}`);
+    log.trace(MODULELOG, `Retrieving transaction: ${transactionHash}`);
     return ethRpc.getRawTransaction(transactionHash)
     .then(transaction => {
         if (!transaction) {
-            return Promise.reject(new ProcessingError(`No transaction returned by node for hash: ${transactionHash}`, null, 'WF_API_NO_DATA'));
+            return Promise.reject(new ProcessingError(`No transaction returned by ${_ethChain} node for hash: ${transactionHash}`, null, 'WF_API_NO_DATA'));
         }
         return Promise.resolve(transaction);
     })
@@ -169,14 +169,14 @@ function getTransaction(transactionHash) {
  * @returns {Promise} resolves to a Whiteflag message
  */
  function extractMessage(transaction, timestamp) {
-    if (_traceRaw) log.trace(_ethName, `Extracting Whiteflag message from transaction: ${transaction.hash}`);
+    if (_traceRaw) log.trace(MODULELOG, `Extracting Whiteflag message from ${_ethChain} transaction: ${transaction.hash}`);
     return new Promise((resolve, reject) => {
         if (
             !transaction ||
             !transaction.input ||
             !transaction.input.startsWith(ETHHEXPREFIX + WFINDENTIFIER)
         ) {
-            return reject(new ProcessingError(`No Whiteflag message found in transaction: ${transaction.hash}`, null, 'WF_API_NO_DATA'));
+            return reject(new ProcessingError(`No Whiteflag message found in ${_ethChain} transaction: ${transaction.hash}`, null, 'WF_API_NO_DATA'));
         }
         // Get raw transaction data
         const rawTransactionObject = {
@@ -191,17 +191,17 @@ function getTransaction(transactionHash) {
             v: transaction.v
         };
         const ethTransactionObject = new EthereumTx(rawTransactionObject, { chain: _ethState.parameters.chainID });
-        const originatorPubKey = ethUtil.bufferToHex(ethTransactionObject.getSenderPublicKey());
+        const orgPubkey = ethUtil.bufferToHex(ethTransactionObject.getSenderPublicKey());
 
         // Construct and return Whiteflag message object
         let wfMessage = {
             MetaHeader: {
-                blockchain: _ethName,
+                blockchain: _ethChain,
                 blockNumber: transaction.blockNumber,
                 transactionHash: noKeyHexPrefix(transaction.hash),
                 transactionTime: '',
                 originatorAddress: noAddressHexPrefix(transaction.from),
-                originatorPubKey: noPubkeyHexPrefix(originatorPubKey),
+                originatorPubKey: noPubkeyHexPrefix(orgPubkey),
                 encodedMessage: noKeyHexPrefix(transaction.input)
             }
         };
@@ -257,13 +257,13 @@ function createTransaction(account, toAddress, value, data) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -12,8 +12,8 @@
 process.chdir(__dirname);
 
 // Whiteflag common functions and classes //
-const log = require('./lib/common/logger');
-const { ignore } = require('./lib/common/processing');
+const log = require('./lib/_common/logger');
+const { ignore } = require('./lib/_common/processing');
 
 // Whiteflag modules //
 const wfApiConfig = require('./lib/config');

@@ -37,15 +37,15 @@ module.exports = {
 };
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const { ignore } = require('../../common/processing');
-const { ProcessingError } = require('../../common/errors');
+const log = require('../../_common/logger');
+const { ignore } = require('../../_common/processing');
+const { ProcessingError } = require('../../_common/errors');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
 
 // Whiteflag common blockchain functions //
-const { determineStartingBlock, logStartingBlock} = require('../common/state');
+const { determineStartingBlock, logStartingBlock} = require('../_common/state');
 
 // Whiteflag event emitters //
 const wfRxEvent = require('../../protocol/events').rxEvent;
@@ -55,12 +55,13 @@ const ethRpc = require('./rpc');
 const ethTransactions = require('./transactions');
 
 // Module constants //
+const MODULELOG = 'ethereum';
 const BLOCKSTACKSIZE = 100;
 const BLOCKRETRYDELAY = 10000;
 const BLOCKITERATIONDELAY = 5;
 
 // Module variables //
-let _ethName = 'ethereum';
+let _ethChain;
 let _ethState;
 let _iterationCount = 0;
 let _discoveredBlock = 0;
@@ -84,30 +85,30 @@ let _transactionBatchSize = 64;
  * @returns {Promise} resolve if succesfully initialised
  */
 async function initListener(ethConfig, ethState) {
-    log.trace(_ethName, 'Initialising listener for Ethereum blockchain transactions...');
-    _ethName = ethConfig.name;
+    log.trace(MODULELOG, 'Initialising listener for Ethereum blockchain transactions');
+    _ethChain = ethConfig.name;
     _ethState = ethState;
 
     // Block processing parameters
     if (ethConfig.blockMaxRetries) _blockMaxRetries = ethConfig.blockMaxRetries;
-    if (_blockMaxRetries > 0) log.debug(_ethName, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
+    if (_blockMaxRetries > 0) log.debug(MODULELOG, `Maximum retries for processing a block is set to ${_blockMaxRetries} for each block`);
     if (ethConfig.transactionBatchSize) _transactionBatchSize = ethConfig.transactionBatchSize;
-    log.debug(_ethName, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
+    log.debug(MODULELOG, `Maximum number of transactions in a block that are processed in parallel is set to ${_transactionBatchSize}`);
 
     // Block interval time
     if (ethConfig.blockRetrievalInterval &amp;&amp; ethConfig.blockRetrievalInterval > 500) {
         _blockInterval = ethConfig.blockRetrievalInterval;
     }
-    log.info(_ethName, `Block retrieval interval: ${_blockInterval} ms`);
+    log.info(MODULELOG, `Block retrieval interval: ${_blockInterval} ms`);
 
     // Determine block retrieval range
     if (ethConfig.blockRetrievalRestart) _blockRetrievalRestart = ethConfig.blockRetrievalRestart;
     if (ethConfig.blockRetrievalStart &amp;&amp; ethConfig.blockRetrievalStart > 0) {
-        log.info(_ethName, `Starting block specified in configuration: ${ethConfig.blockRetrievalStart}`);
+        log.info(MODULELOG, `Starting block specified in configuration: ${ethConfig.blockRetrievalStart}`);
         _blockRetrievalStart = ethConfig.blockRetrievalStart;
     }
     if (ethConfig.blockRetrievalEnd &amp;&amp; ethConfig.blockRetrievalEnd > 0) {
-        log.info(_ethName, `Ending block specified in configuration: ${ethConfig.blockRetrievalEnd}`);
+        log.info(MODULELOG, `Ending block specified in configuration: ${ethConfig.blockRetrievalEnd}`);
         _blockRetrievalEnd = ethConfig.blockRetrievalEnd;
     }
     // Determine starting block
@@ -120,15 +121,15 @@ async function initListener(ethConfig, ethState) {
             _blockRetrievalStart,
             _blockRetrievalRestart
         );
-        logStartingBlock(_ethName, _blockCursor, _ethState.status.highestBlock);
+        logStartingBlock(_ethChain, _blockCursor, _ethState.status.highestBlock);
     } catch(err) {
         if (err) return Promise.reject(err);
-        return Promise.reject(new Error('Could not connect to Ethereum node and determine starting block'));
+        return Promise.reject(new Error(`Could not connect to ${_ethChain} node and determine starting block`));
     }
     // Schedule iterative block retrieval
     scheduleBlockIteration();
-    wfState.updateBlockchainData(_ethName, _ethState);
-    return Promise.resolve(); // Succesfully completed initialisation
+    wfState.updateBlockchainData(_ethChain, _ethState);
+    return Promise.resolve();
 }
 
 // PRIVATE LISTENER FUNCTIONS //
@@ -147,7 +148,7 @@ async function initListener(ethConfig, ethState) {
  * @private
  */
 function scheduleBlockIteration() {
-    log.trace(_ethName, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
+    log.trace(MODULELOG, `Scheduling block retrieval iteration ${(_iterationCount + 1)} in ${_blockInterval} ms`);
     setTimeout(executeBlockIteration, _blockInterval);
 }
 
@@ -157,7 +158,7 @@ function scheduleBlockIteration() {
  */
 function executeBlockIteration() {
     _iterationCount += 1;
-    log.trace(_ethName, `Starting block retrieval iteration ${_iterationCount}`);
+    log.trace(MODULELOG, `Starting block retrieval iteration ${_iterationCount}`);
 
     // Get the actual Ethereum blockchain height
     ethRpc.getHighestBlock()
@@ -166,16 +167,16 @@ function executeBlockIteration() {
         if (highestBlock >  _discoveredBlock) {
             _discoveredBlock = highestBlock;
             _ethState.status.highestBlock = highestBlock;
-            log.trace(_ethName, `New highest block discovered on node is ${_discoveredBlock}`);
+            log.trace(MODULELOG, `New highest block discovered on node is ${_discoveredBlock}`);
         }
         // Check if highest block is already processed, and schedule next iteration
         if (highestBlock === _blockCursor) {
-            log.trace(_ethName, `Highest block ${highestBlock} has already been processed`);
+            log.trace(MODULELOG, `Highest block ${highestBlock} has already been processed`);
             return Promise.reject(); // Stop this iteration without error
         }
         // Current block may be higher than highest block when node is resyncing
         if (_blockCursor > highestBlock) {
-            log.debug(_ethName, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
+            log.debug(MODULELOG, `Current block ${_blockCursor} is higher than highest block ${highestBlock} on node`);
             return Promise.reject(); // Stop this iteration withour error
         }
         // Last block to retrieve is highest block or, if provided, end block
@@ -193,12 +194,12 @@ function executeBlockIteration() {
             return Promise.resolve(); // This iteration is completed
         }
         // Provided end block is reached
-        log.info(_ethName, `Reached configured block retrieval end: ${_blockCursor}`);
+        log.info(MODULELOG, `Reached configured block retrieval end: ${_blockCursor}`);
         _blockRetrievalEnd = 0;
 
         // Dtermine from where to proceed
         _blockCursor = determineStartingBlock(_ethState.status.highestBlock, _blockCursor, _blockRetrievalEnd, _blockRetrievalRestart);
-        logStartingBlock(_ethName, _blockCursor, _ethState.status.highestBlock);
+        logStartingBlock(_ethChain, _blockCursor, _ethState.status.highestBlock);
         return Promise.resolve();
     })
     .then(() => {
@@ -208,7 +209,7 @@ function executeBlockIteration() {
     .catch(err => {
         if (err) {
             // Schedule next iteration shortly to retry
-            log.warn(_ethName, `Could not complete retrieval of block ${_blockCursor} in iteration ${_iterationCount}: ${err.message}`);
+            log.warn(MODULELOG, `Could not complete retrieval of block ${_blockCursor} in iteration ${_iterationCount}: ${err.message}`);
             return setTimeout(executeBlockIteration, BLOCKRETRYDELAY);
         }
         // Schedule next iteration based on configured block time
@@ -227,28 +228,28 @@ async function processBlocks(startBlock, endBlock) {
     // Stack callbacks to a maximum of 100
     _blockStackSize += 1;
     if (_blockStackSize > BLOCKSTACKSIZE) {
-        log.trace(_ethName, `Reached maximum block processing stack size: ${_blockStackSize}`);
+        log.trace(MODULELOG, `Reached maximum block processing stack size: ${_blockStackSize}`);
         return Promise.resolve(); // Completed for now
     }
     // If current block is last block, then there is no new block to retrieve
     if (startBlock === endBlock) {
-        log.trace(_ethName, 'No new block to retrieve');
+        log.trace(MODULELOG, 'No new block to retrieve');
         return Promise.resolve(); // Completed for now
     }
     // Block to be processed is the next block after starting block and skipped blocks
-    if (_skippedBlocks > 0) log.trace(_ethName, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
+    if (_skippedBlocks > 0) log.trace(MODULELOG, `Skipped ${_skippedBlocks} blocks since block ${startBlock}`);
     let thisBlock = startBlock + _skippedBlocks + 1;
 
     // Skip this block if the block has been retried too often
     if (_blockMaxRetries > 0 &amp;&amp; _blockRetryCount > _blockMaxRetries) {
-        log.warn(_ethName, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
+        log.warn(MODULELOG, `Skipping block ${thisBlock} after ${_blockMaxRetries} retries`);
         thisBlock += 1;
         _blockRetryCount = 0;
         _skippedBlocks += 1;
     }
     // Log where we are with blocks
-    if (_blockRetryCount !== 0) log.info(_ethName, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
-    log.trace(_ethName, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
+    if (_blockRetryCount !== 0) log.info(MODULELOG, `Retry ${_blockRetryCount} to process block: ${thisBlock}`);
+    log.trace(MODULELOG, `Retrieving block ${_blockStackSize} of iteration ${_iterationCount}: ${thisBlock}`);
 
     // Retrieve new block
     try {
@@ -264,7 +265,7 @@ async function processBlocks(startBlock, endBlock) {
 
     // Update state
     _ethState.status.currentBlock = _blockCursor;
-    wfState.updateBlockchainData(_ethName, _ethState);
+    wfState.updateBlockchainData(_ethChain, _ethState);
 
     // Get next block if not yet at last block
     if (thisBlock &lt; endBlock) return processBlocks(_blockCursor, endBlock); // Process next block
@@ -289,14 +290,14 @@ async function processBlock(blockNumber) {
     let transactionCount = block.transactions.length;
     if (!block || transactionCount &lt; 1) {
         // Rare case, but in certain instances there could be no transactions in the block
-        log.info(_ethName, `No transactions in block: ${blockNumber}`);
+        log.info(MODULELOG, `No transactions in block: ${blockNumber}`);
         return Promise.resolve(); // Completed this block
     }
     // Retrieve transactions from block
-    log.trace(_ethName, `Transactions discovered in block ${blockNumber}: ${transactionCount}`);
+    log.trace(MODULELOG, `Transactions discovered in block ${blockNumber}: ${transactionCount}`);
     return processTransactions(0, block.transactions, block.timestamp)
     .then(() => {
-        log.info(_ethName, `Transactions processed from block ${blockNumber}: ${transactionCount} `);
+        log.info(MODULELOG, `Transactions processed from block ${blockNumber}: ${transactionCount} `);
         return Promise.resolve(); // Completed this block
     })
     .catch(err => {
@@ -339,7 +340,7 @@ async function processBlock(blockNumber) {
  * @param {number} index the first transaction in the array to process
  * @param {Array} transactions the transactions to process
  * @param {number} timestamp the block timestamp
- * @return {Array} Array with transaction Promises
+ * @returns {Array} Array with transaction Promises
  */
 function createTransactionBatch(index, transactions, timestamp) {
     let transactionBatch = [];
@@ -354,11 +355,11 @@ function createTransactionBatch(index, transactions, timestamp) {
             // Whiteflag message is extracted by resolving the promise
             ethRpc.getRawTransaction(transactionHash)
             .then(transaction => {
-                if (!transaction) return log.warn(_ethName, `No data received for transaction: ${transactionHash}`);
+                if (!transaction) return log.warn(MODULELOG, `No data received for transaction: ${transactionHash}`);
                 return ethTransactions.extractMessage(transaction, timestamp);
             })
             .then(wfMessage => {
-                log.trace(_ethName, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
+                log.trace(MODULELOG, `Received Whiteflag message: ${JSON.stringify(wfMessage.MetaHeader)}`);
                 wfRxEvent.emit('messageReceived', wfMessage);
             })
             .catch(err => {
@@ -379,13 +380,13 @@ function createTransactionBatch(index, transactions, timestamp) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

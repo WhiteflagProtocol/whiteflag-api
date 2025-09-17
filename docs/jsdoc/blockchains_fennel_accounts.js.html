@@ -37,7 +37,8 @@ module.exports = {
     get: getAccount,
     create: createAccount,
     update: updateAccount,
-    delete: deleteAccount
+    delete: deleteAccount,
+    sign: getSignature
 };
 
 // Node.js core and external modules //
@@ -45,11 +46,12 @@ const crypto = require('crypto');
 const fnlCrypto = require('@polkadot/util-crypto');
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const object = require('../../common/objects');
-const { hash } = require('../../common/crypto');
-const { ignore } = require('../../common/processing');
-const { ProcessingError } = require('../../common/errors');
+const log = require('../../_common/logger');
+const object = require('../../_common/objects');
+const { hash, zeroise } = require('../../_common/crypto');
+const { ignore } = require('../../_common/processing');
+const { ProcessingError } = require('../../_common/errors');
+const { hexToBuffer } = require('../../_common/encoding');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
@@ -58,16 +60,17 @@ const wfState = require('../../protocol/state');
 const fnlRpc = require('./rpc');
 const { noKeyHexPrefix,
         noPubkeyHexPrefix
-    } = require('../common/format');
+    } = require('../_common/format');
 
 // Module constants //
+const MODULELOG = 'fennel';
+const HEXENCODING= 'hex';
 const STATUSINTERVAL = 60000; // Every minute
-const BINENCODING = 'hex';
 const KEYIDLENGTH = 12;
 const SEEDBYTELENGTH = 32;
 
 // Module variables //
-let _fnlName = 'fennel';
+let _fnlChain;
 let _fnlState;
 
 /**
@@ -80,17 +83,17 @@ let _fnlState;
  * @returns {Promise} resolves if succesfully initialised
  */
 async function initAccounts(fnlConfig, fnlState) {
-    _fnlName = fnlConfig.name;
+    log.trace(MODULELOG, 'Initialising Fennel accounts management');
+    _fnlChain = fnlConfig.name;
     _fnlState = fnlState;
-    log.trace(_fnlName, 'Initialising Fennel accounts management...');
 
     // If configured, create new account if none exists
     if (fnlConfig.createAccount &amp;&amp; _fnlState.accounts.length === 0) {
         createAccount(null)
         .then(account => {
-            log.info(_fnlName, `Fennel account created automatically: ${account.address}`);
+            log.info(MODULELOG, `Automatically created first ${_fnlChain} account: ${account.address}`);
         })
-        .catch(err => log.warn(_fnlName, err.message));
+        .catch(err => log.warn(MODULELOG, err.message));
     }
     // Periodically update account balances
     // WIP: updateAccounts(); setInterval(updateAccounts, STATUSINTERVAL);
@@ -110,7 +113,7 @@ function getAccount(address = null) {
     return new Promise((resolve, reject) => {
         let account = _fnlState.accounts.find(item => item.address === address);
         if (!account) {
-            return reject(new ProcessingError(`No existing ${_fnlName} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`No existing ${_fnlChain} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         resolve(account);
     });
@@ -128,13 +131,13 @@ function createAccount(seed = null) {
         let account;
         try {
             if (seed) {
-                log.trace(_fnlName, 'Creating Fennel account from existing private key');
-                const seedBuffer = Buffer.from(seed, BINENCODING);
+                log.trace(MODULELOG, `Creating ${_fnlChain} account from secret seed`);
+                const seedBuffer = hexToBuffer(seed);
                 account = createAccountEntry(fnlCrypto.sr25519PairFromSeed(seedBuffer));
-                // WIP: updateAccountBalance(account);
-                // WIP: updateAccountTransactions(account);
+                // WIP: updateAccountBalance(account)
+                // WIP: updateAccountTransactions(account)
             } else {
-                log.trace(_fnlName, 'Creating new Fennel account with generated secret key');
+                log.trace(MODULELOG, `Creating new ${_fnlChain} account with generated secret key`);
                 const seedBuffer = crypto.randomBytes(SEEDBYTELENGTH);
                 account = createAccountEntry(fnlCrypto.sr25519PairFromSeed(seedBuffer));
                 account.balance = 0;
@@ -144,14 +147,14 @@ function createAccount(seed = null) {
             seed = undefined;
         } catch(err) {
             seed = undefined;
-            log.error(_fnlName, `Error while creating new Fennel account: ${err.message}`);
+            log.error(MODULELOG, `Error while creating new ${_fnlChain} account: ${err.message}`);
             return reject(err);
         }
         // Check for existing account and store account
         getAccount(account.address)
         .then(existingAccount => {
             if (existingAccount.address === account.address) {
-                return reject(new ProcessingError(`The ${_fnlName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
+                return reject(new ProcessingError(`The ${_fnlChain} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
             }
         })
         .catch(err => ignore(err)); // all good if account does not yet exist
@@ -170,20 +173,20 @@ function createAccount(seed = null) {
  * @returns {Promise} resolves to updated account
  */
 function updateAccount(account) {
-    log.trace(_fnlName, `Updating Fennel account: ${account.address}`);
+    log.trace(MODULELOG, `Updating ${_fnlChain} account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Update only if account exists
         getAccount(account.address)
         .then(existingAccount => {
             // Double check addresses
             if (existingAccount.address !== account.address) {
-                return reject(new Error(`Address of ${_fnlName} account in state does not correspond with updated account data address`));
+                return reject(new Error(`Address of ${_fnlChain} account in state does not correspond with updated account data address`));
             }
             // Upsert updated account data
             try {
                 upsertAccount(account);
             } catch(err) {
-                return reject(new Error(`Could not update ${_fnlName} account: ${err.message}`));
+                return reject(new Error(`Could not update ${_fnlChain} account: ${err.message}`));
             }
             return resolve(account);
         })
@@ -199,23 +202,71 @@ function updateAccount(account) {
  * @returns {Promise} resolves to updated account
  */
 function deleteAccount(address) {
-    log.trace(_fnlName, `Deleting Fennel account: ${address}`);
+    log.trace(MODULELOG, `Deleting ${_fnlChain} account: ${address}`);
     return new Promise((resolve, reject) => {
         // Get index of account
         const index = _fnlState.accounts.findIndex(item => item.address === address);
         if (index &lt; 0) {
-            return reject(new ProcessingError(`Could not find ${_fnlName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`Could not find ${_fnlChain} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         // Remove account from state after double check
         const account = _fnlState.accounts[index];
         if (account.address === address) {
             _fnlState.accounts.splice(index, 1);
-            wfState.updateBlockchainData(_fnlName, _fnlState);
+            wfState.updateBlockchainData(_fnlChain, _fnlState);
         } else {
-            return reject(new Error(`Could not not delete ${_fnlName} account: ${address}`));
+            return reject(new Error(`Could not not delete ${_fnlChain} account: ${address}`));
         }
         // Log and return result
         return resolve(account);
+    });
+}
+
+/**
+ * Signs an arbitrary input with an account's private key 
+ * @todo Complete and test function
+ * @function getSignature
+ * @alias module:lib/blockchains/fennel.getSignature
+ * @param {string} address the address of the account used to sign
+ * @param {string} input the input to be signed 
+ * @returns {Promise} resolves to the signature
+ */
+function getSignature(address, input) {
+    log.trace(MODULELOG, `Generating signature for address: ${address}`);
+    return new Promise((resolve, reject) => {
+        getAccount(address)
+        .then(account => {
+            const privateKeyId = getPrivateKeyId(account.address);
+            wfState.getKey('blockchainKeys', privateKeyId, function fnlGetKeyCb(err, privateKey) {
+                if (err) reject(err);
+                const keypair = createKeypair(account.publicKey, privateKey);
+                const signature = toHex(fnlCrypto.sr25519Sign(input, keypair));
+                zeroise(keypair.secretKey);
+                return resolve(signature);
+            });
+        })
+        .catch(err => reject(err));
+    });
+}
+
+/**
+ * Verifies if the signature is valid for the arbitrary input and address
+ * @todo Complete and test function
+ * @param {string} address the address of the account used to sign
+ * @param {string} input the input that has been signed
+ * @param {string} signature the signature to be verified
+ * @returns {Promise} resoilves if signature is vlaid
+ */
+function verifySignature(address, input, signature) {
+    return new Promise((resolve, reject) => {
+        const publicKey = fnlCrypto.decodeAddress(address);
+        const valid = fnlCrypto.sr25519Verify(
+            input,
+            hexToBuffer(signature),
+            publicKey
+        );
+        if (valid) return resolve();
+        return reject(new ProtocolError('Invalid Whiteflag authentication signature', null, 'WF_SIGN_ERROR'));
     });
 }
 
@@ -231,7 +282,7 @@ function updateAccounts() {
             updateAccountTransactions(account)
         ])
         .then(() => {
-            wfState.updateBlockchainData(_fnlName, _fnlState);
+            wfState.updateBlockchainData(_fnlChain, _fnlState);
         });
     });
 }
@@ -243,13 +294,13 @@ function updateAccounts() {
  * @returns {Promise}
  */
 function updateAccountBalance(account) {
-    log.trace(_fnlName, `Updating balance of account: ${account.address}`);
+    log.trace(MODULELOG, `Updating balance of account: ${account.address}`);
     return fnlRpc.getBalance(account.address)
     .then(balance => {
         account.balance = balance;
         return Promise.resolve(account.balance);
     })
-    .catch(err => log.warn(_fnlName, `Could not update balance for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not update balance for account ${account.address}: ${err.message}`));
 }
 
  /**
@@ -259,13 +310,13 @@ function updateAccountBalance(account) {
  * @returns {Promise}
  */
 function updateAccountTransactions(account) {
-    log.trace(_fnlName, `Updating transaction count of account: ${account.address}`);
+    log.trace(MODULELOG, `Updating transaction count of ${_fnlChain} account: ${account.address}`);
     return fnlRpc.getTransactionCount(account.address)
     .then(transactionCount => {
         account.transactionCount = transactionCount;
         return Promise.resolve(account.transactionCount);
     })
-    .catch(err => log.warn(_fnlName, `Could not update transaction count for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not update transaction count for ${_fnlChain} account ${account.address}: ${err.message}`));
 }
 
 /**
@@ -276,7 +327,7 @@ function updateAccountTransactions(account) {
 function upsertAccount(account) {
     // Securely store the private key in state
     if (Object.hasOwn(account, 'privateKey')) {
-        const privateKeyId = hash(_fnlName + account.address, KEYIDLENGTH);
+        const privateKeyId = getPrivateKeyId(account.address);
         wfState.upsertKey('blockchainKeys', privateKeyId, noKeyHexPrefix(account.privateKey));
         delete account.privateKey;
     }
@@ -285,13 +336,13 @@ function upsertAccount(account) {
     if (!existingAccount) {
         // Insert new account
         _fnlState.accounts.push(account);
-        log.trace(_fnlName, `New Fennel account added to state: ${account.address}`);
+        log.trace(MODULELOG, `Added new ${_fnlChain} account to state: ${account.address}`);
     } else {
         // Update account
         object.update(account, existingAccount);
-        log.trace(_fnlName, `Fennel account updated in state: ${account.address}`);
+        log.trace(MODULELOG, `Updated ${_fnlChain} account in state: ${account.address}`);
     }
-    wfState.updateBlockchainData(_fnlName, _fnlState);
+    wfState.updateBlockchainData(_fnlChain, _fnlState);
 }
 
 /**
@@ -303,11 +354,44 @@ function upsertAccount(account) {
  function createAccountEntry(keypair) {
     return {
         address: fnlCrypto.encodeAddress(keypair.publicKey),
-        publicKey: noPubkeyHexPrefix(Buffer.from(keypair.publicKey).toString('hex')),
-        privateKey: noKeyHexPrefix(Buffer.from(keypair.secretKey).toString('hex')),
+        publicKey: noPubkeyHexPrefix(toHex(keypair.publicKey)),
+        privateKey: noKeyHexPrefix(toHex(keypair.secretKey)),
         balance: null,
         transactionCount: null
     };
+}
+
+/**
+ * Creates a Polkadot keypair from hexadecimal keys
+ * @param {string} publicKey 
+ * @param {string} secretKey 
+ * @returns {Uint8Array} a keypair
+ */
+function createKeypair(publicKey, secretKey) {
+    return {
+        publicKey: hexToBuffer(publicKey),
+        secretKey: hexToBuffer(secretKey)
+    };
+}
+
+/**
+ * Gets the identifier to get private key from state
+ * @private
+ * @param {string} address the address of the account
+ * @returns {string} a hexadecimal string with the private key id
+ */
+function getPrivateKeyId(address) {
+    return hash(_fnlChain + address, KEYIDLENGTH);
+}
+
+/**
+ * Encodes a Polkadot binary encoding into a hexadecimal string
+ * @private
+ * @param {Uint8Array} u8array the binary encoding used by Polkadot
+ * @returns {string} a hexadecimal string
+ */
+function toHex(u8array) {
+    return Buffer.from(u8array).toString(HEXENCODING);
 }
 </code></pre>
         </article>
@@ -319,13 +403,13 @@ function upsertAccount(account) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -48,11 +48,11 @@ module.exports = {
 const bitcoin = require('bitcoinjs-lib');
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const object = require('../../common/objects');
-const { hash } = require('../../common/crypto');
-const { ignore } = require('../../common/processing');
-const { ProcessingError } = require('../../common/errors');
+const log = require('../../_common/logger');
+const object = require('../../_common/objects');
+const { hash } = require('../../_common/crypto');
+const { ignore } = require('../../_common/processing');
+const { ProcessingError } = require('../../_common/errors');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
@@ -61,12 +61,13 @@ const wfState = require('../../protocol/state');
 const btcRpc = require('./rpc');
 
 // Module constants //
+const MODULELOG = 'bitcoin';
 const ACCOUNTSYNCDELAY = 10000;
 const SATOSHI = 100000000;
 const KEYIDLENGTH = 12;
 
 // Module variables //
-let _btcName = 'bitcoin';
+let _btcChain;
 let _btcState;
 let _transactionBatchSize = 128;
 
@@ -78,9 +79,9 @@ let _transactionBatchSize = 128;
  * @param {Object} btcState the Bitcoin blockchain state
  */
 async function initAccounts(btcConfig, btcState) {
-    _btcName = btcConfig.name;
+    log.trace(MODULELOG, 'Initialising Bitcoin accounts management');
+    _btcChain = btcConfig.name;
     _btcState = btcState;
-    log.trace(_btcName, 'Initialising Bitcoin accounts management...');
 
     // Wallet synchronisation parameters
     if (btcConfig.transactionBatchSize) _transactionBatchSize = btcConfig.transactionBatchSize;
@@ -89,9 +90,9 @@ async function initAccounts(btcConfig, btcState) {
     if (btcConfig.createAccount &amp;&amp; _btcState.accounts.length === 0) {
         createAccount(null)
         .then(account => {
-            log.info(_btcName, `Bitcoin account created automatically: ${account.address}`);
+            log.info(MODULELOG, `Automatically created first ${_btcChain} account: ${account.address}`);
         })
-        .catch(err => log.warn(_btcName, err.message));
+        .catch(err => log.warn(MODULELOG, err.message));
     } else {
         // Upgrade data structure of existing accounts
         for (let account of _btcState.accounts) {
@@ -116,7 +117,7 @@ function getAccount(address) {
     return new Promise((resolve, reject) => {
         let account = _btcState.accounts.find(item => item.address === address);
         if (!account) {
-            return reject(new ProcessingError(`The ${_btcName} account does not exist: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`The ${_btcChain} account does not exist: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         resolve(account);
     });
@@ -134,7 +135,7 @@ function checkAccount(address) {
         getAccount(address)
         .then(account => {
             if (account.syncing === true) {
-                return reject(new ProcessingError(`The ${_btcName} account cannot be used because it is currently syncing at block: ${account.lastBlock}/${_btcState.status.currentBlock}`, null, 'WF_API_NOT_AVAILABLE'));
+                return reject(new ProcessingError(`The ${_btcChain} account cannot be used because it is currently syncing at block: ${account.lastBlock}/${_btcState.status.currentBlock}`, null, 'WF_API_NOT_AVAILABLE'));
             }
             resolve(account);
         })
@@ -154,10 +155,10 @@ async function createAccount(wif = null) {
         let account;
         try {
             if (wif !== null) {
-                log.trace(_btcName, 'Creating Bitcoin account from WIF');
+                log.trace(MODULELOG, `Creating ${_btcChain} account from WIF`);
                 account = createAccountEntry(bitcoin.ECPair.fromWif(wif, _btcState.parameters.network));
             } else {
-                log.trace(_btcName, 'Creating new Bitcoin account with generated keys');
+                log.trace(MODULELOG, `Creating new ${_btcChain} account with generated keys`);
                 account = createAccountEntry(bitcoin.ECPair.makeRandom({ network: _btcState.parameters.network }));
                 btcRpc.getBlockCount()
                 .then(highestBlock => {
@@ -169,14 +170,14 @@ async function createAccount(wif = null) {
             wif = undefined;
         } catch(err) {
             wif = undefined;
-            log.error(_btcName, `Error while creating new Bitcoin account: ${err.message}`);
+            log.error(MODULELOG, `Error while creating new ${_btcChain} account: ${err.message}`);
             return reject(err);
         }
         // Check for existing account and store account
         getAccount(account.address)
         .then(existingAccount => {
             if (existingAccount.address === account.address) {
-                return reject(new ProcessingError(`The ${_btcName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
+                return reject(new ProcessingError(`The ${_btcChain} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
             }
         })
         .catch(err => ignore(err)); // all good if account does not yet exist
@@ -195,20 +196,20 @@ async function createAccount(wif = null) {
  * @returns {Promise} resolves to the account data
  */
 function updateAccount(account) {
-    log.trace(_btcName, `Updating Bitcoin account: ${account.address}`);
+    log.trace(MODULELOG, `Updating ${_btcChain} account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Update only if account exists
         getAccount(account.address)
         .then(existingAccount => {
             // Double check addresses
             if (existingAccount.address !== account.address) {
-                return reject(new Error(`Address of ${_btcName} account in state does not correspond with updated account data address`));
+                return reject(new Error(`Address of ${_btcChain} account in state does not correspond with updated account data address`));
             }
             // Upsert updated account data
             try {
                 upsertAccount(account);
             } catch(err) {
-                return reject(new Error(`Could not update ${_btcName} account: ${err.message}`));
+                return reject(new Error(`Could not update ${_btcChain} account: ${err.message}`));
             }
             return resolve(account);
         })
@@ -221,24 +222,24 @@ function updateAccount(account) {
  * @function deleteAccount
  * @alias module:lib/blockchains/bitcoin/accounts.delete
  * @param {string} address the address of the account information object with updated informationto be deleted
- * @param {blockchainDeleteAccountCb} callback function to be called upon completion
+ * @param {bcDeleteAccountCb} callback function to be called upon completion
  */
 function deleteAccount(address) {
-    log.trace(_btcName, `Deleting Bitcoin account: ${address}`);
+    log.trace(MODULELOG, `Deleting ${_btcChain} account: ${address}`);
 
     return new Promise((resolve, reject) => {
         // Get index of account in state
         const index = _btcState.accounts.findIndex(item => item.address === address);
         if (index &lt; 0) {
-            return reject(new ProcessingError(`Could not find ${_btcName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`Could not find ${_btcChain} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         // Remove account from state after double check
         const account = _btcState.accounts[index];
         if (account.address === address) {
             _btcState.accounts.splice(index, 1);
-            wfState.updateBlockchainData(_btcName, _btcState);
+            wfState.updateBlockchainData(_btcChain, _btcState);
         } else {
-            return reject(new Error(`Could not not delete ${_btcName} account: ${address}`));
+            return reject(new Error(`Could not not delete ${_btcChain} account: ${address}`));
         }
         // Log and return result
         return resolve(account);
@@ -300,7 +301,7 @@ function processBlockUtxos(blockNumber, block) {
                 account.lastBlock = blockNumber;
             })
             .catch(err => {
-                log.warn(_btcName, `Error processing block ${blockNumber} to check UTXOs for account ${account.address}: ${err.message}`);
+                log.warn(MODULELOG, `Error processing block ${blockNumber} to check UTXOs for account ${account.address}: ${err.message}`);
                 return scheduleSynchroniseAccount(account.address);
             });
         } else {
@@ -360,7 +361,7 @@ function upgradeAccountData(account) {
 function upsertAccount(account) {
     // Securely store the private key in state
     if (Object.hasOwn(account, 'privateKey')) {
-        const privateKeyId = hash(_btcName + account.address, KEYIDLENGTH);
+        const privateKeyId = hash(_btcChain + account.address, KEYIDLENGTH);
         wfState.upsertKey('blockchainKeys', privateKeyId, account.privateKey.toString('hex'));
         delete account.privateKey;
     }
@@ -373,7 +374,7 @@ function upsertAccount(account) {
         // Update account
         object.update(account, existingAccount);
     }
-    wfState.updateBlockchainData(_btcName, _btcState);
+    wfState.updateBlockchainData(_btcChain, _btcState);
 }
 
 /**
@@ -398,7 +399,7 @@ function scheduleSynchroniseAccount(address) {
         }, ACCOUNTSYNCDELAY);
     })
     .catch(err => {
-        log.warn(_btcName, `Rescheduling synchronisation of account ${address} after error: ${err.message}`);
+        log.warn(MODULELOG, `Rescheduling synchronisation of account ${address} after error: ${err.message}`);
         return scheduleSynchroniseAccount(address);
     });
 }
@@ -412,18 +413,18 @@ function synchroniseAccount(account) {
     // To sync or not to sync
     if (account.lastBlock >= _btcState.status.currentBlock) {
         if (account.syncing) {
-            log.info(_btcName, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
+            log.info(MODULELOG, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
             account.syncing = false;
         }
         return Promise.resolve();
     }
     if (!account.syncing) {
-        log.info(_btcName, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
+        log.info(MODULELOG, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
         account.syncing = true;
     }
     // Get next block
     let thisBlock = account.lastBlock + 1;
-    log.trace(_btcName, `Synchronising account ${account.address} with block: ${thisBlock}/${_btcState.status.highestBlock}`);
+    log.trace(MODULELOG, `Synchronising account ${account.address} with block: ${thisBlock}/${_btcState.status.highestBlock}`);
     btcRpc.getBlockByNumber(thisBlock, true)
     .then(block => {
         return processAccountTransactions(0, block.tx, account);
@@ -433,7 +434,7 @@ function synchroniseAccount(account) {
         return synchroniseAccount(account);
     })
     .catch(err => {
-        log.warn(_btcName, `Rescheduling synchronisation of account ${account.address} after failure to process block ${thisBlock}: ${err.message}`);
+        log.warn(MODULELOG, `Rescheduling synchronisation of account ${account.address} after failure to process block ${thisBlock}: ${err.message}`);
         return scheduleSynchroniseAccount(account.address);
     });
 }
@@ -472,7 +473,7 @@ function synchroniseAccount(account) {
  * @param {number} index the transaction in the array to process
  * @param {Array} transactions the transactions to process
  * @param {Object} account the account to check transaction for
- * @return {Array} Array with transaction Promises
+ * @returns {Array} Array with transaction Promises
  */
 function createTransactionBatch(index, transactions, account) {
     let transactionBatch = [];
@@ -529,7 +530,7 @@ function checkAccountUtxosReceived(transaction, index, account) {
                 value: parseInt((transaction.vout[index].value * SATOSHI).toFixed(0)),
                 spent: false
             };
-            log.info(_btcName, `Received ${utxo.value} satoshis on account: ${account.address}`);
+            log.info(MODULELOG, `Received ${utxo.value} satoshis on account: ${account.address}`);
             account.utxos.push(utxo);
             updateAccountBalance(account);
         }
@@ -548,7 +549,7 @@ function checkAccountUtxosSpent(transaction, index, account) {
         if (utxo.txid === transaction.vin[index].txid
             &amp;&amp; +transaction.vin[index].vout === +utxo.index
         ) {
-            log.info(_btcName, `Spent ${utxo.value} satoshis from account: ${account.address}`);
+            log.info(MODULELOG, `Spent ${utxo.value} satoshis from account: ${account.address}`);
             utxo.spent = transaction.txid;
             updateAccountBalance(account);
         }
@@ -564,13 +565,13 @@ function checkAccountUtxosSpent(transaction, index, account) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

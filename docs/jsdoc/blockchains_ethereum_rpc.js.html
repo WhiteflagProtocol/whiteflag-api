@@ -54,21 +54,26 @@ module.exports = {
 const Web3 = require('web3');
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const { timeoutPromise } = require('../../common/processing');
+const log = require('../../_common/logger');
+const { timeoutPromise } = require('../../_common/processing');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
 
+// Whiteflag common blockchain functions //
+const { getFullURL } = require('../_common/rpc');
+
 // Ethereum sub-modules //
-const { withHexPrefix } = require('../common/format');
+const { withHexPrefix } = require('../_common/format');
 
 // Module constants //
+const MODULELOG = 'ethereum';
+const DEFAULTPORT = '8545';
 const STATUSINTERVAL = 60000; // Every minute
 const INFOINTERVAL = 3600000; // Every hour
 
 // Module variables //
-let _ethName = 'ethereum';
+let _ethChain;
 let _ethState;
 let _ethApi;
 let _chainID = 1;
@@ -83,24 +88,24 @@ let _rpcTimeout = 10000;
  * @returns {Promise} resolve if succesfully initialised
  */
 function initRpc(ethConfig, ethState) {
-    _ethName = ethConfig.name;
+    _ethChain = ethConfig.name;
     _ethState = ethState;
 
     // Set configured timeout
     if (ethConfig.rpcTimeout &amp;&amp; ethConfig.rpcTimeout > 500) {
         _rpcTimeout = ethConfig.rpcTimeout;
     }
-    log.info(_ethName, `Timeout for remote calls to the Ethereum node: ${_rpcTimeout} ms`);
+    log.info(MODULELOG, `Timeout for remote calls to the ${_ethChain} node: ${_rpcTimeout} ms`);
 
     // Get Node URL and credentials
-    const rpcAuthURL = getFullURL(ethConfig, false);    // include credentials
-    const rpcCleanURL = getFullURL(ethConfig, true);    // no credentials
+    const rpcAuthURL = getFullURL(ethConfig, false, DEFAULTPORT);   // include credentials
+    const rpcCleanURL = getFullURL(ethConfig, true, DEFAULTPORT);   // no credentials
     _ethState.parameters.rpcURL = rpcCleanURL;
     _ethApi = new Web3(rpcAuthURL);
-    log.info(_ethName, `Using web3 Ethereum API version: ${_ethApi.version}`);
+    log.info(MODULELOG, `Using web3 Ethereum API version: ${_ethApi.version}`);
 
     // Connect to the Ethereum node
-    log.trace(_ethName, `Setting up connection with Ethereum node: ${rpcCleanURL}`);
+    log.trace(MODULELOG, `Setting up connection with ${_ethChain} node: ${rpcCleanURL}`);
     return new Promise((resolve, reject) => {
         // Check Ethereum chain identifier
         getChainId()
@@ -112,7 +117,7 @@ function initRpc(ethConfig, ethState) {
             }
             // We have a connection
             _ethState.parameters.chainID = chainID;
-            log.info(_ethName, `Connected to Ethereum chain ${chainID} through node: ${rpcCleanURL}`);
+            log.info(MODULELOG, `Connected to ${_ethChain} chain ${chainID} through node: ${rpcCleanURL}`);
 
             // Periodically update node parameters and status information
             updateNodeInfo(); setInterval(updateNodeInfo, INFOINTERVAL);
@@ -121,7 +126,7 @@ function initRpc(ethConfig, ethState) {
             // Succesfully completed initialisation
             return resolve(_ethApi);
         })
-        .catch(err => reject(new Error(`Could not connect to Ethereum node: ${err.message}`), _ethName));
+        .catch(err => reject(new Error(`Could not connect to ${_ethChain} node: ${err.message}`), _ethChain));
     });
 }
 
@@ -271,26 +276,6 @@ function sendSignedTransaction(rawTransaction) {
     return timeoutPromise(_ethApi.eth.sendSignedTransaction(rawTransaction), (_rpcTimeout * 5));
 }
 
-// PRIVATE RPC FUNCTIONS //
-/**
- * Gets URL of the Ethereum blockchain node from the configuration
- * @private
- * @param {Object} ethConfig blockchain configuration parameters
- * @param {boolean} hideCredentials whether to inlude username and password in url
- * @returns {string} the url of the Ethereum node
- */
- function getFullURL(ethConfig, hideCredentials = false) {
-    const rpcProtocol = (ethConfig.rpcProtocol || 'http') + '://';
-    const rpcHost = ethConfig.rpcHost || 'localhost';
-    const rpcPort = ':' + (ethConfig.rpcPort || '8545');
-    const rpcPath = ethConfig.rpcPath || '';
-    let rpcAuth = '';
-    if (ethConfig.rpcUsername &amp;&amp; ethConfig.rpcPassword &amp;&amp; !hideCredentials) {
-        rpcAuth = ethConfig.rpcUsername + ':' + ethConfig.rpcPassword + '@';
-    }
-    return (rpcProtocol + rpcAuth + rpcHost + rpcPort + rpcPath);
-}
-
 // PRIVATE BLOCKCHAIN STATUS FUNCTIONS //
 /**
  * Requests some semi-static Ethereum blockchain information
@@ -300,27 +285,27 @@ async function updateNodeInfo() {
     // Get node information
     await getNodeInfo()
     .then(nodeInfo => (_ethState.parameters.nodeInfo = nodeInfo))
-    .catch(err => log.warn(_ethName, `Could not get node software and version information: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get node software and version information: ${err.message}`));
 
     // Get protocol version
     await getProtocolVersion()
     .then(protocolVersion => (_ethState.parameters.protocolVersion = protocolVersion))
-    .catch(err => log.warn(_ethName, `Could not get protocol version from node: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get protocol version from node: ${err.message}`));
 
     // Get network ID
     await getNetworkId()
     .then(networkID => (_ethState.parameters.networkID = networkID))
-    .catch(err => log.warn(_ethName, `Could not get Network ID from node: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get Network ID from node: ${err.message}`));
 
     // Check chain ID
     await getChainId()
     .then(chainID => {
         if (chainID !== _chainID) {
-            log.warn(_ethName, `The node's Chain ID has changed to ${chainID} and does not correspond with the configured Chain ID ${_chainID}`);
+            log.warn(MODULELOG, `The node's Chain ID has changed to ${chainID} and does not correspond with the configured Chain ID ${_chainID}`);
         }
         _ethState.parameters.chainID = chainID;
     })
-    .catch(err => log.warn(_ethName, `Could not get Chain ID from node: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get Chain ID from node: ${err.message}`));
 }
 
 /**
@@ -333,17 +318,17 @@ async function updateNodeStatus() {
     // Get peer status
     await getPeerCount()
     .then(peers => (_ethState.status.peers = peers))
-    .catch(err => log.warn(_ethName, `Could not get peer status: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get peer status: ${err.message}`));
 
     // Get synchronisation status
     await isSyncing()
     .then(syncing => (_ethState.status.syncing = syncing))
-    .catch(err => log.warn(_ethName, `Could not get synchronisation status: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get synchronisation status: ${err.message}`));
 
     // Get gas price
     await getGasPrice()
     .then(gasPrice => (_ethState.status.gasPrice = gasPrice))
-    .catch(err => log.warn(_ethName, `Could not get gas price: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not get gas price: ${err.message}`));
 
     // Log node status
     saveNodeStatus();
@@ -354,8 +339,8 @@ async function updateNodeStatus() {
  * @private
  */
 function saveNodeStatus() {
-    wfState.updateBlockchainData(_ethName, _ethState);
-    log.info(_ethName, `Status: {${JSON.stringify(_ethState.parameters)}, ${JSON.stringify(_ethState.status)}}`);
+    wfState.updateBlockchainData(_ethChain, _ethState);
+    log.info(_ethChain, `Status: {${JSON.stringify(_ethState.parameters)}, ${JSON.stringify(_ethState.status)}}`);
 }
 </code></pre>
         </article>
@@ -367,13 +352,13 @@ function saveNodeStatus() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

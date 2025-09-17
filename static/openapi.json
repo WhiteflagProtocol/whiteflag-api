@@ -542,7 +542,7 @@
                 "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature to be used with authentication method 1. This signature should be made available on an internet resource to which an `A1` authentication message refers. This operation may be disabled in the configuration.",
                 "operationId": "createSignature",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/wfSignaturePayload"
+                    "$ref": "#/components/requestBodies/wfSignPayload"
                 },
                 "responses": {
                     "200": {
@@ -618,7 +618,7 @@
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
+                        "$ref": "#/components/responses/wfSignDecoded"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -645,7 +645,7 @@
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
+                        "$ref": "#/components/responses/wfSignDecoded"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -1207,12 +1207,12 @@
                     }
                 }
             },
-            "wfSignaturePayload": {
+            "wfSignPayload": {
                 "description": "Payload for a Whiteflag Authentication Signature",
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "protocol/signature.schema.json#/definitions/wfSignaturePayload"
+                            "$ref": "protocol/signature.schema.json#/definitions/wfSignPayload"
                         }
                     }
                 }
@@ -1508,7 +1508,7 @@
                     }
                 }
             },
-            "wfSignatureDecoded": {
+            "wfSignDecoded": {
                 "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
@@ -1519,7 +1519,7 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "$ref": "protocol/signature.schema.json#/definitions/wfSignatureDecoded"
+                                    "$ref": "protocol/signature.schema.json#/definitions/wfSignDecoded"
                                 }
                             }
                         }

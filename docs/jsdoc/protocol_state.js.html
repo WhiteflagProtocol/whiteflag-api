@@ -71,10 +71,43 @@ module.exports = {
     }
 };
 
+// Type definitions //
+/**
+ * @typedef {blockchainData[]} blockchainsData State data of all blockchains
+ */
+/**
+ * @typedef {Object} blockchainData Blockchain parameters, status and account data
+ * @property {Object} parameters Blockchain specific parameters, such as name and node information
+ * @property {Object} status Blockchain status, such as current block height, block times, etc.
+ * @property {wfAccount[]} accounts Accounts available on this blockchain
+ */
+/**
+ * @typedef {originatorData[]} originatorsData State data of all originators
+ */
+/**
+ * @typedef {Object} originatorData State data of a specific originator
+ * @property {string} name The name of the originator
+ * @property {string} blockchain The name of the blockchain used by the originator
+ * @property {string} address The blockchain address that identifies the originator
+ * @property {string} originatorPubKey The public key associated with the blockchain account of the originator
+ * @property {string} ecdhPublicKey The state crypto identifier of the ECDH public key of this originator
+ * @property {string} url The url of the authentication signature of the originator
+ * @property {string} authTokenId The state crypto identifier of the authentication token for this originator
+ * @property {boolean} authenticationValid Indication whether the originator has been authenticated at some point in time
+ * @property {string[]} authenticationMessages Transaction hashes of valid original authentication messages
+ */
+/**
+ * @typedef {Array} queueData State data from a specific queue
+ */
+
 // Module objects //
 /**
- * Whiteflag state
- * @type {Object}
+ * The Whiteflag state object
+ * @typedef {Object} wfState
+ * @property {blockchainsData} blockchains
+ * @property {originatorsData} originators
+ * @property {Object} queue
+ * @property {Object} crypto
  */
 let _wfState = {
     blockchains: {},
@@ -98,11 +131,12 @@ const crypto = require('crypto');
 const jsonValidate = require('jsonschema').validate;
 
 // Whiteflag common functions and classes //
-const array = require('../common/arrays');
-const log = require('../common/logger');
-const object = require('../common/objects');
-const { hkdf, hash, zeroise } = require('../common/crypto');
-const { ProcessingError } = require('../common/errors');
+const array = require('../_common/arrays');
+const log = require('../_common/logger');
+const object = require('../_common/objects');
+const { hkdf, hash, zeroise } = require('../_common/crypto');
+const { ProcessingError } = require('../_common/errors');
+const { hexToBuffer, bufferToHex } = require('../_common/encoding');
 
 // Whiteflag modules //
 const wfApiDatastores = require('../datastores');
@@ -237,7 +271,6 @@ function saveState() {
  * @alias module:lib/protocol/state.getBlockchains
  * @param {function(Error, blockchainsData)} [callback] function to which data is passed
  * @returns {blockchainsData}
- * @typedef {Object} blockchainsData state data of all blockchains
  */
 function getBlockchains(callback) {
     if (callback) return callback(null, _wfState.blockchains);
@@ -250,10 +283,9 @@ function getBlockchains(callback) {
  * @alias module:lib/protocol/state.getBlockchainData
  * @param {string} blockchain name of the blockchain
  * @param {function(Error, blockchainData)} callback function to which data is passed
- * @typedef {Object} blockchainData state data of a blockchain
  */
 function getBlockchainData(blockchain, callback) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+    if (!Object.hasOwn(_wfState.blockchains, blockchain)) {
         return callback(null, null);
     }
     return callback(null, _wfState.blockchains[blockchain]);
@@ -268,7 +300,7 @@ function getBlockchainData(blockchain, callback) {
  * @emits module:lib/protocol/events.stateEvent:updatedBlockchain
  */
 function updateBlockchainData(blockchain, data) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+    if (!Object.hasOwn(_wfState.blockchains, blockchain)) {
         log.warn(MODULELOG, `Adding previously unknown blockchain to state: ${blockchain}`);
     }
     _wfState.blockchains[blockchain] = data;
@@ -284,7 +316,7 @@ function updateBlockchainData(blockchain, data) {
  * @param {string} address the address of the account to be saved
  */
 function backupAccount(blockchain, address) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.blockchains, blockchain)) {
+    if (!Object.hasOwn(_wfState.blockchains, blockchain)) {
         return log.error(MODULELOG, `Cannot backup account because blockchain does not exist in state: ${blockchain}`);
     }
     const account = _wfState.blockchains[blockchain].accounts.find(account => account.address === address);
@@ -302,7 +334,6 @@ function backupAccount(blockchain, address) {
  * @function getOriginators
  * @alias module:lib/protocol/state.getOriginators
  * @param {function(Error, originatorsData)} callback function to which data is passed
- * @typedef {Array} originatorsData state data of all originators
  */
 function getOriginators(callback) {
     if (callback) return callback(null, _wfState.originators);
@@ -315,7 +346,6 @@ function getOriginators(callback) {
  * @alias module:lib/protocol/state.getOriginatorData
  * @param {string} address the originator's blockchain address
  * @param {function(Error, originatorData)} callback function to which data is passed
- * @typedef {Object} originatorData state data of all originators
  */
 function getOriginatorData(address, callback) {
     const index = _wfState.originators.findIndex(
@@ -338,7 +368,7 @@ function getOriginatorData(address, callback) {
 function upsertOriginatorData(data) {
     // Check if originator with the same address or authentication token already exists
     let indexA = null;
-    if (Object.prototype.hasOwnProperty.call(data, 'address')) {
+    if (Object.hasOwn(data, 'address')) {
         indexA = _wfState.originators.findIndex(
             originator => originator.address.toLowerCase() === data.address.toLowerCase()
         );
@@ -346,7 +376,7 @@ function upsertOriginatorData(data) {
         data.address = '';
     }
     let indexT = null;
-    if (Object.prototype.hasOwnProperty.call(data, 'authTokenId')) {
+    if (Object.hasOwn(data, 'authTokenId')) {
         indexT = _wfState.originators.findIndex(
             originator => originator.authTokenId === data.authTokenId
         );
@@ -473,10 +503,9 @@ function removeOriginatorAuthToken(authTokenId) {
  * @alias module:lib/protocol/state.getQueue
  * @param {string} queue the name of the queue
  * @param {function(Error, queueData)} callback function to which data is passed
- * @typedef {Array} queueData state data from a specific queue
  */
 function getQueue(queue, callback) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.queue, queue)) {
+    if (!Object.hasOwn(_wfState.queue, queue)) {
         return callback(new ProcessingError(`Queue ${queue} does not exist`, null, 'WF_API_NO_RESOURCE'));
     }
     return callback(null, _wfState.queue[queue]);
@@ -492,7 +521,7 @@ function getQueue(queue, callback) {
  * @param {function(Error, Object)} callback function to which data is passed
  */
 function getQueueData(queue, property, value, callback) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.queue, queue)) {
+    if (!Object.hasOwn(_wfState.queue, queue)) {
         return callback(new Error(`Queue ${queue} does not exist`));
     }
     const index = _wfState.queue[queue].findIndex(
@@ -555,7 +584,7 @@ function removeQueueData(queue, property, value) {
  * @param {function(Error, Array)} callback function to which the key is passed
  */
 function getKeyIds(category, callback) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.crypto, category)) {
+    if (!Object.hasOwn(_wfState.crypto, category)) {
         return callback(new Error(`Key category ${category} does not exist`));
     }
     return callback(null, array.pluck(_wfState.crypto[category], 'id'));
@@ -568,10 +597,9 @@ function getKeyIds(category, callback) {
  * @param {string} category the key category
  * @param {string} id unique identifier of the key
  * @param {function(Error, key)} callback function to which the key is passed
- * @typedef {string} key hexadecimal representation of a cryptographic key
  */
 function getKey(category, id, callback) {
-    if (!Object.prototype.hasOwnProperty.call(_wfState.crypto, category)) {
+    if (!Object.hasOwn(_wfState.crypto, category)) {
         return callback(new Error(`Key category ${category} does not exist`));
     }
     const index = _wfState.crypto[category].findIndex(
@@ -679,12 +707,12 @@ function encloseState(stateData = _wfState) {
  */
 function extractState(stateObject) {
     let stateDataStr;
-    if (!Object.prototype.hasOwnProperty.call(stateObject, 'state')) {
+    if (!Object.hasOwn(stateObject, 'state')) {
         throw new Error('State object might be corrupted: state property is missing');
     }
     if (
-        Object.prototype.hasOwnProperty.call(stateObject, 'tag')
-        &amp;&amp; Object.prototype.hasOwnProperty.call(stateObject, 'iv')
+        Object.hasOwn(stateObject, 'tag')
+        &amp;&amp; Object.hasOwn(stateObject, 'iv')
     ) {
         stateDataStr = decryptState(stateObject);
     } else {
@@ -775,11 +803,11 @@ function decryptState(stateObject) {
 /**
  * Encrypts key data
  * @private
- * @param {string} keyStr key in hexadecimal string
+ * @param {string} key key in hexadecimal string
  * @param {string} id unique identifier for the key, usually a related blockchain address
  * @returns {Object} encrypted key with authentication tag and initialisation vector
  */
-function encryptKey(keyStr, id) {
+function encryptKey(key, id) {
     // Initialise encrypter object
     const ivBuffer = crypto.randomBytes(KEYIVLENGTH);
     const kekBuffer = generateKEK(id);
@@ -789,11 +817,11 @@ function encryptKey(keyStr, id) {
     const encrypter = crypto.createCipheriv(KEYCIPHER, kekBuffer, ivBuffer);
 
     // Perform encrytption
-    const encryptedKey = encrypter.update(keyStr, '', BINENCODING) + encrypter.final(BINENCODING);
+    const encryptedKey = encrypter.update(key, '', BINENCODING) + encrypter.final(BINENCODING);
     const tag = encrypter.getAuthTag().toString(BINENCODING);
 
     // Hopefully the garbage collector will do its work
-    keyStr = undefined;
+    key = undefined;
     zeroise(kekBuffer);
 
     // Return encryption result
@@ -830,11 +858,11 @@ function decryptKey(keyObject, id) {
 
     // Perform decryption and return result
     decrypter.setAuthTag(tagBuffer);
-    const keyStr = Buffer.concat([decrypter.update(keyBuffer), decrypter.final()]).toString();
+    const key = Buffer.concat([decrypter.update(keyBuffer), decrypter.final()]).toString();
     zeroise(kekBuffer);
 
     // Return decryption result
-    return keyStr;
+    return key;
 }
 
 /**
@@ -874,17 +902,17 @@ function generateKEK(id) {
  * @returns {Object} the checked and corrected state data object
  */
 function checkStateDataStructure(stateData) {
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'blockchains')) stateData.blockchains = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'originators')) stateData.originators = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'queue')) stateData.queue = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'initVectors')) stateData.queue.initVectors = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.queue, 'blockDepths')) stateData.queue.blockDepths = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData, 'crypto')) stateData.crypto = {};
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'blockchainKeys')) stateData.crypto.blockchainKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'ecdhPrivateKeys')) stateData.crypto.ecdhPrivateKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'negotiatedKeys')) stateData.crypto.negotiatedKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'presharedKeys')) stateData.crypto.presharedKeys = [];
-    if (!Object.prototype.hasOwnProperty.call(stateData.crypto, 'authTokens')) stateData.crypto.authTokens = [];
+    if (!Object.hasOwn(stateData, 'blockchains')) stateData.blockchains = {};
+    if (!Object.hasOwn(stateData, 'originators')) stateData.originators = [];
+    if (!Object.hasOwn(stateData, 'queue')) stateData.queue = {};
+    if (!Object.hasOwn(stateData.queue, 'initVectors')) stateData.queue.initVectors = [];
+    if (!Object.hasOwn(stateData.queue, 'blockDepths')) stateData.queue.blockDepths = [];
+    if (!Object.hasOwn(stateData, 'crypto')) stateData.crypto = {};
+    if (!Object.hasOwn(stateData.crypto, 'blockchainKeys')) stateData.crypto.blockchainKeys = [];
+    if (!Object.hasOwn(stateData.crypto, 'ecdhPrivateKeys')) stateData.crypto.ecdhPrivateKeys = [];
+    if (!Object.hasOwn(stateData.crypto, 'negotiatedKeys')) stateData.crypto.negotiatedKeys = [];
+    if (!Object.hasOwn(stateData.crypto, 'presharedKeys')) stateData.crypto.presharedKeys = [];
+    if (!Object.hasOwn(stateData.crypto, 'authTokens')) stateData.crypto.authTokens = [];
     return stateData;
 }
 
@@ -898,11 +926,11 @@ function checkStateDataBlockchains(stateData) {
     // Check blockchains
     for (const blockchain in stateData.blockchains) {
         // Check blockchain accounts
-        if (Object.prototype.hasOwnProperty.call(stateData.blockchains[blockchain], 'accounts')) {
+        if (Object.hasOwn(stateData.blockchains[blockchain], 'accounts')) {
             let accounts = stateData.blockchains[blockchain].accounts;
             for (const index in accounts) {
                 // Remove invalid account entry with a non-string address
-                if (Object.prototype.hasOwnProperty.call(accounts[index], 'address')) {
+                if (Object.hasOwn(accounts[index], 'address')) {
                     if (typeof accounts[index].address !== 'string') {
                         accounts.splice(index, 1);
                         continue;
@@ -925,7 +953,7 @@ function checkStateDataBlockchains(stateData) {
  * @returns {Object} the checked and corrected state data object
  */
 function upgradeStateDataKeyStorage(stateData, blockchain, account) {
-    if (Object.prototype.hasOwnProperty.call(account, 'privateKey')) {
+    if (Object.hasOwn(account, 'privateKey')) {
         const id = hash(blockchain + account.address, KEYIDLENGTH);
         const index = stateData.crypto.blockchainKeys.findIndex(
             item => item.id.toLowerCase() === id.toLowerCase()
@@ -972,13 +1000,13 @@ function checkStateDataOriginators(stateData) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

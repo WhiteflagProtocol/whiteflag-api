@@ -14,12 +14,12 @@ const semver = require('semver');
 const jsonValidate = require('jsonschema').validate;
 
 // Whiteflag common functions and classes //
-const { ignore } = require('../lib/common/processing');
-const log = require('../lib/common/logger');
+const { ignore } = require('../lib/_common/processing');
+const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const array = require('../lib/common/arrays');
+const array = require('../lib/_common/arrays');
 
 // Constants //
 const _metaSchema = JSON.parse(fs.readFileSync('./test/static/json-schema.schema.json'));
@@ -52,8 +52,8 @@ testCase('Whiteflag API static data tests', function() {
         // Schemas
         const staticSchemas = [
             './test/static/json-schema.schema.json',
-            './lib/blockchains/static/blockchains.config.schema.json',
-            './lib/datastores/static/datastores.config.schema.json',
+            './lib/blockchains/_static/blockchains.config.schema.json',
+            './lib/datastores/_static/datastores.config.schema.json',
             './static/protocol/message.schema.json',
             './static/protocol/metaheader.schema.json',
             './static/protocol/signature.schema.json',

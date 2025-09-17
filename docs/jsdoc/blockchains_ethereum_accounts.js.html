@@ -45,11 +45,12 @@ const crypto = require('crypto');
 const ethUtil = require('ethereumjs-util');
 
 // Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const object = require('../../common/objects');
-const { hash } = require('../../common/crypto');
-const { ignore } = require('../../common/processing');
-const { ProcessingError } = require('../../common/errors');
+const log = require('../../_common/logger');
+const object = require('../../_common/objects');
+const { hash } = require('../../_common/crypto');
+const { ignore } = require('../../_common/processing');
+const { ProcessingError } = require('../../_common/errors');
+const { bufferToHex, hexToBuffer } = require('../../_common/encoding');
 
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
@@ -60,15 +61,15 @@ const { withHexPrefix,
         noKeyHexPrefix,
         noAddressHexPrefix,
         noPubkeyHexPrefix
-    } = require('../common/format');
+    } = require('../_common/format');
 
 // Module constants //
+const MODULELOG = 'ethereum';
 const STATUSINTERVAL = 60000; // Every minute
-const BINENCODING = 'hex';
 const KEYIDLENGTH = 12;
 
 // Module variables //
-let _ethName = 'ethereum';
+let _ethName;
 let _ethState;
 let _ethApi;
 
@@ -82,18 +83,20 @@ let _ethApi;
  * @returns {Promise} resolves if succesfully initialised
  */
 async function initAccounts(ethConfig, ethState, ethApi) {
+    log.trace(MODULELOG, 'Initialising Ethereum accounts management');
     _ethName = ethConfig.name;
     _ethState = ethState;
+
+    // TODO: remove Web3 dependency foor account management
     _ethApi = ethApi;
-    log.trace(_ethName, 'Initialising Ethereum accounts management...');
 
     // If configured, create new account if none exists
     if (ethConfig.createAccount &amp;&amp; _ethState.accounts.length === 0) {
         createAccount(null)
         .then(account => {
-            log.info(_ethName, `Ethereum account created automatically: ${account.address}`);
+            log.info(MODULELOG, `Automatically created first ${_ethChain} account: ${account.address}`);
         })
-        .catch(err => log.warn(_ethName, err.message));
+        .catch(err => log.warn(MODULELOG, err.message));
     }
     // Periodically update account balances
     updateAccounts(); setInterval(updateAccounts, STATUSINTERVAL);
@@ -131,12 +134,12 @@ function createAccount(privateKey = null) {
         let account;
         try {
             if (privateKey) {
-                log.trace(_ethName, 'Creating Ethereum account from existing private key');
+                log.trace(MODULELOG, `Creating ${_ethChain} account from existing private key`);
                 account = createAccountEntry(_ethApi.eth.accounts.privateKeyToAccount(withHexPrefix(privateKey)));
                 updateAccountBalance(account);
                 updateAccountTransactions(account);
             } else {
-                log.trace(_ethName, 'Creating new Ethereum account with generated keys');
+                log.trace(MODULELOG, `Creating new ${_ethChain} account with generated keys`);
                 account = createAccountEntry(_ethApi.eth.accounts.create(crypto.randomBytes(64)));
                 account.balance = 0;
                 account.transactionCount = 0;
@@ -145,7 +148,7 @@ function createAccount(privateKey = null) {
             privateKey = undefined;
         } catch(err) {
             privateKey = undefined;
-            log.error(_ethName, `Error while creating new Ethereum account: ${err.message}`);
+            log.error(MODULELOG, `Error while creating new ${_ethChain} account: ${err.message}`);
             return reject(err);
         }
         // Check for existing account and store account
@@ -171,7 +174,7 @@ function createAccount(privateKey = null) {
  * @returns {Promise} resolves to updated account
  */
 function updateAccount(account) {
-    log.trace(_ethName, `Updating Ethereum account: ${account.address}`);
+    log.trace(MODULELOG, `Updating Ethereum account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Update only if account exists
         getAccount(account.address)
@@ -200,7 +203,7 @@ function updateAccount(account) {
  * @returns {Promise} resolves to updated account
  */
 function deleteAccount(address) {
-    log.trace(_ethName, `Deleting Ethereum account: ${address}`);
+    log.trace(MODULELOG, `Deleting Ethereum account: ${address}`);
     return new Promise((resolve, reject) => {
         // Get index of account
         const index = _ethState.accounts.findIndex(item => item.address === address);
@@ -244,13 +247,13 @@ function updateAccounts() {
  * @returns {Promise}
  */
 function updateAccountBalance(account) {
-    log.trace(_fnlName, `Updating balance of account: ${account.address}`);
+    log.trace(MODULELOG, `Updating balance of ${_ethChain} account: ${account.address}`);
     return ethRpc.getBalance(account.address)
     .then(balance => {
         account.balance = _ethApi.utils.fromWei(balance, 'ether');
         return Promise.resolve(account.balance);
     })
-    .catch(err => log.warn(_ethName, `Could not update balance for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not update balance for account ${account.address}: ${err.message}`));
 }
 
  /**
@@ -260,13 +263,13 @@ function updateAccountBalance(account) {
  * @returns {Promise}
  */
 function updateAccountTransactions(account) {
-    log.trace(_fnlName, `Updating transaction count of account: ${account.address}`);
+    log.trace(MODULELOG, `Updating transaction count of ${_ethChain} account: ${account.address}`);
     return ethRpc.getTransactionCount(account.address)
     .then(transactionCount => {
         account.transactionCount = transactionCount;
         return Promise.resolve(account.transactionCount);
     })
-    .catch(err => log.warn(_ethName, `Could not update transaction count for account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not update transaction count for ${_ethChain} account ${account.address}: ${err.message}`));
 }
 
 /**
@@ -286,11 +289,11 @@ function upsertAccount(account) {
     if (!existingAccount) {
         // Insert new account
         _ethState.accounts.push(account);
-        log.trace(_ethName, `New Ethereum account added to state: ${account.address}`);
+        log.trace(MODULELOG, `Added new ${_ethChain} account to state: ${account.address}`);
     } else {
         // Update account
         object.update(account, existingAccount);
-        log.trace(_ethName, `Ethereum account updated in state: ${account.address}`);
+        log.trace(MODULELOG, `Updated ${_ethChain} account in state: ${account.address}`);
     }
     wfState.updateBlockchainData(_ethName, _ethState);
 }
@@ -302,10 +305,10 @@ function upsertAccount(account) {
  * @returns {Object} the account data
  */
  function createAccountEntry(ethAccount) {
-    const publicKey = ethUtil.privateToPublic(Buffer.from(noKeyHexPrefix(ethAccount.privateKey), BINENCODING));
+    const publicKey = ethUtil.privateToPublic(hexToBuffer(noKeyHexPrefix(ethAccount.privateKey)));
     return {
         address: noAddressHexPrefix(ethAccount.address),
-        publicKey: noPubkeyHexPrefix(publicKey.toString(BINENCODING)),
+        publicKey: noPubkeyHexPrefix(bufferToHex(publicKey)),
         privateKey: noKeyHexPrefix(ethAccount.privateKey),
         balance: null,
         transactionCount: null
@@ -321,13 +324,13 @@ function upsertAccount(account) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Sep 01 2025 23:56:07 GMT+0200 (Midden-Europese zomertijd)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

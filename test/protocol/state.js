@@ -12,15 +12,15 @@ const assert = require('assert');
 const fs = require('fs');
 
 // Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
 const wfState = require('../../lib/protocol/state');
 
 // Whiteflag common functions and classes //
-const { hash } = require('../../lib/common/crypto');
+const { hash } = require('../../lib/_common/crypto');
 
 // Constants //
 /**

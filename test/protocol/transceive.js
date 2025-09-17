@@ -12,14 +12,14 @@ const assert = require('assert');
 const fs = require('fs');
 
 // Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
 const wfTransmit = require('../../lib/protocol/transmit');
 const wfReceive = require('../../lib/protocol/receive');
-const { ProcessingError, ProtocolError } = require('../../lib/common/errors');
+const { ProcessingError, ProtocolError } = require('../../lib/_common/errors');
 
 // Whiteflag event emitters //
 const wfRxEvent = require('../../lib/protocol/events').rxEvent;
