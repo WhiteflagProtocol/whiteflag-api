@@ -24,7 +24,7 @@ const data = require('../../lib/_common/encoding');
  * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/encoding.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/encoding.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common encoding module', function() {

@@ -25,7 +25,7 @@ const BINENCODING = 'hex';
  * @constant {Object} testVector
  * @description Defines the common cryptographic functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/crypto.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/crypto.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common cryptography module', function() {

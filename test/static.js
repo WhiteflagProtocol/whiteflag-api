@@ -22,7 +22,7 @@ log.setLogLevel(1, ignore);
 const array = require('../lib/_common/arrays');
 
 // Constants //
-const _metaSchema = JSON.parse(fs.readFileSync('./test/static/json-schema.schema.json'));
+const _metaSchema = JSON.parse(fs.readFileSync('./test/_static/json-schema.schema.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag API static data tests', function() {
@@ -51,7 +51,7 @@ testCase('Whiteflag API static data tests', function() {
     testCase('JSON schemas', function() {
         // Schemas
         const staticSchemas = [
-            './test/static/json-schema.schema.json',
+            './test/_static/json-schema.schema.json',
             './lib/blockchains/_static/blockchains.config.schema.json',
             './lib/datastores/_static/datastores.config.schema.json',
             './static/protocol/message.schema.json',

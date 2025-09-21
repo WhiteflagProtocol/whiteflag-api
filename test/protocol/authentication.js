@@ -26,7 +26,7 @@ const SIGNKEYTYPE = 'secp256k1';
  * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/authentication.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/authentication.testvector.json'));
 
 
 // TEST SCRIPT //

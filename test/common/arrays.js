@@ -24,7 +24,7 @@ const array = require('../../lib/_common/arrays');
  * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/arrays.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/arrays.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common array module', function() {

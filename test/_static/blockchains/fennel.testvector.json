@@ -1,0 +1,18 @@
+{
+    "state": {
+        "parameters": {},
+        "status": {},
+        "accounts": []
+    },
+    "config": {
+        "name": "fennel-test",
+        "createAccount": false
+    },
+    "accounts": {
+        "1": {
+            "seed": "4dded3d33eed5a3d8745a5c54c8e8bf55effe317cd23351deeb82b5c1ac33eee",
+            "address": "5HNRYTr4mQsAZpta8fXcBjjtu3qJL66dpAKbSh35FUhSUTR4",
+            "publicKey": "eab0aac8c48317fb7e6bbae1346a8770d7b720ebc0a0949fa34cd865dcb3f023"
+        }
+    }
+}

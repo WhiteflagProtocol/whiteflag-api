@@ -25,7 +25,7 @@ const { ProtocolError } = require('../../lib/_common/errors');
  * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/codec.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/codec.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag message encoding and decoding module', function() {

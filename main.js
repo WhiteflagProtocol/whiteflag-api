@@ -51,6 +51,10 @@ log.redirectStream(process.stdout, log.trace);
 log.redirectStream(process.stderr, log.debug);
 
 // EXECUTE MAIN PROCESS FUNCTION //
+/**
+ * @Callback mainCb
+ * @param {Error} err error object if any error
+ */
 main(function mainCb(err) {
     if (err) {
         log.fatal(MODULELOG, err.message);
@@ -63,7 +67,7 @@ main(function mainCb(err) {
 /**
  * Main process function that reads the configuration and starts all functionality
  * @function main
- * @param {function(Error)} callback
+ * @param {mainCb} callback
  */
 function main(callback) {
     log.info('whiteflag', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
@@ -164,7 +168,6 @@ function initModules() {
 /**
  * Shuts down the API gracefully
  * @function shutdown
- * @param {Error} err error object if any error
  */
 function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
@@ -196,7 +199,7 @@ function shutdown() {
     });
     /**
      * Shuts down forcefully after timeout
-     * @callback timeout
+     * @callback timeoutCb
      */
     function timeoutCb() {
         log.warn(MODULELOG, 'Taking too much time to close down everything. Exiting now.');
@@ -249,6 +252,7 @@ function socketEventCb(err, client, event, info) {
 /**
  * Callback to log transceive chain initialisation
  * @callback transceiveInitCb
+ * @param {Error} err error object if any error
  * @param {string} info transceive init information
  */
 function transceiveInitCb(err, info) {
@@ -280,6 +284,7 @@ function datastoresInitCb(err, primaryDatastore) {
  * Callback to log datatstore closure
  * @callback datastoresCloseCb
  * @param {Error} err error object if any error
+ * @param {string} naem of the primary datastrore
  */
 function datastoresCloseCb(err, primaryDatastore) {
     if (err) {
@@ -293,6 +298,7 @@ function datastoresCloseCb(err, primaryDatastore) {
  * Callback to log blockchain initialisation
  * @callback blockhainsInitCb
  * @param {Error} err error object if any error
+ * @param {Array} array of blockchain names in the configuration
  */
 function blockhainsInitCb(err, blockchains) {
     if (err) {

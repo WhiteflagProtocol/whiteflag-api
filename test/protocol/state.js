@@ -27,7 +27,7 @@ const { hash } = require('../../lib/_common/crypto');
  * @constant {Object} testVector
  * @description Defines state test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/state.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/state.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag protocol state management module', function() {

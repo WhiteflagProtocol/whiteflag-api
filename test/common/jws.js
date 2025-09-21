@@ -24,7 +24,7 @@ const jws = require('../../lib/_common/jws');
  * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/jws.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/jws.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common JWS module', function() {
@@ -118,5 +118,14 @@ testCase('Common JWS module', function() {
             assert.deepStrictEqual(jws.toFull(flatJWS), fullJWS);
             return done();
         });
-    });    
+    });
+    testCase('JWS verification input', function() {
+        assertion('15. should be equal to initial input', function(done) {
+            const payload = testVector['2'].full.payload;
+            const algorithm = testVector['2'].full.protected.alg;
+            const signature = testVector['2'].flat;
+            assert.deepStrictEqual(jws.extractSignInput(signature), jws.createSignInput(payload, algorithm));
+            return done();
+        });
+    });
 });

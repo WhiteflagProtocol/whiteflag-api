@@ -27,6 +27,7 @@ testCase('Whiteflag API blockchains module', function() {
 });
 
 /*
- * No specific blockchain functions are currently unit tested here.
+ * Only some blockchain functions are currently unit tested here.
  * Blockchain functions are assumed to be online end-to-end tested
  */
+

@@ -24,7 +24,7 @@ const object = require('../../lib/_common/objects');
  * @constant {Object} testVector
  * @description Defines the common object functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/objects.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/objects.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common objects module', function() {

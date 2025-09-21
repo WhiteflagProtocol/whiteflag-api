@@ -24,7 +24,7 @@ const { type } = require('../../lib/_common/protocol');
  * @constant {Object} testVector
  * @description Defines the common protocol functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/protocol.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/protocol.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common protocol module', function() {

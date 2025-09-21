@@ -26,7 +26,7 @@ const BINENCODING = 'hex';
  * @constant {Object} testVector
  * @description Defines the cryptographic test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/crypto.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/crypto.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Whiteflag cryptography module', function() {
