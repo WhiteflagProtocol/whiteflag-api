@@ -16,6 +16,7 @@ const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
+const jws = require('../../lib/_common/jws');
 const { base64uToHex,
         hexToBase64u,
         hexToU8a,
@@ -35,34 +36,35 @@ testCase('Fennel blockchain module', function() {
     let keypair;
     testCase('Fennel accounts', function() {
         assertion(' 1. should correctly create second account from seed', function(done) {
-            account = fnlAccounts.test.create(testVector.accounts['1'].seed);
+            account = fnlAccounts.test.createAccountEntry(testVector.accounts['1'].seed);
             keypair = fnlAccounts.test.createKeypair(account.publicKey, account.privateKey);
             assert.strictEqual(account.address, testVector.accounts['1'].address);
             assert.strictEqual(account.publicKey, testVector.accounts['1'].publicKey);
             return done();
         });
-        assertion(' 2. should correctly create and verify signature', function(done) {
+        assertion(' 2. should correctly create and verify raw signature', function(done) {
             // Create signature
             const input = "Message to be signed!";
-            const signature = fnlAccounts.test.sign(input, keypair);
+            const signature = fnlAccounts.test.generateSignature(input, account.publicKey, account.privateKey);
             
             // Verify signature
-            const valid = fnlAccounts.test.verify(input, signature, keypair.publicKey);
+            const valid = fnlAccounts.test.testSignature(input, signature, keypair.publicKey);
             assert.strictEqual(valid, true);
             return done();
         });
-        assertion(' 2. should correctly create and verify hex encoded signature', function(done) {
+        assertion(' 2. should correctly create and verify Whiteflag signature', function(done) {
             // Create hexadecimal signature
-            const input = "Message to be signed!";
-            const output = fnlAccounts.test.sign(input, keypair);
-            const signatureB64u = hexToBase64u(u8aToHex(output));
+            const payload = testVector.accounts['1'].payload;
+            const input1 = jws.createSignInput(payload, 'sr25519');
+            const output = fnlAccounts.test.generateSignature(input1, account.publicKey, account.privateKey);
+            const wfSignature = jws.createFlattened(input1, hexToBase64u(output));
             
             // Prepare verification
-            const signature = hexToU8a(base64uToHex(signatureB64u));
-            const publicKey = hexToU8a(account.publicKey);
+            const input2 = jws.serializeSignInput(wfSignature);
+            const signature = base64uToHex(wfSignature.signature);
 
             // Verify signature
-            const valid = fnlAccounts.test.verify(input, signature, publicKey);
+            const valid = fnlAccounts.test.testSignature(input2, signature, account.publicKey);
             assert.strictEqual(valid, true);
             return done();
         });

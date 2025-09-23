@@ -124,7 +124,7 @@ testCase('Common JWS module', function() {
             const payload = testVector['2'].full.payload;
             const algorithm = testVector['2'].full.protected.alg;
             const signature = testVector['2'].flat;
-            assert.deepStrictEqual(jws.extractSignInput(signature), jws.createSignInput(payload, algorithm));
+            assert.deepStrictEqual(jws.serializeSignInput(signature), jws.createSignInput(payload, algorithm));
             return done();
         });
     });
