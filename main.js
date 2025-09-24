@@ -11,7 +11,7 @@
 // Change working directory to process directory
 process.chdir(__dirname);
 
-// Whiteflag common functions and classes //
+// Common internal functions and classes //
 const log = require('./lib/_common/logger');
 const { ignore } = require('./lib/_common/processing');
 

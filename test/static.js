@@ -13,7 +13,7 @@ const fs = require('fs');
 const semver = require('semver');
 const jsonValidate = require('jsonschema').validate;
 
-// Whiteflag common functions and classes //
+// Common internal functions and classes //
 const { ignore } = require('../lib/_common/processing');
 const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
