@@ -18,9 +18,7 @@ log.setLogLevel(1, ignore);
 // Project modules required for test //
 const jws = require('../../lib/_common/jws');
 const { base64uToHex,
-        hexToBase64u,
-        hexToU8a,
-        u8aToHex } = require('../../lib/_common/encoding');
+        hexToBase64u } = require('../../lib/_common/encoding');
 const fnlAccounts = require('../../lib/blockchains/fennel/accounts');
 
 // Constants //
