@@ -1,13 +1,5 @@
 {
-    "state": {
-        "parameters": {},
-        "status": {},
-        "accounts": []
-    },
-    "config": {
-        "name": "fennel-test",
-        "createAccount": false
-    },
+
     "accounts": {
         "1": {
             "seed": "4dded3d33eed5a3d8745a5c54c8e8bf55effe317cd23351deeb82b5c1ac33eee",
