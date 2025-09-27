@@ -37,17 +37,20 @@ module.exports = {
     get: getAccount,
     create: createAccount,
     update: updateAccount,
-    delete: deleteAccount
+    delete: deleteAccount,
+    test: {
+        createAccountEntry
+    }
 };
 
 // Node.js core and external modules //
 const crypto = require('crypto');
-const ethUtil = require('ethereumjs-util');
+const web3Accounts = require('web3-eth-accounts');
+const web3Utils = require('web3-utils');
 
-// Whiteflag common functions and classes //
+// Common internal functions and classes //
 const log = require('../../_common/logger');
 const object = require('../../_common/objects');
-const { hash } = require('../../_common/crypto');
 const { ignore } = require('../../_common/processing');
 const { ProcessingError } = require('../../_common/errors');
 const { bufferToHex, hexToBuffer } = require('../../_common/encoding');
@@ -55,23 +58,24 @@ const { bufferToHex, hexToBuffer } = require('../../_common/encoding');
 // Whiteflag modules //
 const wfState = require('../../protocol/state');
 
-// Ethereum sub-modules //
-const ethRpc = require('./rpc');
+// Common blockchain functions //
+const { getPrivateKeyId } = require('../_common/keys');
 const { withHexPrefix,
         noKeyHexPrefix,
         noAddressHexPrefix,
         noPubkeyHexPrefix
     } = require('../_common/format');
 
+// Ethereum sub-modules //
+const ethRpc = require('./rpc');
+
 // Module constants //
 const MODULELOG = 'ethereum';
 const STATUSINTERVAL = 60000; // Every minute
-const KEYIDLENGTH = 12;
 
 // Module variables //
-let _ethName;
+let _ethChain;
 let _ethState;
-let _ethApi;
 
 /**
  * Initialises Ethereum accounts management
@@ -82,13 +86,10 @@ let _ethApi;
  * @param {Object} ethApi the Ethereum Web3 API instance
  * @returns {Promise} resolves if succesfully initialised
  */
-async function initAccounts(ethConfig, ethState, ethApi) {
+async function initAccounts(ethConfig, ethState) {
     log.trace(MODULELOG, 'Initialising Ethereum accounts management');
-    _ethName = ethConfig.name;
+    _ethChain = ethConfig.name;
     _ethState = ethState;
-
-    // TODO: remove Web3 dependency foor account management
-    _ethApi = ethApi;
 
     // If configured, create new account if none exists
     if (ethConfig.createAccount &amp;&amp; _ethState.accounts.length === 0) {
@@ -116,7 +117,7 @@ function getAccount(address = null) {
     return new Promise((resolve, reject) => {
         let account = _ethState.accounts.find(item => item.address === address);
         if (!account) {
-            return reject(new ProcessingError(`No existing ${_ethName} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`No existing ${_ethChain} account with address: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         resolve(account);
     });
@@ -133,29 +134,25 @@ function createAccount(privateKey = null) {
     return new Promise((resolve, reject) => {
         let account;
         try {
-            if (privateKey) {
-                log.trace(MODULELOG, `Creating ${_ethChain} account from existing private key`);
-                account = createAccountEntry(_ethApi.eth.accounts.privateKeyToAccount(withHexPrefix(privateKey)));
-                updateAccountBalance(account);
-                updateAccountTransactions(account);
-            } else {
-                log.trace(MODULELOG, `Creating new ${_ethChain} account with generated keys`);
-                account = createAccountEntry(_ethApi.eth.accounts.create(crypto.randomBytes(64)));
-                account.balance = 0;
-                account.transactionCount = 0;
-            }
-            // Hopefully the garbage collector will do its work
-            privateKey = undefined;
+            account = createAccountEntry(privateKey);
         } catch(err) {
             privateKey = undefined;
             log.error(MODULELOG, `Error while creating new ${_ethChain} account: ${err.message}`);
             return reject(err);
         }
+        if (privateKey) {
+            privateKey = undefined;
+            updateAccountBalance(account);
+            updateAccountTransactions(account);
+        } else {
+            account.balance = 0;
+            account.transactionCount = 0;
+        }
         // Check for existing account and store account
         getAccount(account.address)
         .then(existingAccount => {
             if (existingAccount.address === account.address) {
-                return reject(new ProcessingError(`The ${_ethName} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
+                return reject(new ProcessingError(`The ${_ethChain} account already exists: ${account.address}`, null, 'WF_API_RESOURCE_CONFLICT'));
             }
         })
         .catch(err => ignore(err)); // all good if account does not yet exist
@@ -181,13 +178,13 @@ function updateAccount(account) {
         .then(existingAccount => {
             // Double check addresses
             if (existingAccount.address !== account.address) {
-                return reject(new Error(`Address of ${_ethName} account in state does not correspond with updated account data address`));
+                return reject(new Error(`Address of ${_ethChain} account in state does not correspond with updated account data address`));
             }
             // Upsert updated account data
             try {
                 upsertAccount(account);
             } catch(err) {
-                return reject(new Error(`Could not update ${_ethName} account: ${err.message}`));
+                return reject(new Error(`Could not update ${_ethChain} account: ${err.message}`));
             }
             return resolve(account);
         })
@@ -208,15 +205,15 @@ function deleteAccount(address) {
         // Get index of account
         const index = _ethState.accounts.findIndex(item => item.address === address);
         if (index &lt; 0) {
-            return reject(new ProcessingError(`Could not find ${_ethName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
+            return reject(new ProcessingError(`Could not find ${_ethChain} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         // Remove account from state after double check
         const account = _ethState.accounts[index];
         if (account.address === address) {
             _ethState.accounts.splice(index, 1);
-            wfState.updateBlockchainData(_ethName, _ethState);
+            wfState.updateBlockchainData(_ethChain, _ethState);
         } else {
-            return reject(new Error(`Could not not delete ${_ethName} account: ${address}`));
+            return reject(new Error(`Could not not delete ${_ethChain} account: ${address}`));
         }
         // Log and return result
         return resolve(account);
@@ -224,6 +221,31 @@ function deleteAccount(address) {
 }
 
 // PRIVATE ACCOUNT FUNCTIONS //
+/**
+ * Create account entry from private key or random
+ * @private
+ * @param {string} [privateKey] hexadecimal string with private key (without 0x prefix)
+ * @returns {Object} the account data
+ */
+ function createAccountEntry(privateKey = null) {
+    let ethAccount;
+    if (privateKey) {
+        log.trace(MODULELOG, `Creating ${_ethChain} account from existing private key`);
+        ethAccount = web3Accounts.privateKeyToAccount(withHexPrefix(privateKey));
+    } else {
+        log.trace(MODULELOG, `Creating new ${_ethChain} account with generated keys`);
+        ethAccount = web3Accounts.create(crypto.randomBytes(64));
+    }
+    const publicKey = web3Accounts.privateKeyToPublicKey(hexToBuffer(noKeyHexPrefix(ethAccount.privateKey)));
+    return {
+        address: noAddressHexPrefix(ethAccount.address),
+        publicKey: noPubkeyHexPrefix(bufferToHex(publicKey)),
+        privateKey: noKeyHexPrefix(ethAccount.privateKey),
+        balance: null,
+        transactionCount: null
+    };
+}
+
 /**
  * Updates all Ethereum blockchain accounts
  * @private
@@ -235,7 +257,7 @@ function updateAccounts() {
             updateAccountTransactions(account)
         ])
         .then(() => {
-            wfState.updateBlockchainData(_ethName, _ethState);
+            wfState.updateBlockchainData(_ethChain, _ethState);
         });
     });
 }
@@ -250,7 +272,7 @@ function updateAccountBalance(account) {
     log.trace(MODULELOG, `Updating balance of ${_ethChain} account: ${account.address}`);
     return ethRpc.getBalance(account.address)
     .then(balance => {
-        account.balance = _ethApi.utils.fromWei(balance, 'ether');
+        account.balance = web3Utils.fromWei(balance, 'ether');
         return Promise.resolve(account.balance);
     })
     .catch(err => log.warn(MODULELOG, `Could not update balance for account ${account.address}: ${err.message}`));
@@ -280,7 +302,7 @@ function updateAccountTransactions(account) {
 function upsertAccount(account) {
     // Securely store the private key in state
     if (Object.hasOwn(account, 'privateKey')) {
-        const privateKeyId = hash(_ethName + account.address, KEYIDLENGTH);
+        const privateKeyId = getPrivateKeyId(_ethChain, noAddressHexPrefix(account.address));
         wfState.upsertKey('blockchainKeys', privateKeyId, noKeyHexPrefix(account.privateKey));
         delete account.privateKey;
     }
@@ -295,24 +317,7 @@ function upsertAccount(account) {
         object.update(account, existingAccount);
         log.trace(MODULELOG, `Updated ${_ethChain} account in state: ${account.address}`);
     }
-    wfState.updateBlockchainData(_ethName, _ethState);
-}
-
-/**
- * Create account entry from Ethereum keypair/account
- * @private
- * @param {Object} ethAccount an Ethereum keypair/account
- * @returns {Object} the account data
- */
- function createAccountEntry(ethAccount) {
-    const publicKey = ethUtil.privateToPublic(hexToBuffer(noKeyHexPrefix(ethAccount.privateKey)));
-    return {
-        address: noAddressHexPrefix(ethAccount.address),
-        publicKey: noPubkeyHexPrefix(bufferToHex(publicKey)),
-        privateKey: noKeyHexPrefix(ethAccount.privateKey),
-        balance: null,
-        transactionCount: null
-    };
+    wfState.updateBlockchainData(_ethChain, _ethState);
 }
 </code></pre>
         </article>
@@ -330,7 +335,7 @@ function upsertAccount(account) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

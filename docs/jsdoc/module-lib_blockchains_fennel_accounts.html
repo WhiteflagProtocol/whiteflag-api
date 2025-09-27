@@ -257,7 +257,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line94">line 94</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -315,7 +315,7 @@
     
 
     
-    <h4 class="name" id="~createKeypair"><span class="type-signature">(inner) </span>createKeypair<span class="signature">(publicKey, secretKey)</span><span class="type-signature"> &rarr; {Uint8Array}</span></h4>
+    <h4 class="name" id="~createKeypair"><span class="type-signature">(inner) </span>createKeypair<span class="signature">(publicKey, secretKey)</span><span class="type-signature"> &rarr; {Object}</span></h4>
     
 
     
@@ -375,7 +375,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>the hexadecimal public key</p></td>
         </tr>
 
     
@@ -398,7 +398,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>the hexadecimal private key</p></td>
         </tr>
 
     
@@ -439,7 +439,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line342">line 342</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line222">line 222</a>
     </li></ul></dd>
     
 
@@ -479,7 +479,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Uint8Array</span>
+<span class="param-type">Object</span>
 
 
     </dd>
@@ -598,7 +598,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line169">line 169</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line175">line 175</a>
     </li></ul></dd>
     
 
@@ -757,7 +757,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line77">line 77</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -815,7 +815,166 @@
     
 
     
-    <h4 class="name" id="~getSignature"><span class="type-signature">(inner) </span>getSignature<span class="signature">(address, input)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="~getAddress"><span class="type-signature">(inner) </span>getAddress<span class="signature">(fnlPublicKey)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Derives a Fennel address from a public key</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fnlPublicKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a hexadecimal encoded public key</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line203">line 203</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the Fennel address</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~getSignature"><span class="type-signature">(inner) </span>getSignature<span class="signature">(input, address)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -859,29 +1018,6 @@
 
         <tr>
             
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the address of the account used to sign</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>input</code></td>
             
 
@@ -899,6 +1035,29 @@
             
 
             <td class="description last"><p>the input to be signed</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the address of the account used to sign</p></td>
         </tr>
 
     
@@ -939,7 +1098,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line197">line 197</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line237">line 237</a>
     </li></ul></dd>
     
 
@@ -951,7 +1110,7 @@
     <dt class="tag-todo">To Do:</dt>
     <dd class="tag-todo">
         <ul>
-            <li>Complete and test function</li>
+            <li>Complete and test function; move signing to testable private function</li>
         </ul>
     </dd>
     
@@ -975,7 +1134,7 @@
 
         
 <div class="param-desc">
-    <p>resolves to the signature</p>
+    <p>resolves to the hexadecmial encoded signature</p>
 </div>
 
 
@@ -1151,7 +1310,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line48">line 48</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line59">line 59</a>
     </li></ul></dd>
     
 
@@ -1310,7 +1469,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line140">line 140</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line146">line 146</a>
     </li></ul></dd>
     
 
@@ -1368,7 +1527,7 @@
     
 
     
-    <h4 class="name" id="~verifySignature"><span class="type-signature">(inner) </span>verifySignature<span class="signature">(address, input, signature)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="~verifySignature"><span class="type-signature">(inner) </span>verifySignature<span class="signature">(input, signature, publicKey)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -1412,29 +1571,6 @@
 
         <tr>
             
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the address of the account used to sign</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>input</code></td>
             
 
@@ -1474,7 +1610,30 @@
 
             
 
-            <td class="description last"><p>the signature to be verified</p></td>
+            <td class="description last"><p>the hexadecmial encoded signature to be verified</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>publicKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the hexadecmial encoded public key of the signature</p></td>
         </tr>
 
     
@@ -1515,7 +1674,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line232">line 232</a>
+        <a href="blockchains_fennel_accounts.js.html">blockchains/fennel/accounts.js</a>, <a href="blockchains_fennel_accounts.js.html#line272">line 272</a>
     </li></ul></dd>
     
 
@@ -1527,7 +1686,7 @@
     <dt class="tag-todo">To Do:</dt>
     <dd class="tag-todo">
         <ul>
-            <li>Complete and test function</li>
+            <li>Complete and test function; move verification to testable private function</li>
         </ul>
     </dd>
     
@@ -1551,7 +1710,7 @@
 
         
 <div class="param-desc">
-    <p>resoilves if signature is vlaid</p>
+    <p>resoilves if signature is valid</p>
 </div>
 
 
@@ -1596,7 +1755,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Sep 17 2025 22:14:19 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

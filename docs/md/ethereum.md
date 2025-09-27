@@ -3,7 +3,7 @@
 The Whiteflag API natively supports the [Ethereum](https://www.ethereum.org/)
 blockchain.
 
-**NOTE** - *The Ethereum module has not been maintained and needs updating.*
+**NOTE** - *The Ethereum module needs updating.*
 
 ## Blockchain specifications
 
