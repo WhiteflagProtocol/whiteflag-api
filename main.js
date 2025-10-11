@@ -11,9 +11,9 @@
 // Change working directory to process directory
 process.chdir(__dirname);
 
-// Whiteflag common functions and classes //
-const log = require('./lib/common/logger');
-const { ignore } = require('./lib/common/processing');
+// Common internal functions and classes //
+const log = require('./lib/_common/logger');
+const { ignore } = require('./lib/_common/processing');
 
 // Whiteflag modules //
 const wfApiConfig = require('./lib/config');
@@ -31,9 +31,10 @@ const wfTxEvent = require('./lib/protocol/events').txEvent;
 const wfStateEvent = require('./lib/protocol/events').stateEvent;
 
 // Module constants //
-const MODULELOG = 'api';
+const MODULELOG = 'main';
 const SHUTDOWNTIMEOUT = 10000;
 
+// PROCESS CONTROL //
 /*
  * Gracefully crash if an uncaught exception occurs and
  * ensure proper shutdown when process is stopped
@@ -42,7 +43,18 @@ process.on('uncaughtException', uncaughtExceptionCb);
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
+/*
+ * Send any uncontrolled output to stdout and stderr to the debug logger
+ * to avoid submodules that do not properly report errors flooding the log
+ */
+log.redirectStream(process.stdout, log.trace);
+log.redirectStream(process.stderr, log.debug);
+
 // EXECUTE MAIN PROCESS FUNCTION //
+/**
+ * @Callback mainCb
+ * @param {Error} err error object if any error
+ */
 main(function mainCb(err) {
     if (err) {
         log.fatal(MODULELOG, err.message);
@@ -55,7 +67,7 @@ main(function mainCb(err) {
 /**
  * Main process function that reads the configuration and starts all functionality
  * @function main
- * @param {function(Error)} callback
+ * @param {mainCb} callback
  */
 function main(callback) {
     log.info('whiteflag', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
@@ -156,7 +168,6 @@ function initModules() {
 /**
  * Shuts down the API gracefully
  * @function shutdown
- * @param {Error} err error object if any error
  */
 function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
@@ -188,7 +199,7 @@ function shutdown() {
     });
     /**
      * Shuts down forcefully after timeout
-     * @callback timeout
+     * @callback timeoutCb
      */
     function timeoutCb() {
         log.warn(MODULELOG, 'Taking too much time to close down everything. Exiting now.');
@@ -241,6 +252,7 @@ function socketEventCb(err, client, event, info) {
 /**
  * Callback to log transceive chain initialisation
  * @callback transceiveInitCb
+ * @param {Error} err error object if any error
  * @param {string} info transceive init information
  */
 function transceiveInitCb(err, info) {
@@ -272,6 +284,7 @@ function datastoresInitCb(err, primaryDatastore) {
  * Callback to log datatstore closure
  * @callback datastoresCloseCb
  * @param {Error} err error object if any error
+ * @param {string} naem of the primary datastrore
  */
 function datastoresCloseCb(err, primaryDatastore) {
     if (err) {
@@ -285,6 +298,7 @@ function datastoresCloseCb(err, primaryDatastore) {
  * Callback to log blockchain initialisation
  * @callback blockhainsInitCb
  * @param {Error} err error object if any error
+ * @param {Array} array of blockchain names in the configuration
  */
 function blockhainsInitCb(err, blockchains) {
     if (err) {

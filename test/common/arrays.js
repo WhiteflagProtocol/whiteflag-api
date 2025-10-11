@@ -11,20 +11,20 @@ const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+// Common internal functions and classes //
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const array = require('../../lib/common/arrays');
+const array = require('../../lib/_common/arrays');
 
 // Constants //
 /**
  * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/arrays.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/arrays.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common array module', function() {

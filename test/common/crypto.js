@@ -11,13 +11,13 @@ const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+// Common internal functions and classes //
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const { hkdf, zeroise } = require('../../lib/common/crypto');
+const { hkdf, zeroise } = require('../../lib/_common/crypto');
 
 // Constants //
 const BINENCODING = 'hex';
@@ -25,7 +25,7 @@ const BINENCODING = 'hex';
  * @constant {Object} testVector
  * @description Defines the common cryptographic functions test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/common/crypto.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/common/crypto.testvector.json'));
 
 // TEST SCRIPT //
 testCase('Common cryptography module', function() {

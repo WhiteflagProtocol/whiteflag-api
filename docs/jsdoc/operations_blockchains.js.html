@@ -38,6 +38,7 @@ module.exports = {
     // Endpoint handler functions
     getBlockchains,
     getBlockchain,
+    scanBlocks,
     transferFunds,
     getAccounts,
     getAccount,
@@ -47,10 +48,10 @@ module.exports = {
     createSignature
 };
 
-// Whiteflag common functions and classes //
-const response = require('../common/httpres');
-const array = require('../common/arrays');
-const { ProcessingError } = require('../common/errors');
+// Common internal functions and classes //
+const response = require('../_common/httpres');
+const array = require('../_common/arrays');
+const { ProcessingError } = require('../_common/errors');
 
 // Whiteflag modules //
 const wfApiBlockchains = require('../blockchains');
@@ -94,19 +95,56 @@ function getBlockchains(req, res, operationId, callback) {
  */
 function getBlockchain(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
-    wfState.getBlockchainData(blockchain, function endpointGetBlockchainCb(err, blockchainState = null) {
+    wfState.getBlockchainData(blockchain, function endpointGetBlockchainCb(err, bcState = null) {
         // Create response body and preserve information before responding
         let resBody = response.createBody(req, operationId);
 
         // Send response using common endpoint response function
-        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
         if (!err) {
             resBody.meta.blockchain = blockchain;
             resBody.meta.info = array.addItem(resBody.meta.info, `Current ${blockchain} state`);
         }
-        return response.sendIndicative(res, err, resBody, blockchainState, callback);
+        return response.sendIndicative(res, err, resBody, bcState, callback);
     });
 }
+
+/**
+ * Scans a number of blocks for Whiteflag messages
+ * @function getBlockchain
+ * @alias module:lib/operations/blockchains.scanBlocks
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function scanBlocks(req, res, operationId, callback) {
+    const blockchain = req.params.blockchain;
+    let resBody = response.createBody(req, operationId);
+
+    // Check query
+    let queryErrors = []
+    if (!req.query?.from) queryErrors.push('Query parameter \'from\' is missing');
+    if (!req.query?.to) queryErrors.push('Query parameter \'to\' is missing');
+    if (queryErrors.length > 0) {
+        const err = new ProcessingError('Request is not a valid query', queryErrors, 'WF_API_BAD_REQUEST');
+        return response.sendImperative(res, err, resBody, null, callback)
+    }
+    // Scan blocks
+    wfApiBlockchains.scanBlocks(Number(req.query.from), Number(req.query.to), blockchain, function endpointScanBlocksCb(err, wfMessages = []) {
+        // Prepare response
+        let resData = [];
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
+            resBody.meta.query = req.query;
+            resBody.meta.info = array.addItem(resBody.meta.info, `Found ${wfMessages.length} Whiteflag messages on the blockchain between blocks ${req.query.from} and ${req.query.to}`);
+            resData = wfMessages;
+        }
+        // Send response using common endpoint response function
+        return response.sendIndicative(res, err, resBody, resData, callback);
+    });
+}
+
 
 /**
  * Provides all blockchain accounts from state module
@@ -119,17 +157,17 @@ function getBlockchain(req, res, operationId, callback) {
  */
 function getAccounts(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
-    wfState.getBlockchainData(blockchain, function endpointGetAccountsCb(err, blockchainState = null) {
+    wfState.getBlockchainData(blockchain, function endpointGetAccountsCb(err, bcState = null) {
         // Create response body and preserve information before responding
         let resData = [];
         let resBody = response.createBody(req, operationId);
 
         // Extract account data from blockchain state
-        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
         if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; !blockchainState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
+        if (!err &amp;&amp; !bcState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
         if (!err) {
-            resData = array.pluck(blockchainState.accounts, 'address') || [];
+            resData = array.pluck(bcState.accounts, 'address') || [];
             resBody.meta.info = array.addItem(resBody.meta.info, `Blockchain accounts on ${blockchain}`);
         }
         // Send response using common endpoint response function
@@ -149,17 +187,17 @@ function getAccounts(req, res, operationId, callback) {
 function getAccount(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     const address = req.params.account;
-    wfState.getBlockchainData(blockchain, function endpointGetAccountCb(err, blockchainState = null) {
+    wfState.getBlockchainData(blockchain, function endpointGetAccountCb(err, bcState = null) {
         // Create response body and preserve information before responding
         let resData = {};
         let resBody = response.createBody(req, operationId);
 
         // Get the requested account object
-        if (!err &amp;&amp; !blockchainState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
+        if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
         if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; !blockchainState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
+        if (!err &amp;&amp; !bcState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
         if (!err) {
-            const index = blockchainState.accounts.findIndex(
+            const index = bcState.accounts.findIndex(
                 item => item.address.toLowerCase() === address.toLowerCase()
             );
             if (index &lt; 0) {
@@ -167,7 +205,7 @@ function getAccount(req, res, operationId, callback) {
             } else {
                 resBody.meta.account = address;
                 resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account details');
-                resData = blockchainState.accounts[index];
+                resData = bcState.accounts[index];
             }
         }
         // Send response using common endpoint response function
@@ -186,21 +224,19 @@ function getAccount(req, res, operationId, callback) {
  */
 function createAccount(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
-    let privateKey = req.body.privateKey || null;
-    wfApiBlockchains.createAccount(blockchain, privateKey, function endpointCreateAccountCb(err, result = {}) {
+    let secret = req.body.secret || null;
+    wfApiBlockchains.createAccount(blockchain, secret, function endpointCreateAccountCb(err, result = {}) {
         // Create response body and preserve information before responding
         let resData = {};
         let resBody = response.createBody(req, operationId);
-        resBody.meta.blockchain = blockchain;
 
         // Check results
         if (result.address) {
             resBody.meta.resource = `/blockchains/${blockchain}/accounts/${result.address}`;
-        } else {
-            if (!err) err = new Error('Could not determine address of created blockchain account');
-        }
+        } else if (!err) err = new Error('Could not determine address of created blockchain account');
         if (!err) {
             resData = result;
+            resBody.meta.blockchain = blockchain;
             resBody.meta.account = result.address;
             resBody.meta.info = array.addItem(resBody.meta.info, 'Blockchain account created');
         }
@@ -208,7 +244,7 @@ function createAccount(req, res, operationId, callback) {
         return response.sendImperative(res, err, resBody, resData, callback);
    });
    // Hopefully the garbage collector will do its work
-   privateKey = undefined;
+   secret = undefined;
 }
 
 /**
@@ -283,16 +319,16 @@ function createSignature(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     const address = req.params.account;
     const signPayload = req.body;
-    wfAuthenticate.sign(signPayload, address, blockchain, function endpointCreateSignatureCb(err, wfSignature, wfSignatureDecoded) {
+    wfAuthenticate.sign(signPayload, address, blockchain, function endpointCreateSignatureCb(err, wfSignature, wfSignDecoded) {
         // Create response body and preserve information before responding
         let resBody = response.createBody(req, operationId);
 
         // Send response using common endpoint response function
         if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; (!wfSignature || !wfSignatureDecoded)) err = new Error('Did not receive valid signature from blockchain');
-        if (wfSignatureDecoded) {
+        if (!err &amp;&amp; (!wfSignature || !wfSignDecoded)) err = new Error('Did not receive valid signature from blockchain');
+        if (wfSignDecoded) {
             resBody.meta.account = address;
-            resBody.meta.decoded = wfSignatureDecoded;
+            resBody.meta.decoded = wfSignDecoded;
         }
         return response.sendImperative(res, err, resBody, wfSignature, callback);
     });
@@ -311,19 +347,19 @@ function transferFunds(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     const address = req.params.account;
     const transfer = req.body;
-    wfApiBlockchains.transferFunds(transfer, address, blockchain, function endpointTransferFundsCb(err, txHash) {
+    wfApiBlockchains.transferFunds(transfer, address, blockchain, function endpointTransferFundsCb(err, txHash, blockNumber) {
         // Create response body and preserve information before responding
         let resData = {};
         let resBody = response.createBody(req, operationId);
-        resBody.meta.blockchain = blockchain;
-        resBody.meta.account = address;
 
-        // Send response using common endpoint response function
-        if (!err) resBody.meta.transfer = transfer;
-        if (!err &amp;&amp; !txHash) err = new Error('Could not determine transaction hash after value transfer');
-        if (txHash) {
-            resData = { transactionHash: txHash };
-            resBody.meta.info = array.addItem(resBody.meta.info, 'Value transfered');
+        // Check results and send response using common endpoint response function
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
+            resBody.meta.account = address;
+            resData = transfer;
+            if (txHash) resData.transactionHash = txHash;
+                else resBody.meta.warnings = array.addItem(resBody.meta.warnings, 'Could not retrieve transaction hash');
+            if (blockNumber) resData.blockNumber = blockNumber;
         }
         return response.sendImperative(res, err, resBody, resData, callback);
     });
@@ -338,13 +374,13 @@ function transferFunds(req, res, operationId, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Aug 16 2025 12:40:46 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

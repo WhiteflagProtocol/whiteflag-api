@@ -113,7 +113,8 @@ all blockchains:
 * `enabled`: boolean whether to track block depth of message for confirmation
 * `interval`: interval in ms to check blockdepth of message
 * `maxBlockDepth`: maximum block depth after which a message is confirmed
-* `updateEachBlock`: if true, block depth is updated in data store for each block, otherwise only when confirmed
+* `updateEachBlock`: if true, the block depth of messages on the confirmation queue is updated upon each new block, otherwise only when confirmed
+* `doubleCheck`: if true, a message duplicate is retrieved from the blockchain for double check upon confirmation
 
 Furthermore, the configuration file defines which blockchains are supported,
 and the specific parameters for each supported blockchain. Multiple blockchains

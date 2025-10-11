@@ -144,6 +144,161 @@
     
 
     
+    <h4 class="name" id="~getBalance"><span class="type-signature">(inner) </span>getBalance<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Gets the balance of the specified Fennel blockchain account</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line147">line 147</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="~getBlock"><span class="type-signature">(inner) </span>getBlock<span class="signature">(blockHash)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
@@ -245,7 +400,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line305">line 305</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -303,7 +458,7 @@
     
 
     
-    <h4 class="name" id="~getBlockByHash"><span class="type-signature">(inner) </span>getBlockByHash<span class="signature">(blockHash, extrinsics)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="~getBlockByHash"><span class="type-signature">(inner) </span>getBlockByHash<span class="signature">(blockHash, full<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -335,6 +490,8 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -360,6 +517,14 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -370,7 +535,7 @@
 
         <tr>
             
-                <td class="name"><code>extrinsics</code></td>
+                <td class="name"><code>full</code></td>
             
 
             <td class="type">
@@ -383,10 +548,20 @@
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>get the block including all extrinsics</p></td>
+            <td class="description last"><p>get the full block including extrinsics (default)</p></td>
         </tr>
 
     
@@ -427,7 +602,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line292">line 292</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line196">line 196</a>
     </li></ul></dd>
     
 
@@ -485,7 +660,7 @@
     
 
     
-    <h4 class="name" id="~getBlockByNumber"><span class="type-signature">(inner) </span>getBlockByNumber<span class="signature">(blockNumber, extrinsics)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="~getBlockByNumber"><span class="type-signature">(inner) </span>getBlockByNumber<span class="signature">(blockNumber, full<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -517,6 +692,8 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -542,6 +719,14 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -552,7 +737,7 @@
 
         <tr>
             
-                <td class="name"><code>extrinsics</code></td>
+                <td class="name"><code>full</code></td>
             
 
             <td class="type">
@@ -565,10 +750,20 @@
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>get the block including all extrinsics</p></td>
+            <td class="description last"><p>get the full block including extrinsics (default)</p></td>
         </tr>
 
     
@@ -609,7 +804,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line274">line 274</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -768,7 +963,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line262">line 262</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line184">line 184</a>
     </li></ul></dd>
     
 
@@ -927,7 +1122,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line323">line 323</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line227">line 227</a>
     </li></ul></dd>
     
 
@@ -1037,7 +1232,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line166">line 166</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line239">line 239</a>
     </li></ul></dd>
     
 
@@ -1196,7 +1391,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line335">line 335</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line265">line 265</a>
     </li></ul></dd>
     
 
@@ -1306,7 +1501,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line245">line 245</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line277">line 277</a>
     </li></ul></dd>
     
 
@@ -1416,7 +1611,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line154">line 154</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line294">line 294</a>
     </li></ul></dd>
     
 
@@ -1526,7 +1721,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line200">line 200</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line306">line 306</a>
     </li></ul></dd>
     
 
@@ -1636,7 +1831,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line178">line 178</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line323">line 323</a>
     </li></ul></dd>
     
 
@@ -1746,7 +1941,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line234">line 234</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line334">line 334</a>
     </li></ul></dd>
     
 
@@ -1856,7 +2051,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line189">line 189</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line345">line 345</a>
     </li></ul></dd>
     
 
@@ -1966,7 +2161,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line132">line 132</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line356">line 356</a>
     </li></ul></dd>
     
 
@@ -2076,7 +2271,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line143">line 143</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line367">line 367</a>
     </li></ul></dd>
     
 
@@ -2134,7 +2329,162 @@
     
 
     
-    <h4 class="name" id="~initRpc"><span class="type-signature">(inner) </span>initRpc<span class="signature">(fennelConfig, fennelState)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="~getTransactionCount"><span class="type-signature">(inner) </span>getTransactionCount<span class="signature">(address)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Gets the transaction count of the specified Fennel blockchain account</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line378">line 378</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~initRpc"><span class="type-signature">(inner) </span>initRpc<span class="signature">(fnlConfig, fnlState)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -2178,7 +2528,7 @@
 
         <tr>
             
-                <td class="name"><code>fennelConfig</code></td>
+                <td class="name"><code>fnlConfig</code></td>
             
 
             <td class="type">
@@ -2201,7 +2551,7 @@
 
         <tr>
             
-                <td class="name"><code>fennelState</code></td>
+                <td class="name"><code>fnlState</code></td>
             
 
             <td class="type">
@@ -2258,7 +2608,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line53">line 53</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -2368,7 +2718,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line217">line 217</a>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line397">line 397</a>
     </li></ul></dd>
     
 
@@ -2421,6 +2771,393 @@
 
 
         
+            
+
+    
+
+    
+    <h4 class="name" id="~sendSignal"><span class="type-signature">(inner) </span>sendSignal<span class="signature">(keyring, data)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Send a signal transaction to the Fennel blockchain</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>keyring</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Polkadot keyring to sign the transaction</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the data to be sent as a signal</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line420">line 420</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>resolves to the transaction hash</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~sendTokens"><span class="type-signature">(inner) </span>sendTokens<span class="signature">(keyring, toAddress, amount)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sends a token transfer transaction to the Fennel blockchain</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>keyring</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Polkadot keyring to sign the transaction</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the address to transfer the tokens to</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>amount</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the amount of tokens to transfer</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_fennel_rpc.js.html">blockchains/fennel/rpc.js</a>, <a href="blockchains_fennel_rpc.js.html#line437">line 437</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>resolves to the transaction hash</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
     
 
     
@@ -2436,13 +3173,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Aug 16 2025 12:40:46 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

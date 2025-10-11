@@ -3,6 +3,23 @@
 The Whiteflag API natively supports the [Ethereum](https://www.ethereum.org/)
 blockchain.
 
+**NOTE** - *The Ethereum module needs updating.*
+
+## Blockchain specifications
+
+|                                |              |
+|--------------------------------|--------------|
+| Whiteflag message embedding:   | `data` field |
+| Maximum message length:        | dynamic      |
+| Signature algorithm:           | ECDSA secp256k1 |
+| Transaction hash:              | 256 bits (64 hexadecimals) |
+| Secret for account creation:   | private key  |
+
+Note that curve `secp256k1` for the ECDSA signature algorthm is officially not
+specified to be used with JWS for Whiteflag authentication method 1. Instead,
+the JWS specification requires curve `secp256r1` a.k.a. `prime256v1`. See
+https://github.com/WhiteflagProtocol/whiteflag-api/issues/28.
+
 ## Ethereum configuration
 
 The blockchains configuration file `config/blockchains.toml` should contain
@@ -20,7 +37,7 @@ These parameters manage Ethereum blockchain accounts:
 For retrieving transactions containing Whiteflag messages from the blockchain,
 these parameters may be provided, otherwise default values are used:
 
-* `blockRetrievalInterval`: the time in milliseconds between data retrieval intervals; the default is `6000` ms
+* `blockRetrievalInterval`: the time in milliseconds before the Ethereum listener tries to retireve the next block; the default is `6000` ms
 * `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API resumes a number of blocks before the highest block as configured below
 * `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the highest block on the node
 * `blockRetrievalRestart`: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period
@@ -38,5 +55,5 @@ configure the connection:
 * `rpcHost`: the hostname of the Ethereum node
 * `rpcPort`: the port on which the RPC interface is exposed
 * `rpcPath`: optional path to reach the RPC interface
-* `username`: an optional username for basic http authorization
-* `password`: an optional password for basic http authorization
+* `rpcUsername`: an optional username for basic http authorization
+* `rpcPassword`: an optional password for basic http authorization

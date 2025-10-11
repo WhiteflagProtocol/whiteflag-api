@@ -10,9 +10,9 @@ const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../lib/common/processing');
-const log = require('../lib/common/logger');
+// Common internal functions and classes //
+const { ignore } = require('../lib/_common/processing');
+const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
