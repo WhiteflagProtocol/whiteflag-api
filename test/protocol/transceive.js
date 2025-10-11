@@ -19,11 +19,10 @@ log.setLogLevel(1, ignore);
 // Project modules required for test //
 const wfTransmit = require('../../lib/protocol/transmit');
 const wfReceive = require('../../lib/protocol/receive');
-const { ProcessingError, ProtocolError } = require('../../lib/_common/errors');
-
-// Whiteflag event emitters //
 const wfRxEvent = require('../../lib/protocol/events').rxEvent;
 const wfTxEvent = require('../../lib/protocol/events').txEvent;
+const { ProcessingError,
+        ProtocolError } = require('../../lib/_common/errors');
 
 // Constants //
 /**

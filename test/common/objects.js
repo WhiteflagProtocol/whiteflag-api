@@ -17,7 +17,7 @@ const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const object = require('../../lib/_common/objects');
+const obj = require('../../lib/_common/objects');
 
 // Constants //
 /**
@@ -30,7 +30,7 @@ const testVector = JSON.parse(fs.readFileSync('./test/_static/common/objects.tes
 testCase('Common objects module', function() {
     testCase('Updating object with other object', function() {
         assertion(' 1. should correctly merge source object into target object', function(done) {
-            object.update(testVector['1'].sourceObject, testVector['1'].targetObject, true);
+            obj.update(testVector['1'].sourceObject, testVector['1'].targetObject, true);
             assert.deepStrictEqual(testVector['1'].targetObject, testVector['1'].newObject);
             done();
         });

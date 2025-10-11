@@ -16,13 +16,13 @@ const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const wfApiConfig = require('../lib/config');
+const wfConfig = require('../lib/config');
 
 // TEST SCRIPT //
 testCase('Whiteflag API configuration module', function() {
     testCase('Loading configuration', function() {
         assertion(' 1. should return the configuration object', function(done) {
-            wfApiConfig.getConfig(function test1ConfigCb(err, apiConfig) {
+            wfConfig.getConfig(function test1ConfigCb(err, apiConfig) {
                 if (err) done(err);
                 assert(apiConfig);
                 done();

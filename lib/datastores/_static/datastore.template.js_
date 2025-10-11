@@ -5,7 +5,6 @@
  * @description Module template to develop a specific datastore implementation
  */
 module.exports = {
-    // Database functions
     init: initDatastore,
     close: closeDatastore,
     storeMessage,
@@ -34,7 +33,7 @@ let _db;
  * @function initDatastore
  * @alias module:lib/datastores/.init
  * @param {Object} dbConfig datastore configuration parameters
- * @param {datastoreInitCb} callback function to be called after initialising the datastore
+ * @param {datastoreInitCb} callback function called after initialising the datastore
  */
 function initDatastore(dbConfig, callback) {
     // Preserve name of the datastore
@@ -50,7 +49,7 @@ function initDatastore(dbConfig, callback) {
  * Closes the database
  * @function closeDatastore
  * @alias module:lib/datastores/.close
- * @param {datastoreCloseCb} callback function to be called after initialising the datastore
+ * @param {datastoreCloseCb} callback function called after initialising the datastore
  */
 function closeDatastore(callback) {
     log.trace(_dbName, 'Closing database connection');
@@ -64,7 +63,7 @@ function closeDatastore(callback) {
  * @function storeMessage
  * @alias module:lib/datastores/.storeMessage
  * @param {wfMessage} wfMessage the whiteflag message to be stored
- * @param {datastoreStoreMessageCb} callback function to be called after storing the Whiteflag message
+ * @param {datastoreStoreMessageCb} callback function called after storing the Whiteflag message
  */
 function storeMessage(wfMessage, callback) {
     // TODO: Do stuff to store a message in the datastore
@@ -77,7 +76,7 @@ function storeMessage(wfMessage, callback) {
  * @function getMessages
  * @alias module:lib/datastores/.getMessages
  * @param {Object} wfQuery the properties of the messages to look up
- * @param {datastoreGetMessagesCb} callback function to be called after retrieving Whiteflag messages
+ * @param {datastoreGetMessagesCb} callback function called after retrieving Whiteflag messages
  */
 function getMessages(wfQuery, callback) {
     // TODO: Do stuff to query the datastore
@@ -90,7 +89,7 @@ function getMessages(wfQuery, callback) {
  * @function storeState
  * @alias module:lib/datastores/.storeState
  * @param {Object} stateObject state data enclosed in a storage / encryption container
- * @param {datastoreStoreStateCb} callback function to be called after storing the Whiteflag state
+ * @param {datastoreStoreStateCb} callback function called after storing the Whiteflag state
  */
 function storeState(stateObject, callback) {
     // TODO: Do stuff to store the state in the datastore
@@ -102,7 +101,7 @@ function storeState(stateObject, callback) {
  * Gets Whiteflag state from the database
  * @function getState
  * @alias module:lib/datastores/.getState
- * @param {datastoreGetStateCb} callback function to be called after getting the Whiteflag state
+ * @param {datastoreGetStateCb} callback function called after getting the Whiteflag state
  */
 function getState(callback) {
      // TODO: Do stuff to get the state from the datastore

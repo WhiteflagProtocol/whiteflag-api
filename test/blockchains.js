@@ -15,13 +15,13 @@ const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-// const wfApiBlockchains = require('../../lib/blockchains');
+// const wfBlockchains = require('../../lib/blockchains');
 
 // TEST SCRIPT //
 testCase('Whiteflag API blockchains module', function() {
     assertion(' 0. should correctly load', function(done) {
-        const wfApiBlockchains = require('../lib/blockchains');
-        ignore(wfApiBlockchains);
+        const wfBlockchains = require('../lib/blockchains');
+        ignore(wfBlockchains);
         done();
     });
 });

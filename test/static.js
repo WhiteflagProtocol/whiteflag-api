@@ -19,7 +19,7 @@ const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const array = require('../lib/_common/arrays');
+const arr = require('../lib/_common/arrays');
 
 // Constants //
 const _metaSchema = JSON.parse(fs.readFileSync('./test/_static/json-schema.schema.json'));
@@ -83,7 +83,7 @@ testCase('Whiteflag API static data tests', function() {
  */
 function validateJSON(specification, schema = _metaSchema) {
     try {
-        return [].concat(array.pluck(jsonValidate(specification, schema).errors, 'stack'));
+        return [].concat(arr.pluck(jsonValidate(specification, schema).errors, 'stack'));
     } catch(err) {
         console.log(err);
         return [].push(err.message);

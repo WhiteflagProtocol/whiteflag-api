@@ -5,7 +5,6 @@
  * @description Module template to develop a specific blockchain implementation
  */
 module.exports = {
-    // Blockchain functions
     init: initBlockchain,
     sendMessage,
     getMessage,
@@ -44,7 +43,7 @@ let _bcState = {};
  * @todo Implement function
  * @function initBlockchain
  * @alias module:lib/blockchains/.init
- * @param {bcInitCb} callback function to be called after intitialising the blockchain
+ * @param {bcInitCb} callback function called after intitialising the blockchain
  */
 function initBlockchain(bcConfig, callback) {
     // Preserve name of the blockchain
@@ -73,7 +72,7 @@ function initBlockchain(bcConfig, callback) {
  * @function sendMessage
  * @alias module:lib/blockchains/.sendMessage
  * @param {wfMessage} wfMessage the Whiteflag message to be sent on the blockchain
- * @param {bcSendMessageCb} callback function to be called after sending Whiteflag message
+ * @param {bcSendMessageCb} callback function called after sending Whiteflag message
  */
 function sendMessage(wfMessage, callback) {
     // Check metaheader and encoded message
@@ -99,7 +98,7 @@ function sendMessage(wfMessage, callback) {
  * @function getMessage
  * @alias module:lib/blockchains/.getMessage
  * @param {Object} wfQuery the property of the transaction to look up
- * @param {bcGetMessageCb} callback function to be called after Whiteflag message lookup
+ * @param {bcGetMessageCb} callback function called after Whiteflag message lookup
  */
 function getMessage(wfQuery, callback) {
     // Check query parameters
@@ -122,7 +121,7 @@ function getMessage(wfQuery, callback) {
  * @function requestSignature
  * @alias module:lib/blockchains/.requestSignature
  * @param {wfSignPayload} wfSignPayload the JWS payload for the Whiteflag signature
- * @param {bcRequestSignatureCb} callback function to be called upon completion
+ * @param {bcRequestSignatureCb} callback function called on completion
  */
 function requestSignature(wfSignPayload, callback) {
     // TODO: Do stuff to sign the payload with blockchain keys
@@ -136,7 +135,7 @@ function requestSignature(wfSignPayload, callback) {
  * @function verifySignature
  * @param {wfSignature} wfSignature the Whiteflag signature to be verified
  * @param {string} bcPublicKey the Ethereum public key to verify against
- * @param {bcVerifySignatureCb} callback function to be called upon completion
+ * @param {bcVerifySignatureCb} callback function called on completion
  */
 function verifySignature(wfSignature, bcPublicKey, callback) {
     // TODO: Do stuff to verify the wignature with blockchain keys
@@ -150,7 +149,7 @@ function verifySignature(wfSignature, bcPublicKey, callback) {
  * @function getBinaryAddress
  * @alias module:lib/blockchains/.getBinaryAddress
  * @param {string} bcAddress the blockchain address
- * @param {bcBinaryAddressCb} callback function to be called upon completion
+ * @param {bcBinaryAddressCb} callback function called on completion
  */
 function getBinaryAddress(bcAddress, callback) {}
 
@@ -160,7 +159,7 @@ function getBinaryAddress(bcAddress, callback) {}
  * @function transferFunds
  * @alias module:lib/blockchains/.transferFunds
  * @param {wfTransfer} transfer the transaction details for the funds transfer
- * @param {bcSendTransactionCb} callback function to be called upon completion
+ * @param {bcSendTransactionCb} callback function called on completion
  */
 function transferFunds(transfer, callback) {
     ignore(transfer);
@@ -173,7 +172,7 @@ function transferFunds(transfer, callback) {
  * @function createAccount
  * @alias module:lib/blockchains/.createAccount
  * @param {string} secret hexadecimal encoded blockchain dependent secret (e.g. private key, wif or seed)
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function createAccount(secret, callback) {
     // TODO: Do stuff to create account
@@ -187,7 +186,7 @@ function createAccount(secret, callback) {
  * @function updateAccount
  * @alias module:lib/blockchains/.updateAccount
  * @param {wfAccount} account the account information including address to be updated
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function updateAccount(account, callback) {
     // TODO: Do stuff to update account
@@ -201,7 +200,7 @@ function updateAccount(account, callback) {
  * @function deleteAccount
  * @alias module:lib/blockchains/.deleteAccount
  * @param {string} address the address of the account to be deleted
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function deleteAccount(address, callback) {
     // TODO: Do stuff to delete account
