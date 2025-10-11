@@ -36,13 +36,19 @@
  * @tutorial events
  */
 module.exports = {
-    // Receive functions
     init: initRx
 };
 
+// Type defintitions //
+/**
+ * @callback wfMessageCb
+ * @param {error} err any error
+ * @param {wfMessage} message the resulting Whiteflag message
+ */
+
 // Common internal functions and classes //
 const log = require('../_common/logger');
-const array = require('../_common/arrays');
+const arr = require('../_common/arrays');
 const { type } = require('../_common/protocol');
 const { ProtocolError } = require('../_common/errors');
 
@@ -51,8 +57,6 @@ const wfState = require('./state');
 const wfCodec = require('./codec');
 const wfReference = require('./references');
 const wfAuthenticate = require('./authenticate');
-
-// Whiteflag event emitters //
 const wfRxEvent = require('./events').rxEvent;
 
 // Whiteflag configuration data //
@@ -77,7 +81,7 @@ const CRYPTOMESSAGECODE = 'K';
  * When an error occurs, the 'error' event is emitted.
  * @function init
  * @alias module:lib/protocol/receive.init
- * @param {function(Error)} callback function to be called upon completion
+ * @param {errorCb} callback function called on completion
  * @emits module:lib/protocol/events.rxEvent:initialised
  */
 function initRx(callback) {
@@ -85,71 +89,71 @@ function initRx(callback) {
      * Listener for incoming data from blockchain to call rx metadata verifier
      * @listens module:lib/protocol/events.rxEvent:messageReceived
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('messageReceived', rxVerifyMetadata);
     /**
      * Listener for verified rx blockchain metadata to call rx message decoder
      * @listens module:lib/protocol/events.rxEvent:metadataVerified
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('metadataVerified', rxDecodeMessage);
     /**
      * Listener for encrypted messages without initialisation vectors
      * @listens module:lib/protocol/events.rxEvent:messageEncrypted
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('messageEncrypted', rxGetInitVector);
     /**
      * Listener for decoded messages to call originator verifier
      * @listens module:lib/protocol/events.rxEvent:messageDecoded
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('messageDecoded', rxVerifyOriginator);
     /**
      * Listener for verified rx message originator to call reference verifier
      * @listens module:lib/protocol/events.rxEvent:originatorVerified
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('originatorVerified', rxVerifyReference);
     /**
      * Listener for skipped rx message originator verification to call reference verifier
      * @listens module:lib/protocol/events.rxEvent:originatorSkipped
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('originatorSkipped', rxVerifyReference);
     /**
      * Listener for verified rx message reference to call api response handler
      * @listens module:lib/protocol/events.rxEvent:referenceVerified
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('referenceVerified', rxCompleted);
     /**
      * Listener for skipped rx message reference verificationto call api response handler
      * @listens module:lib/protocol/events.rxEvent:referenceSkipped
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('referenceSkipped', rxCompleted);
     /**
      * Listener for rx completion to send message to socket clients
      * @listens module:lib/protocol/events.rxEvent:referenceVerified
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+     * @param {wfMessageCb} callback function passed to next event to call on completion
      */
     wfRxEvent.on('messageProcessed', rxSocketSendMessage);
     /**
      * Listener for rx completion to call callback
      * @listens module:lib/protocol/events.rxEvent:messageProcessed
-     * @param {Error} err error
+     * @param {Error} err any error
      * @param {wfMessage} wfMessage a Whiteflag message
-     * @param {function(Error, wfMessage)} callback function called with error
+     * @param {wfMessageCb} callback function called on error
      */
     wfRxEvent.on('error', rxError);
 
@@ -162,9 +166,9 @@ function initRx(callback) {
 /**
  * Logs success and calls the callback passed through the rx event chain
  * @private
- * @param {Error} err error
+ * @param {Error} err any error
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function called with error
+ * @param {wfMessageCb} callback function called on completion
  * @emits module:lib/protocol/events.rxEvent:messageProcessed
  */
 function rxCompleted(wfMessage, callback) {
@@ -176,9 +180,9 @@ function rxCompleted(wfMessage, callback) {
 /**
  * Logs errors and calls the callback passed through the rx event chain
  * @private
- * @param {Error} err the error that occured in the event chain
+ * @param {Error} err any error
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function called with error
+ * @param {wfMessageCb} callback function called on completion
  */
 function rxError(err, wfMessage, callback) {
     if (!err) err = new Error('Unspecified error in rx event chain');
@@ -211,7 +215,7 @@ function rxError(err, wfMessage, callback) {
  * Checks incoming rx data and emits positive result
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+ * @param {wfMessageCb} callback function passed to next event to call on completion
  * @emits module:lib/protocol/events.rxEvent:metadataVerified
  */
 function rxVerifyMetadata(wfMessage, callback) {
@@ -239,7 +243,7 @@ function rxVerifyMetadata(wfMessage, callback) {
  * Calls message decoder and emits positive result
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+ * @param {wfMessageCb} callback function passed to next event to call on completion
  * @emits module:lib/protocol/events.rxEvent:messageEncrypted
  * @emits module:lib/protocol/events.rxEvent:messageDecoded
  */
@@ -303,7 +307,7 @@ function rxDecodeMessage(wfMessage, callback) {
  * Checks if initialisation vector is known, otherwise puts encrypted message in datastore
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+ * @param {wfMessageCb} callback function passed to next event to call on completion
  * @emits module:lib/protocol/events.rxEvent:metadataVerified
  */
 function rxGetInitVector(wfMessage, callback) {
@@ -327,7 +331,7 @@ function rxGetInitVector(wfMessage, callback) {
  * Calls originator verifier
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+ * @param {wfMessageCb} callback function passed to next event to call on completion
  * @emits module:lib/protocol/events.rxEvent:originatorVerified
  */
 function rxVerifyOriginator(wfMessage, callback) {
@@ -354,7 +358,7 @@ function rxVerifyOriginator(wfMessage, callback) {
             // Log and preserve orginiator verification errors in metaheader
             if (err.causes) {
                 log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
-                wfMessage.MetaHeader.validationErrors = array.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
+                wfMessage.MetaHeader.validationErrors = arr.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
             } else {
                 log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
             }
@@ -371,7 +375,7 @@ function rxVerifyOriginator(wfMessage, callback) {
  * Calls reference verifier
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function passed to next event to call on completion
+ * @param {wfMessageCb} callback function passed to next event to call on completion
  * @emits module:lib/protocol/events.rxEvent:referenceVerified
  */
 function rxVerifyReference(wfMessage, callback) {
@@ -405,7 +409,7 @@ function rxVerifyReference(wfMessage, callback) {
             // Log and preserve reference errors in metaheader
             if (err.causes) {
                 log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
-                wfMessage.MetaHeader.validationErrors = array.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
+                wfMessage.MetaHeader.validationErrors = arr.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
             } else {
                 log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
             }
@@ -424,8 +428,8 @@ function rxVerifyReference(wfMessage, callback) {
  * @param {wfMessage} wfMessage a Whiteflag message
  */
 function rxSocketSendMessage(wfMessage) {
-    const wfApiServer = require('../server');
-    return wfApiServer.sendSocket(wfMessage);
+    const wfServer = require('../server');
+    return wfServer.sendSocket(wfMessage);
 }
 
 // PRIVATE MODULE FUNCTIONS //
@@ -484,13 +488,13 @@ function checkRxMetaHeaderErrors(wfMessage) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

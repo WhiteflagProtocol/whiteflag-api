@@ -35,7 +35,6 @@
  * @tutorial protocol
  */
 module.exports = {
-    // Authentication functions
     message: verifyMessage,
     verify: verifyAuthentication,
     remove: removeAuthentication,
@@ -82,13 +81,14 @@ const https = require('https');
 
 // Common internal functions and classes //
 const log = require('../_common/logger');
-const array = require('../_common/arrays');
+const arr = require('../_common/arrays');
 const jws = require('../_common/jws');
 const { type } = require('../_common/protocol');
-const { ProcessingError, ProtocolError } = require('../_common/errors');
+const { ProcessingError,
+        ProtocolError } = require('../_common/errors');
 
 // Whiteflag modules //
-const wfApiBlockchains = require('../blockchains');
+const wfBlockchains = require('../blockchains');
 const wfCrypto = require('./crypto');
 const wfState = require('./state');
 const { hexToBuffer } = require('../_common/encoding');
@@ -106,7 +106,7 @@ const AUTHMESSAGECODE = 'A';
  * @function verifyMessage
  * @alias module:lib/protocol/authenticate.message
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {wfMessageCb} callback function called on completion
  */
 function verifyMessage(wfMessage, callback) {
     // Lookup originator in state
@@ -132,7 +132,7 @@ function verifyMessage(wfMessage, callback) {
  * @function verifyAuthentication
  * @alias module:lib/protocol/authenticate.verify
  * @param {wfMessage} wfAuthMessage a Whiteflag authentication message
- * @param {function(Error, wfMessage)} callback function called upon completion
+ * @param {wfMessageCb} callback function called on completion
  */
 function verifyAuthentication(wfAuthMessage = {}, callback) {
     if (wfAuthMessage?.MessageHeader?.MessageCode !== AUTHMESSAGECODE) {
@@ -160,7 +160,7 @@ function verifyAuthentication(wfAuthMessage = {}, callback) {
  * @function removeAuthentication
  * @alias lib/protocol/authenticate.remove
  * @param {wfMessage} wfAuthMessage a Whiteflag authentication message
- * @param {function(Error, wfMessage)} callback
+ * @param {wfMessageCb} callback function called on completion
  */
 function removeAuthentication(wfAuthMessage = {}, callback) {
     // Check messageheader
@@ -181,7 +181,7 @@ function removeAuthentication(wfAuthMessage = {}, callback) {
         if (!originator) {
             // Authentication message from previously unknown originator
             log.debug(MODULELOG, `Cannot remove authentication: ${type(wfAuthMessage)} message is from unknown originator: ${wfAuthMessage.MetaHeader.originatorAddress}`);
-            wfAuthMessage.MetaHeader.validationErrors = array.addArray(wfAuthMessage.MetaHeader.validationErrors, 'Unknown originator');
+            wfAuthMessage.MetaHeader.validationErrors = arr.addArray(wfAuthMessage.MetaHeader.validationErrors, 'Unknown originator');
             return callback(null, wfAuthMessage);
         }
         // Check if any known authentication messages
@@ -216,15 +216,14 @@ function removeAuthentication(wfAuthMessage = {}, callback) {
  * @param {string} authToken the secret authentication token in hexadecimal
  * @param {string} address the address of the account for which the signature is requested
  * @param {string} blockchain the name of the blockchain
- * @param {function(Error, verificationData)} callback function to be called upon completion
- * @typedef {string} verificationData hexadecimal representation of the authentication token verification data
+ * @param {genericCb} callback function called on completion
  */
 function generateToken(authToken, address, blockchain, callback) {
     let tokenBuffer = hexToBuffer(authToken);
     authToken = undefined;
 
     // Get blockchain address is binary
-    wfApiBlockchains.getBinaryAddress(address, blockchain, function authGetAddressCb(err, addressBuffer) {
+    wfBlockchains.getBinaryAddress(address, blockchain, function authGetAddressCb(err, addressBuffer) {
         if (err) return callback(err, null);
 
         // Generate authentication token and compare with message
@@ -242,7 +241,7 @@ function generateToken(authToken, address, blockchain, callback) {
  * @param {wfSignPayload} signPayload the signature payload object to be signed
  * @param {string} address the address of the account for which the signature is requested
  * @param {string} blockchain the blockchain for which the signature is requested
- * @param {function(Error, wfSignature, wfSignDecoded)} callback function to be called upon completion
+ * @param {requestSignatureCb} callback function called on completion
  */
 function createSignature(signPayload, address, blockchain, callback) {
     // Check blockchain and address
@@ -253,7 +252,7 @@ function createSignature(signPayload, address, blockchain, callback) {
     let signErrors = [];
     if (!signPayload?.addr) signPayload.addr = address;
     if (signPayload.addr !== address) signErrors.push('Signature address does not match blockchain account');
-    array.addArray(signErrors, checkSignPayload(signPayload));
+    arr.addArray(signErrors, checkSignPayload(signPayload));
     if (signErrors.length > 0) {
         return callback(new ProtocolError('Invalid Whiteflag authentication signature request', signErrors, 'WF_SIGN_ERROR'), null);
     }
@@ -262,10 +261,11 @@ function createSignature(signPayload, address, blockchain, callback) {
      * @param {Error} err any error
      * @param {wfSignature} wfSignature the Whiteflag JWS to be signs
      */
-    wfApiBlockchains.requestSignature(signPayload, blockchain, function authRequestSignatureCb(err, wfSignature) {
+    wfBlockchains.requestSignature(signPayload, blockchain, function authRequestSignatureCb(err, wfSignature) {
         if (err) return callback(err);
         decodeSignature(wfSignature, function authDecodeSignatureCb(err, wfSignDecoded) {
             if (err) return callbacl(err);
+
             return callback(null, wfSignature, wfSignDecoded);
         });
     });
@@ -276,7 +276,7 @@ function createSignature(signPayload, address, blockchain, callback) {
  * @function decodeSignature
  * @alias module:lib/protocol/authenticate.decodeSignature
  * @param {wfSignature} signature a Whiteflag authentication signature
- * @param {function(Error, wfSignDecoded)} callback function to be called upon completion
+ * @param {genericCb} callback function called on completion
  */
 function decodeSignature(wfSignature, callback) {
     try {
@@ -293,7 +293,7 @@ function decodeSignature(wfSignature, callback) {
  * @function verifySignature
  * @alias module:lib/protocol/authenticate.verifySignature
  * @param {wfExtSignature} wfExtSignature an extended Whiteflag authentication signature
- * @param {endpointSignatureVerifyCb} callback function to be called upon completion
+ * @param {endpointSignatureVerifyCb} callback function called on completion
  */
 function verifySignature(wfExtSignature, callback) {
     // Check properties of the extended signature object
@@ -320,7 +320,7 @@ function verifySignature(wfExtSignature, callback) {
          * @param {Error} err any error
          * @param {wfSignDecoded} [result] the verified and decoded signature
          */
-        wfApiBlockchains.verifySignature(wfSignature, signAddress, orgPubkey, blockchain, function authVerifySignatureCb(err, result) {
+        wfBlockchains.verifySignature(wfSignature, signAddress, orgPubkey, blockchain, function authVerifySignatureCb(err, result) {
             if (err) return callback(err);
             if (result) return callback(null, wfSignDecoded);
             return callback(null, wfSignDecoded);
@@ -333,7 +333,7 @@ function verifySignature(wfExtSignature, callback) {
  * Verifies the information for authentication method 1
  * @private
  * @param {Object} wfAuthMessage a Whiteflag authentication message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {wfMessageCb} callback function called on completion
  */
 function wfAuthentication1(wfAuthMessage, callback) {
     let authURL;
@@ -346,7 +346,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
         validDomains = wfConfigData.authentication['1'].validDomains || [];
     } catch(err) {
         log.error(MODULELOG, `Could not get signature URLs: ${err.message}`);
-        wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+        wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
             wfAuthMessage.MetaHeader.validationErrors,
             `Could not get signature URLs: ${err.message}`
         );
@@ -354,7 +354,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
     }
     // Check for valid domain names
     if (validDomains.length > 0 &amp;&amp; !validDomains.includes(authURL.hostname)) {
-        wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+        wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
             wfAuthMessage.MetaHeader.validationErrors,
             `The domain that holds the authentication signature is not considered valid: ${authURL.hostname}`
         );
@@ -371,7 +371,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
             if (!(err instanceof ProcessingError || err instanceof ProtocolError)) {
                 log.error(MODULELOG, `Could not get signature: ${err.message}`);
             }
-            wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+            wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
                 wfAuthMessage.MetaHeader.validationErrors,
                 `Could not get signature: ${err.message}`);
             return callback(err, wfAuthMessage);
@@ -386,7 +386,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
         verifySignature(wfExtSignature, function authVerifySignatureCb(err, wfSignDecoded) {
             if (err &amp;&amp; !(err instanceof ProtocolError)) {
                 log.warn(MODULELOG, `Could not verify signature from ${wfAuthMessage.MessageBody.VerificationData}: ${err.message}`);
-                wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+                wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
                     wfAuthMessage.MetaHeader.validationErrors,
                     `Could not verify signature: ${err.message}`
                 );
@@ -394,7 +394,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
             }
             if (!wfSignDecoded) {
                 log.debug(MODULELOG, `Could not decode and verify signature from ${wfAuthMessage.MessageBody.VerificationData}`);
-                wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+                wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
                     wfAuthMessage.MetaHeader.validationErrors,
                     'Could not decode and verify signature'
                 );
@@ -406,7 +406,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
             let authenticationErrors = [];
             if (err instanceof ProtocolError) {
                 if (err.causes?.length > 0) {
-                    authenticationErrors = array.addArray(authenticationErrors, err.causes);
+                    authenticationErrors = arr.addArray(authenticationErrors, err.causes);
                 } else {
                     authenticationErrors.push(err.message);
                 }
@@ -423,7 +423,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
             if (authenticationErrors.length > 0) {
                 // Return with authentication errors
                 wfAuthMessage.MetaHeader.originatorValid = false;
-                wfAuthMessage.MetaHeader.validationErrors = array.addArray(wfAuthMessage.MetaHeader.validationErrors, authenticationErrors);
+                wfAuthMessage.MetaHeader.validationErrors = arr.addArray(wfAuthMessage.MetaHeader.validationErrors, authenticationErrors);
                 let err = new ProtocolError(`Could not authenticate originator of ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`, authenticationErrors, 'WF_AUTH_ERROR');
                 return callback(err, wfAuthMessage);
             }
@@ -456,7 +456,7 @@ function wfAuthentication1(wfAuthMessage, callback) {
  * Verifies the information for authentication method 2
  * @private
  * @param {Object} wfAuthMessage a Whiteflag authentication message
- * @param {function(Error, wfMessage)} callback
+ * @param {wfMessageCb} callback
  */
 function wfAuthentication2(wfAuthMessage, callback) {
     // Get known authentication tokens and iterate over them
@@ -475,7 +475,7 @@ function wfAuthentication2(wfAuthMessage, callback) {
         // Return message if no more tokens
         if (t >= authTokenIds.length) {
             log.debug(MODULELOG, `Unknown originator authentication token in ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`);
-            wfAuthMessage.MetaHeader.validationErrors = array.addItem(
+            wfAuthMessage.MetaHeader.validationErrors = arr.addItem(
                 wfAuthMessage.MetaHeader.validationErrors,
                 'Unknown originator authentication token'
             );
@@ -529,7 +529,7 @@ function wfAuthentication2(wfAuthMessage, callback) {
  * Gets an authentication signature from an url
  * @private
  * @param {URL} authURL a URL to get the authentication signature from
- * @param {function(Error, wfSignature)} callback function to be called upon completion
+ * @param {genericCb} callback function called on completion
  */
 function retrieveSignature(authURL, callback) {
     // Get data based on protocol specified in url
@@ -558,7 +558,7 @@ function retrieveSignature(authURL, callback) {
     /**
      * Handles http request errors
      * @private
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      */
     function errorHandler(err) {
         if (err &amp;&amp; err instanceof ProcessingError) return callback(err);
@@ -610,13 +610,13 @@ function checkSignPayload(signPayload) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

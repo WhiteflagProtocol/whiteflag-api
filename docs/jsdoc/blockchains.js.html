@@ -36,7 +36,6 @@
  * @tutorial modules
  */
 module.exports = {
-    // Blockchain functions
     init: initBlockchains,
     scanBlocks,
     sendMessage,
@@ -74,16 +73,15 @@ const jsonValidate = require('jsonschema').validate;
 
 // Common internal functions and classes //
 const log = require('./_common/logger');
-const array = require('./_common/arrays');
+const arr = require('./_common/arrays');
 const { type } = require('./_common/protocol');
-const { ProcessingError, ProtocolError } = require('./_common/errors');
 const { hexToBuffer } = require('./_common/encoding');
+const { ProcessingError,
+        ProtocolError } = require('./_common/errors');
 
 // Whiteflag modules //
 const wfState = require('./protocol/state');
-const wfApiDatastores = require('./datastores');
-
-// Whiteflag event emitters //
+const wfDatastores = require('./datastores');
 const wfRxEvent = require('./protocol/events').rxEvent;
 const wfTxEvent = require('./protocol/events').txEvent;
 
@@ -95,7 +93,6 @@ const BCMODULEDIR = './blockchains/';
 const MAXBLOCKSCAN = 20;
 const bcConfigSchema = JSON.parse(fs.readFileSync('./lib/blockchains/_static/blockchains.config.schema.json'));
 
-
 // Module variables //
 let _blockchains = [];
 let _bcConfig = [];
@@ -106,12 +103,11 @@ let _confirmEachBlock = false;
 let _confirmDoubleCheck = false;
 
 // MAIN MODULE FUNCTIONS //
-
 /**
  * Initialises configured blockchains
  * @function initBlockchains
  * @alias module:lib/blockchains.init
- * @param {blockhainsInitCb} callback function to be called upon completion
+ * @param {blockhainsInitCb} callback function called on completion
  */
 function initBlockchains(callback) {
     // Read the configuration file
@@ -126,7 +122,7 @@ function initBlockchains(callback) {
         return callback(new Error(`Could not parse configuration in ${BCCONFFILE}`));
     }
     _bcConfig = bcConfigData.blockchains;
-    _blockchains = array.pluck(_bcConfig, 'name');
+    _blockchains = arr.pluck(_bcConfig, 'name');
     log.debug(MODULELOG, `Configured blockchains in ${BCCONFFILE}: ` + JSON.stringify(_blockchains));
 
     // Initialise each enabled blockchain
@@ -153,8 +149,8 @@ function initBlockchains(callback) {
  * @alias module:lib/blockchains.scanBlocks
  * @param {number} firstBlock the starting block
  * @param {number} lastBlock the ending block
- * @param {*} blockchain the blockchainto scan
- * @param {*} callback function to be called upon completion
+ * @param {string} blockchain the blockchain to scan
+ * @param {bcScanBlocksCb} callback function called on completion
  */
 function scanBlocks(firstBlock, lastBlock, blockchain, callback) {
     // Check parameters
@@ -182,7 +178,7 @@ function scanBlocks(firstBlock, lastBlock, blockchain, callback) {
             /**
              * @callback bcScanBlocksCb
              * @param {Error} err any error
-             * @param {WfMessage[]} messages an array of found Whiteflag messages
+             * @param {WfMessage[]} wfMessages an array of found Whiteflag messages
              */
             bcInstance._module.scanBlocks(firstBlock, lastBlock, callback);
         }
@@ -194,7 +190,7 @@ function scanBlocks(firstBlock, lastBlock, blockchain, callback) {
  * @function sendMessage
  * @alias module:lib/blockchains.sendMessage
  * @param {wfMessage} wfMessage the Whiteflag message to be sent on the blockchain
- * @param {bcSendTransactionCb} callback function to be called upon completion
+ * @param {bcSendTransactionCb} callback function called on completion
  */
 function sendMessage(wfMessage, callback) {
     // Check message parameters
@@ -251,7 +247,7 @@ function sendMessage(wfMessage, callback) {
  * @function getMessage
  * @alias module:lib/blockchains.getMessage
  * @param {Object} wfQuery the property of the transaction to look up
- * @param {bcGetMessageCb} callback function to be called upon completion
+ * @param {bcGetMessageCb} callback function called on completion
  */
 function getMessage(wfQuery = {}, callback) {
     // Check query parameters
@@ -282,7 +278,7 @@ function getMessage(wfQuery = {}, callback) {
  * @alias module:lib/blockchains.requestSignature
  * @param {Object} signPayload the JWS payload for the Whiteflag signature
  * @param {string} blockchain the blockchain for which the signature is requested
- * @param {authRequestSignatureCb} callback function to be called upon completion
+ * @param {authRequestSignatureCb} callback function called on completion
  */
 function requestSignature(signPayload, blockchain, callback) {
     // Check blockchain
@@ -308,7 +304,7 @@ function requestSignature(signPayload, blockchain, callback) {
  * @param {string} signAddress the blockchain address in the signature
  * @param {string} orgPubkey the public key to verify the signature against
  * @param {string} blockchain the blockchain for which the signature is verified
- * @param {authVerifySignatureCb} callback function to be called upon completion
+ * @param {authVerifySignatureCb} callback function called on completion
  */
 function verifySignature(wfSignature, signAddress, orgPubkey, blockchain, callback) {
     // Check blockchain
@@ -332,8 +328,7 @@ function verifySignature(wfSignature, signAddress, orgPubkey, blockchain, callba
  * @alias module:lib/blockchains.requestgetBinaryAddressKeys
  * @param {string} address the blockchain address
  * @param {string} blockchain the blockchain for which the binary encoded address is requested
- * @param {bcSendTransactionCb} callback function to be called upon completion
- * @typedef {Buffer} binaryAddress binary encoded blockchain address
+ * @param {bcSendTransactionCb} callback function called on completion
  */
 function getBinaryAddress(address, blockchain, callback) {
     // If no blockchains active, just assume hex encoded address for testing
@@ -367,7 +362,7 @@ function getBinaryAddress(address, blockchain, callback) {
  * @param {wfTransfer} transfer the object with the transaction details to transfer value
  * @param {string} address the address of the account from which to make the transfer from
  * @param {string} blockchain the blockchain on which the value must be transdered
- * @param {bcSendTransactionCb} callback function to be called upon completion
+ * @param {bcSendTransactionCb} callback function called on completion
  */
 function transferFunds(transfer = {}, address, blockchain, callback) {
     // Check blockchain and address
@@ -401,7 +396,7 @@ function transferFunds(transfer = {}, address, blockchain, callback) {
  * @alias module:lib/blockchains.createAccount
  * @param {string} blockchain the blockchain for which account needs to be created
  * @param {string} secret hexadecimal encoded blockchain dependent secret (e.g. private key, wif or seed)
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function createAccount(blockchain, secret = null, callback) {
     // Check blockchain
@@ -413,7 +408,7 @@ function createAccount(blockchain, secret = null, callback) {
     /**
      * Callback for blockchain account functions
      * @callback bcAccountCb
-     * @param {Error} err an error if any, else null
+     * @param {Error} err any error
      * @param {wfAccount} result the result of the account action
      */
     _bcConfig.forEach(bcInstance => {
@@ -433,7 +428,7 @@ function createAccount(blockchain, secret = null, callback) {
  * @param {wfAccount} account the blockchain account to be updated
  * @param {string} address the address of the account to be updated
  * @param {string} blockchain the blockchain for which the account needs to be updated
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function updateAccount(account = {}, address, blockchain, callback) {
     // Check blockchain and address
@@ -465,7 +460,7 @@ function updateAccount(account = {}, address, blockchain, callback) {
  * @alias module:lib/blockchains.deleteAccount
  * @param {string} address the blockchain account address
  * @param {string} blockchain the blockchain for which the account needs to be deleted
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function deleteAccount(address, blockchain, callback) {
     // Check blockchain
@@ -548,7 +543,7 @@ function parseConfig(bcConfigData) {
  */
 function validateConfig(bcConfigData) {
     try {
-        return [].concat(array.pluck(jsonValidate(bcConfigData, bcConfigSchema).errors, 'stack'));
+        return [].concat(arr.pluck(jsonValidate(bcConfigData, bcConfigSchema).errors, 'stack'));
     } catch(err) {
         return [].push(err.message);
     }
@@ -745,7 +740,7 @@ function updateMessageConfirmation(message) {
     let wfQuery = {};
     wfQuery['MetaHeader.transactionHash'] = message.transactionHash;
     wfQuery['MetaHeader.blockchain'] = message.blockchain;
-    wfApiDatastores.getMessages(wfQuery, function blockchainGetMessageDbCb(err, wfMessages, count) {
+    wfDatastores.getMessages(wfQuery, function blockchainGetMessageDbCb(err, wfMessages, count) {
         if (err) return log.error(MODULELOG, err.message);
 
         // Remove from queue if message not exactly matches one message in primary datastore
@@ -773,7 +768,7 @@ function updateMessageConfirmation(message) {
  * Helper function to get current blockchain height from state
  * @private
  * @param {string} blockchain the name of the blockchain to het
- * @param {function(Error, highestBlock)} callback function to be called upon completion
+ * @param {getBlockHeightCb} callback function called on completion
  * @typedef {number} highestBlock
  */
 function getBlockHeight(blockchain, callback) {
@@ -783,6 +778,11 @@ function getBlockHeight(blockchain, callback) {
         if (!blockchainSate.status?.highestBlock) {
             return callback(new Error(`Blockchain state of ${blockchain} does not contain highest block`));
         }
+        /**
+         * @callback getBlockHeightCb
+         * @param {Error} err any error
+         * @param {number} highestBlock the current heighest block
+         */
         return callback(null, blockchainSate.status.highestBlock);
     });
 }
@@ -796,13 +796,13 @@ function getBlockHeight(blockchain, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

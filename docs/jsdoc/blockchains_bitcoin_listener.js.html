@@ -33,20 +33,21 @@
  * @description Module to connect to the Bitcoin network and crawl/listen for transactions
  */
 module.exports = {
-    init: initListener
+    init: initListener,
+    scanBlocks
 };
 
 // Common internal functions and classes //
 const log = require('../../_common/logger');
-const { addArray } = require('../../_common/arrays');
-const { ProcessingError } = require('../../_common/errors');
+const arr = require('../../_common/arrays');
 
 // Whiteflag modules //
 const wfRxEvent = require('../../protocol/events').rxEvent;
 const wfState = require('../../protocol/state');
 
 // Common blockchain functions //
-const { determineStartingBlock, logStartingBlock} = require('../_common/state');
+const { determineStartingBlock,
+        logStartingBlock } = require('../_common/state');
 
 // Bitcoin sub-modules //
 const btcRpc = require('./rpc');
@@ -62,7 +63,6 @@ const BLOCKITERATIONDELAY = 5;
 // Module variables //
 let _btcChain;
 let _btcState;
-let _traceRaw = false;
 let _iterationCount = 0;
 let _discoveredBlock = 0;
 let _blockCursor = 0;
@@ -88,9 +88,6 @@ async function initListener(btcConfig, btcState) {
     log.trace(MODULELOG, 'Initialising listener for Bitcoin blockchain transactions');
     _btcChain = btcConfig.name;
     _btcState = btcState;
-
-    // Trace all transactions if configured
-    if (fnlConfig.traceRawTransaction) _traceRaw = fnlConfig.traceRawTransaction;
 
     // Block processing parameters
     if (btcConfig.blockMaxRetries) _blockMaxRetries = btcConfig.blockMaxRetries;
@@ -134,6 +131,28 @@ async function initListener(btcConfig, btcState) {
     scheduleBlockIteration();
     wfState.updateBlockchainData(_btcChain, _btcState);
     return Promise.resolve();
+}
+
+/**
+ * Scans a block for Whiteflag messages, and triggers to scan next block
+ * @function scanBlocks
+ * @alias module:lib/blockchains/bitcoin/listener.scanBlocks
+ * @param {number} cursor the block to scan
+ * @param {number} lastBlock the last block to scan block
+ * @param {Array} [messages] messages processed in an earlier block
+ * @returns {Promise} resolves if all blocks are successfully processed
+ */
+function scanBlocks(cursor, lastBlock, messages = []) {
+    return processBlock(cursor)
+    .then(wfMessages => {
+        messages = arr.addArray(messages, wfMessages);
+        let nextBlock = ++cursor;
+        if (nextBlock > lastBlock) return Promise.resolve(messages);
+        return scanBlocks(nextBlock, lastBlock, messages);
+    })
+    .catch(err => {
+        return Promise.reject(err);
+    });
 }
 
 // PRIVATE BLOCKCHAIN LISTENER FUNCTIONS //
@@ -333,7 +352,7 @@ function processTransactions(blockNumber, blockTime, transactions, index = 0, me
     // Resolve all transaction promises in the batch
     return Promise.all(transactionBatch)
     .then(wfMessages => {
-        messages = addArray(messages, wfMessages);
+        messages = arr.addArray(messages, wfMessages);
 
         // Next batch
         let nextIndex = index + _transactionBatchSize;
@@ -389,13 +408,13 @@ function createTransactionBatch(blockNumber, blockTime, transactions, index) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

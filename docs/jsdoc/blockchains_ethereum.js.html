@@ -55,8 +55,10 @@ const { pubToAddress }  = require('ethereumjs-util');
 // Common internal functions and classes //
 const log = require('../_common/logger');
 const { ignore } = require('../_common/processing');
-const { ProcessingError, ProtocolError } = require('../_common/errors');
-const { hexToBuffer, bufferToHex } = require('../_common/encoding');
+const { ProcessingError,
+        ProtocolError } = require('../_common/errors');
+const { hexToBuffer,
+        bufferToHex } = require('../_common/encoding');
 
 // Whiteflag modules //
 const wfState = require('../protocol/state');
@@ -64,11 +66,11 @@ const wfState = require('../protocol/state');
 // Common blockchain functions //
 const { getEmptyState } = require('./_common/state');
 const { getPrivateKeyId } = require('./_common/keys');
-const { createJWS, verifyJWS } = require('./_common/crypto');
+const { createJWS,
+        verifyJWS } = require('./_common/crypto');
 const { withHexPrefix,
         noHexPrefix,
-        noAddressHexPrefix
-    } = require('./_common/format');
+        noAddressHexPrefix } = require('./_common/format');
 
 // Ethereum sub-modules //
 const ethRpc = require('./ethereum/rpc');
@@ -92,7 +94,7 @@ let _transactionValue = '0';
  * @function initEthereum
  * @alias module:lib/blockchains/ethereum.init
  * @param {Object} ethConfig the blockchain configuration
- * @param {bcInitCb} callback function to be called after intitialising Ethereum
+ * @param {bcInitCb} callback function called after intitialising Ethereum
  */
 function initEthereum(ethConfig, callback) {
     log.trace(MODULELOG, 'Initialising the Ethereum blockchain');
@@ -124,16 +126,21 @@ function initEthereum(ethConfig, callback) {
 
 /**
  * Scans a number of blocks for Whiteflag messages
- * @todo Implement block scan for Ethereum
  * @function scanBlocks
  * @alias module:lib/ethereum.scanBlocks
  * @param {number} firstBlock the starting block
  * @param {number} lastBlock the ending block
- * @param {*} callback function to be called upon completion
+ * @param {bcScanBlocksCb} callback function called on completion
  */
 function scanBlocks(firstBlock, lastBlock, callback) {
-    ignore(firstBlock, lastBlock);
-    return callback(new ProcessingError('Block scan not implemented for the Ethereum blockchain', null, 'WF_API_NOT_IMPLEMENTED'));
+    log.debug(MODULELOG, `Scanning block ${firstBlock} to ${lastBlock}`)
+    ethListener.scanBlocks(firstBlock, lastBlock)
+    .then(wfMessages => {
+        return callback(null, wfMessages);
+    })
+    .catch(err => {
+        return callback(err);
+    });
 }
 
 /**
@@ -141,7 +148,7 @@ function scanBlocks(firstBlock, lastBlock, callback) {
  * @function sendMessage
  * @alias module:lib/blockchains/ethereum.sendMessage
  * @param {wfMessage} wfMessage the Whiteflag message to be sent on Ethereum
- * @param {bcSendTransactionCb} callback function to be called after sending Whiteflag message
+ * @param {bcSendTransactionCb} callback function called after sending Whiteflag message
  */
 function sendMessage(wfMessage, callback) {
     ethAccounts.get(wfMessage.MetaHeader.originatorAddress)
@@ -164,7 +171,7 @@ function sendMessage(wfMessage, callback) {
  * @function getMessage
  * @alias module:lib/blockchains/ethereum.getMessage
  * @param {Object} wfQuery the property of the transaction to look up
- * @param {bcGetMessageCb} callback function to be called after Whiteflag message lookup
+ * @param {bcGetMessageCb} callback function called after Whiteflag message lookup
  */
 function getMessage(wfQuery, callback) {
     const transactionHash = wfQuery['MetaHeader.transactionHash'];
@@ -189,7 +196,7 @@ function getMessage(wfQuery, callback) {
  * @function requestSignature
  * @alias module:lib/blockchains/ethereum.requestSignature
  * @param {wfSignPayload} wfSignPayload the JWS payload for the Whiteflag signature
- * @param {authRequestSignatureCb} callback function to be called upon completion
+ * @param {authRequestSignatureCb} callback function called on completion
  */
 function requestSignature(wfSignPayload, callback) {
     log.trace(MODULELOG, `Generating Whiteflag authentication signature: ${JSON.stringify(wfSignPayload)}`);
@@ -227,7 +234,7 @@ function requestSignature(wfSignPayload, callback) {
  * @param {wfSignature} wfSignature the Whiteflag authentication signature
  * @param {string} ethAddress the address of the Whiteflag signature
  * @param {string} ethPublicKey the Ethereum public key to verify against
- * @param {authVerifySignatureCb} callback function to be called upon completion
+ * @param {authVerifySignatureCb} callback function called on completion
  */
 function verifySignature(wfSignature, ethAddress, ethPublicKey, callback) {
     log.trace(MODULELOG, `Verifying Whiteflag authentication signature against public key ${ethPublicKey}: ${JSON.stringify(wfSignature)}`);
@@ -256,7 +263,7 @@ function verifySignature(wfSignature, ethAddress, ethPublicKey, callback) {
  * @function getBinaryAddress
  * @alias module:lib/blockchains/ethereum.getBinaryAddress
  * @param {string} ethAddress the blockchain address
- * @param {bcBinaryAddressCb} callback function to be called upon completion
+ * @param {bcBinaryAddressCb} callback function called on completion
  */
 function getBinaryAddress(ethAddress, callback) {
     if (_ethApi.utils.isAddress(withHexPrefix(ethAddress))) {
@@ -270,7 +277,7 @@ function getBinaryAddress(ethAddress, callback) {
  * @function transferFunds
  * @alias module:lib/blockchains/ethereum.transferFunds
  * @param {wfTransfer} transfer the object with the transaction details to transfer funds
- * @param {bcSendTransactionCb} callback function to be called upon completion
+ * @param {bcSendTransactionCb} callback function called on completion
  */
 function transferFunds(transfer, callback) {
     log.trace(MODULELOG, `Transferring funds: ${JSON.stringify(transfer)}`);
@@ -290,7 +297,7 @@ function transferFunds(transfer, callback) {
  * @function createAccount
  * @alias module:lib/blockchains/ethereum.createAccount
  * @param {string} [ethPrivateKey] hexadecimal string with private key (without 0x prefix)
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
  function createAccount(ethPrivateKey, callback) {
     ethAccounts.create(ethPrivateKey)
@@ -306,7 +313,7 @@ function transferFunds(transfer, callback) {
  * @function updateAccount
  * @alias module:lib/blockchains/ethereum.updateAccount
  * @param {wfAccount} account the account information including address to be updated
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function updateAccount(account, callback) {
     ethAccounts.update(account)
@@ -322,7 +329,7 @@ function updateAccount(account, callback) {
  * @function deleteAccount
  * @alias module:lib/blockchains/ethereum.deleteAccount
  * @param {string} ethAddress the address of the account to be deleted
- * @param {bcAccountCb} callback function to be called upon completion
+ * @param {bcAccountCb} callback function called on completion
  */
 function deleteAccount(ethAddress, callback) {
     ethAccounts.delete(ethAddress)
@@ -342,13 +349,13 @@ function deleteAccount(ethAddress, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

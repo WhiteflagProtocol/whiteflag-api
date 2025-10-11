@@ -37,13 +37,11 @@
  * @tutorial openapi
  */
 module.exports = {
-    // Server functions
     start: startServer,
     stop: stopServer,
     createEndpoints,
     sendSocket,
     monitorSocket,
-    // Private server functions for testing
     test: {
         getEndpoints,
         getOpenApiEndpoints
@@ -63,10 +61,11 @@ const socket = require('socket.io');
 const log = require('./_common/logger');
 const { ignore } = require('./_common/processing');
 const { ProcessingError } = require('./_common/errors');
-const response = require('./_common/httpres');
+const { createBody,
+        sendImperative } = require('./_common/httpres');
 
 // Whiteflag modules //
-const wfApiConfig = require('./config');
+const wfConfig = require('./config');
 
 // Whiteflag modules with endpoint operations //
 const wfApiMessagesHandler = require('./operations/messages');
@@ -82,8 +81,8 @@ const SOCKETPATH = '/socket';
 const OPENAPIFILE = '../static/openapi.json';
 
 // Module objects //
-let _wfApiConfig;
 let _wfApi;
+let _wfApiConfig;
 let _wfServer;
 let _wfSocket;
 
@@ -92,12 +91,11 @@ let _wfSocket;
  * Starts the API http server
  * @function startServer
  * @alias module:lib/server.start
- * @param {function(Error, url)} callback function called after starting the server
- * @typedef {string} url the server url
+ * @param {genericCb} callback function called after starting the server
  */
 function startServer(callback) {
     // Get configuration
-    _wfApiConfig = wfApiConfig.getConfig();
+    _wfApiConfig = wfConfig.getConfig();
     const protocol = _wfApiConfig.server.protocol || 'http';
     const hostname = _wfApiConfig.server.hostname || '';
     const port = process.env.WFPORT || _wfApiConfig.server.port || '5746';
@@ -208,7 +206,7 @@ function startServer(callback) {
  * Stops the API http server
  * @function stopServer
  * @alias module:lib/server.stop
- * @param {function(Error)} callback function called after stopping the server
+ * @param {errorCb} callback function called after stopping the server
  */
 function stopServer(callback) {
     // Try to shutdown socket
@@ -242,7 +240,7 @@ function stopServer(callback) {
  * @function createEndpoints
  * @alias module:lib/server.createEndpoints
  * @param {logEndpointEventCb} endpointCb function passed to the endpoint handler to be invoked when done
- * @param {function(Error)} callback function to be called upon completion
+ * @param {errorCb} callback function called on completion
  */
 function createEndpoints(endpointCb, callback) {
     // Endpoints array index
@@ -386,12 +384,12 @@ function createEndpoint(route, method, operationId, handler, endpointCb) {
  * @param {Object} req the http request
  * @param {Object} res the http response
  * @param {string} operationId the operation id as defined in the openapi definition
- * @param {logEndpointEventCb} callback function to be called upon completion
+ * @param {logEndpointEventCb} callback function called on completion
  */
 function undefinedHandler(req, res, operationId, callback) {
-    let resBody = response.createBody(req, operationId);
+    let resBody = createBody(req, operationId);
     let err = new ProcessingError('Undefined endpoint or illegal method', null, 'WF_API_NO_RESOURCE');
-    return response.sendImperative(res, err, resBody, null, callback);
+    return sendImperative(res, err, resBody, null, callback);
 }
 
 /**
@@ -403,22 +401,22 @@ function undefinedHandler(req, res, operationId, callback) {
  * @param {logEndpointEventCb} callback
  */
 function forbiddenHandler(req, res, operationId, callback) {
-    let resBody = response.createBody(req, operationId);
+    let resBody = createBody(req, operationId);
     let err = new ProcessingError(`Configuration does not allow operation: ${operationId}`, null, 'WF_API_NOT_ALLOWED');
-    return response.sendImperative(res, err, resBody, null, callback);
+    return sendImperative(res, err, resBody, null, callback);
 }
 
 /**
  * Handles middleware errors
  * @private
- * @param {Error} err the error
+ * @param {Error} err any error
  * @param {Object} req the http request
  * @param {Object} res the http response
  * @param {function} next middleware function to be called next
  */
 function errorHandler(err, req, res, next) {
     const statusCode = err.status || 500;
-    let resBody = response.createBody(req, null);
+    let resBody = createBody(req, null);
 
     // Compose error message
     let errorMessage = err.message || 'Unspecified error';
@@ -440,7 +438,7 @@ function errorHandler(err, req, res, next) {
  * @returns {Object} the response body
  */
 function unauthorizedResponse(req) {
-    let resBody = response.createBody(req, null);
+    let resBody = createBody(req, null);
     resBody.errors = [ 'Unauthorized to access this endpoint or resource' ];
     log.warn(MODULELOG, `Unauthorised request: ${JSON.stringify(resBody.meta.request)}`);
     return resBody;
@@ -530,13 +528,13 @@ function getOpenApiEndpoints() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

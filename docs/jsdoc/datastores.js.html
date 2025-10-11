@@ -50,11 +50,11 @@ const toml = require('toml');
 const jsonValidate = require('jsonschema').validate;
 
 // Common internal functions and classes //
-const array = require('./_common/arrays');
+const arr = require('./_common/arrays');
 const log = require('./_common/logger');
 const { ignore } = require('./_common/processing');
 
-// Whiteflag event emitters //
+// Whiteflag modules //
 const wfRxEvent = require('./protocol/events').rxEvent;
 const wfTxEvent = require('./protocol/events').txEvent;
 
@@ -81,7 +81,7 @@ let _storeEventRegister = {
  * Initialises configured datastores
  * @function initDatastores
  * @alias module:lib/datastores.init
- * @param {datastoreInitCb} callback function to be called upon completion
+ * @param {datastoreInitCb} callback function called on completion
  */
 function initDatastores(callback) {
     // Read the configuration file
@@ -96,7 +96,7 @@ function initDatastores(callback) {
         _datastoresConfig = datastoresConfig.databases;
 
         // Get array of names of configured datastores
-        _datastores = array.pluck(_datastoresConfig, 'name');
+        _datastores = arr.pluck(_datastoresConfig, 'name');
         log.debug(MODULELOG, `Configured datastores in ${DSCONFFILE}: ` + JSON.stringify(_datastores));
 
         // Pass result of initialization to callback
@@ -110,7 +110,7 @@ function initDatastores(callback) {
  * Closes configured datastores
  * @function closeDatastores
  * @alias module:lib/datastores.close
- * @param {function(Error)} callback function to be called upon completion
+ * @param {genericCb} callback function called on completion
  */
 function closeDatastores(callback) {
     _datastoresConfig.forEach(dbInstance => {
@@ -119,7 +119,7 @@ function closeDatastores(callback) {
             /**
              * Callback after closing the datastore
              * @callback datastoreInitCb
-             * @param {Error} err error object if any error
+             * @param {Error} err any error
              */
             dbInstance._module.close(function datastoreCloseCb(err) {
                 dbInstance._initialised = false;
@@ -140,7 +140,7 @@ function closeDatastores(callback) {
  * @function storeMessage
  * @alias module:lib/datastores.storeMessage
  * @param {wfMessage} wfMessage the Whiteflag message to be stored
- * @param {datastoreStoreMessageCb} callback function to be called upon completion
+ * @param {datastoreStoreMessageCb} callback function called on completion
  */
 function storeMessage(wfMessage = {}, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
@@ -149,7 +149,7 @@ function storeMessage(wfMessage = {}, callback) {
             /**
              * Callback after storing the Whiteflag message
              * @callback datastoreStoreMessageCb
-             * @param {Error} err error object if any error
+             * @param {Error} err any error
              * @param {*} result the result
              */
             dbInstance._module.storeMessage(wfMessage, function datastoreStoreMessageCb(err, result) {
@@ -170,7 +170,7 @@ function storeMessage(wfMessage = {}, callback) {
  * @function getMessages
  * @alias module:lib/datastores.getMessages
  * @param {Object} wfQuery the properties of the messages to look up
- * @param {datastoreGetMessagesCb} callback function to be called upon completion
+ * @param {datastoreGetMessagesCb} callback function called on completion
  */
 function getMessages(wfQuery = {}, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
@@ -178,7 +178,7 @@ function getMessages(wfQuery = {}, callback) {
     /**
      * Callback after retrieving Whiteflag messages
      * @callback datastoreGetMessagesCb
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      * @param {Array} wfMessages the resulting Whiteflag messages
      * @param {number} count the number of messages found
      */
@@ -197,7 +197,7 @@ function getMessages(wfQuery = {}, callback) {
  * @function storeState
  * @alias module:lib/datastores.storeState
  * @param {Object} stateObject state data enclosed in a storage / encryption container
- * @param {datastoreStoreStateCb} callback function to be called upon completion
+ * @param {datastoreStoreStateCb} callback function called on completion
  */
 function storeState(stateObject, callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
@@ -205,7 +205,7 @@ function storeState(stateObject, callback) {
     /**
      * Callback after storing the Whiteflag state
      * @callback datastoreStoreStateCb
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      * @param {*} result the result
      */
     function datastoreStoreStateCb(err, result) {
@@ -219,7 +219,7 @@ function storeState(stateObject, callback) {
  * Gets Whiteflag state from the primary database
  * @function getState
  * @alias module:lib/datastores.getState
- * @param {datastoreGetStateCb} callback function to be called upon completion
+ * @param {datastoreGetStateCb} callback function called on completion
  */
 function getState(callback) {
     if (_datastoresConfig.length &lt;= 0) return callback(new Error('No datastore configured'), null);
@@ -227,7 +227,7 @@ function getState(callback) {
     /**
      * Callback after getting the Whiteflag state
      * @callback datastoreGetStateCb
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      * @param {Object} stateObject state data enclosed in a storage / encryption container
      */
     function datastoreGetStateCb(err, stateObject) {
@@ -281,7 +281,7 @@ function parseConfig(datastoresConfig) {
  */
 function validateConfig(datastoresConfig) {
     try {
-        return [].concat(array.pluck(jsonValidate(datastoresConfig, wfDatastoresConfigSchema).errors, 'stack'));
+        return [].concat(arr.pluck(jsonValidate(datastoresConfig, wfDatastoresConfigSchema).errors, 'stack'));
     } catch(err) {
         return [].push(err.message);
     }
@@ -356,7 +356,7 @@ function enabledbInstance(dbInstance) {
 /**
  * Calls init function for each datastore
  * @private
- * @param {function} callback
+ * @param {genericCb} callback
  */
 function initdbInstance(callback) {
     // Get configuration and call init function for each datastore
@@ -365,7 +365,7 @@ function initdbInstance(callback) {
             /**
              * Callback after initialising the datastore
              * @callback datastoreInitCb
-             * @param {Error} err error object if any error
+             * @param {Error} err any error
              */
             dbInstance._module.init(dbInstance, function datastoreInitCb(err) {
                 if (err) {
@@ -405,7 +405,7 @@ function txStoreMessage(event, wfMessage) {
     /**
      * Transmits result of storage of sent message
      * @callback txStoreMessageDbCb
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      * @param {wfMessage} storedMessage the stored Whiteflag message
      */
     function datastoreTxStoreMessageCb(err, storedMessage) {
@@ -430,7 +430,7 @@ function rxStoreMessage(event, wfMessage) {
     /**
      * Transmits result of storage of received message
      * @callback rxStoreMessageDbCb
-     * @param {Error} err error object if any error
+     * @param {Error} err any error
      * @param {wfMessage} storedMessage the stored Whiteflag message
      */
     function datastoreRxStoreMessageCb(err, storedMessage) {
@@ -448,13 +448,13 @@ function rxStoreMessage(event, wfMessage) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

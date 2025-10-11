@@ -37,33 +37,27 @@
  * @tutorial state
  */
 module.exports = {
-    // State functions
     init: initState,
     close: closeState,
     save: saveState,
-    // Blockchain state functions
     backupAccount,
     getBlockchains,
     getBlockchainData,
     updateBlockchainData,
-    // Originator state functions
     getOriginators,
     getOriginatorData,
     upsertOriginatorData,
     removeOriginatorData,
     getOriginatorAuthToken,
     removeOriginatorAuthToken,
-    // Queue function
     getQueue,
     getQueueData,
     upsertQueueData,
     removeQueueData,
-    // Cryptographic keys
     getKeyIds,
     getKey,
     upsertKey,
     removeKey,
-    // Private state functions for testing
     test: {
         validate: validateState,
         enclose: encloseState,
@@ -131,16 +125,16 @@ const crypto = require('crypto');
 const jsonValidate = require('jsonschema').validate;
 
 // Common internal functions and classes //
-const array = require('../_common/arrays');
+const arr = require('../_common/arrays');
 const log = require('../_common/logger');
-const object = require('../_common/objects');
-const { hkdf, hash, zeroise } = require('../_common/crypto');
+const obj = require('../_common/objects');
 const { ProcessingError } = require('../_common/errors');
+const { hkdf,
+        hash,
+        zeroise } = require('../_common/crypto');
 
 // Whiteflag modules //
-const wfApiDatastores = require('../datastores');
-
-// Whiteflag event emitters //
+const wfDatastores = require('../datastores');
 const wfStateEvent = require('./events').stateEvent;
 
 // Whiteflag configuration data //
@@ -173,7 +167,7 @@ let _stateFile = '/tmp/whiteflag.state';
  * Restores previous state from file and binds event handlers to state changes
  * @function initState
  * @alias module:lib/protocol/state.init
- * @param {function(Error)} callback function called after initialising/restoring state
+ * @param {errorCb} callback function called after initialising/restoring state
  * @emits module:lib/protocol/events.stateEvent:initialised
  */
 function initState(callback) {
@@ -191,7 +185,7 @@ function initState(callback) {
 
     // Retrieve state
     log.trace(MODULELOG, 'Retrieving previous state from datastore');
-    wfApiDatastores.getState(function stateReadDatastoreCb(err, stateDbData) {
+    wfDatastores.getState(function stateReadDatastoreCb(err, stateDbData) {
         if (err) return callback(new Error(`Could not retrieve state from datastore: ${err.message}`));
         if (!stateDbData) {
             log.info(MODULELOG, 'Found no existing state: Starting with clean internal state');
@@ -218,7 +212,7 @@ function initState(callback) {
  * Ensures a proper shutdown
  * @function closeState
  * @alias module:lib/protocol/state.closeState
- * @param {function(Error)} [callback] function called after initialising/restoring state
+ * @param {errorCb} [callback] function called after initialising/restoring state
  * @emits module:lib/protocol/events.stateEvent:closed
  */
 function closeState(callback) {
@@ -250,7 +244,7 @@ function saveState() {
     }
     // Save state in datastore
     log.trace(MODULELOG, 'Saving current state to datastore');
-    wfApiDatastores.storeState(stateObject, function stateStoreDatastoreCb(err) {
+    wfDatastores.storeState(stateObject, function stateStoreDatastoreCb(err) {
         if (err) return log.error(MODULELOG, `Could not store state in datastore: ${err.message}`);
         return wfStateEvent.emit('saved');
     });
@@ -268,7 +262,7 @@ function saveState() {
  * Returns blockchain state data to callback
  * @function getBlockchains
  * @alias module:lib/protocol/state.getBlockchains
- * @param {function(Error, blockchainsData)} [callback] function to which data is passed
+ * @param {genericCb} [callback] function to which data is passed
  * @returns {blockchainsData}
  */
 function getBlockchains(callback) {
@@ -281,7 +275,7 @@ function getBlockchains(callback) {
  * @function getBlockchainData
  * @alias module:lib/protocol/state.getBlockchainData
  * @param {string} blockchain name of the blockchain
- * @param {function(Error, blockchainData)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getBlockchainData(blockchain, callback) {
     if (!Object.hasOwn(_wfState.blockchains, blockchain)) {
@@ -332,7 +326,7 @@ function backupAccount(blockchain, address) {
  * Returns originator state data to callback
  * @function getOriginators
  * @alias module:lib/protocol/state.getOriginators
- * @param {function(Error, originatorsData)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getOriginators(callback) {
     if (callback) return callback(null, _wfState.originators);
@@ -344,7 +338,7 @@ function getOriginators(callback) {
  * @function getOriginatorData
  * @alias module:lib/protocol/state.getOriginatorData
  * @param {string} address the originator's blockchain address
- * @param {function(Error, originatorData)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getOriginatorData(address, callback) {
     const index = _wfState.originators.findIndex(
@@ -399,7 +393,7 @@ function upsertOriginatorData(data) {
             // Update if existing originator with token but (different) address
             if (!_wfState.originators[indexT].address) {
                 // No address, so update originator with same token
-                object.update(data, _wfState.originators[indexT]);
+                obj.update(data, _wfState.originators[indexT]);
                 wfStateEvent.emit('updatedOriginatorAuthToken', data.authTokenId);
                 return saveState();
             } else {
@@ -423,7 +417,7 @@ function upsertOriginatorData(data) {
                 });
             }
             // Update if existing originator with address but no token or same token
-            object.update(data, _wfState.originators[indexA]);
+            obj.update(data, _wfState.originators[indexA]);
             wfStateEvent.emit('updatedOriginator', data.address);
             return saveState();
         }
@@ -433,7 +427,7 @@ function upsertOriginatorData(data) {
         _wfState.originators.splice(indexT, 1);
     }
     // Update existing originator
-    object.update(data, _wfState.originators[indexA]);
+    obj.update(data, _wfState.originators[indexA]);
     wfStateEvent.emit('updatedOriginator', data.address);
     return saveState();
 }
@@ -461,7 +455,7 @@ function removeOriginatorData(address) {
  * @function getOriginatorAuthToken
  * @alias module:lib/protocol/state.getOriginatorAuthToken
  * @param {string} authTokenId the originator's authentication token
- * @param {function(Error, originatorData)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getOriginatorAuthToken(authTokenId, callback) {
     const index = _wfState.originators.findIndex(
@@ -501,7 +495,7 @@ function removeOriginatorAuthToken(authTokenId) {
  * @function getQueue
  * @alias module:lib/protocol/state.getQueue
  * @param {string} queue the name of the queue
- * @param {function(Error, queueData)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getQueue(queue, callback) {
     if (!Object.hasOwn(_wfState.queue, queue)) {
@@ -517,7 +511,7 @@ function getQueue(queue, callback) {
  * @param {string} queue the name of the queue
  * @param {string} property the data object property name by which the item is identified
  * @param {Object} value the value of the property by which the item is identified
- * @param {function(Error, Object)} callback function to which data is passed
+ * @param {genericCb} callback function to which data is passed
  */
 function getQueueData(queue, property, value, callback) {
     if (!Object.hasOwn(_wfState.queue, queue)) {
@@ -580,13 +574,13 @@ function removeQueueData(queue, property, value) {
  * @function getKeyIds
  * @alias module:lib/protocol/state.getKeyIds
  * @param {string} category the key category
- * @param {function(Error, Array)} callback function to which the key is passed
+ * @param {genericCb} callback function to which the key is passed
  */
 function getKeyIds(category, callback) {
     if (!Object.hasOwn(_wfState.crypto, category)) {
         return callback(new Error(`Key category ${category} does not exist`));
     }
-    return callback(null, array.pluck(_wfState.crypto[category], 'id'));
+    return callback(null, arr.pluck(_wfState.crypto[category], 'id'));
 }
 
 /**
@@ -595,7 +589,7 @@ function getKeyIds(category, callback) {
  * @alias module:lib/protocol/state.getKey
  * @param {string} category the key category
  * @param {string} id unique identifier of the key
- * @param {function(Error, key)} callback function to which the key is passed
+ * @param {genericCb} callback function to which the key is passed
  */
 function getKey(category, id, callback) {
     if (!Object.hasOwn(_wfState.crypto, category)) {
@@ -675,7 +669,7 @@ function removeKey(category, id) {
 function validateState(stateData = _wfState) {
     let stateErrors = [];
     try {
-        stateErrors = array.pluck(jsonValidate(stateData, wfStateSchema).errors, 'stack');
+        stateErrors = arr.pluck(jsonValidate(stateData, wfStateSchema).errors, 'stack');
     } catch(err) {
         stateErrors.push(err.message);
     }
@@ -999,13 +993,13 @@ function checkStateDataOriginators(stateData) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
