@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.0.1",
+    "version": "1.1.0-dev",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "keywords": [
         "whiteflag",
@@ -10,31 +10,32 @@
     ],
     "license": "CC0-1.0",
     "dependencies": {
-        "bitcoinjs-lib": "^6.1.5",
-        "body-parser": "^1.20.2",
-        "bs58": "^5.0.0",
+        "bitcoinjs-lib": "^6.1.7",
+        "body-parser": "^2.2.0",
+        "bs58": "^6.0.0",
         "cors": "^2.8.5",
         "ethereumjs-tx": "^2.1.2",
         "ethereumjs-util": "^7.1.5",
-        "express": "^4.19.2",
+        "express": "^4.21.2",
         "express-basic-auth": "^1.2.1",
-        "jsonschema": "^1.4.1",
+        "jsonschema": "^1.5.0",
         "jsonwebtoken": "^9.0.2",
         "keccak": "3.0.4",
         "key-encoder": "^2.0.3",
-        "mongodb": "^3.6.12",
+        "mongodb": "^3.7.4",
+        "@polkadot/api": "^16.4.4",
         "simpl.db": "^2.13.0",
-        "socket.io": "^4.7.5",
+        "socket.io": "^4.8.1",
         "toml": "^3.0.0",
         "web3": "^1.10.4"
     },
     "devDependencies": {
         "cloc": "^2.9.0",
-        "eslint": "^8.7.0",
-        "jsdoc": "^4.0.3",
+        "eslint": "^9.33.0",
+        "jsdoc": "^4.0.4",
         "license-checker": "^25.0.1",
-        "mocha": "^10.4.0",
-        "semver": "^7.6.2",
+        "mocha": "^11.7.1",
+        "semver": "^7.7.2",
         "widdershins": "^4.0.1"
     },
     "resolutions": {
@@ -70,6 +71,6 @@
         "licenses": "license-checker --summary"
     },
     "engines": {
-        "node": ">=16.13.x"
+        "node": ">=20.19.x"
     }
 }

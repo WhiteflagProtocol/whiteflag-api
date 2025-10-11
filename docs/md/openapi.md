@@ -1,5 +1,5 @@
 ---
-title: Whiteflag API v1.0.1
+title: Whiteflag API v1.1.0-dev
 language_tabs:
   - shell: Shell
   - http: HTTP
@@ -19,7 +19,7 @@ headingLevel: 2
 
 <!-- Generator: Widdershins v4.0.1 -->
 
-<h1 id="whiteflag-api">Whiteflag API v1.0.1</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.1.0-dev</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -1882,7 +1882,7 @@ false
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully accepted the update request for the Whiteflag originator|Inline|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 
@@ -1933,7 +1933,7 @@ Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully accepted the delete request for the Whiteflag originator|Inline|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 

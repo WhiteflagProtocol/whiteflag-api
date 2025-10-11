@@ -58,7 +58,7 @@ const { ProcessingError } = require('../../common/errors');
 const wfState = require('../../protocol/state');
 
 // Bitcoin sub-modules //
-const bcRpc = require('./rpc');
+const btcRpc = require('./rpc');
 
 // Module constants //
 const ACCOUNTSYNCDELAY = 10000;
@@ -67,26 +67,26 @@ const KEYIDLENGTH = 12;
 
 // Module variables //
 let _blockchainName;
-let _bcState;
+let _btcState;
 let _transactionBatchSize = 128;
 
 /**
  * Initialises Bitcoin accounts management
  * @function initAccounts
  * @alias module:lib/blockchains/bitcoin/accounts.init
- * @param {Object} bcConfig the Bitcoin blockchain configuration
- * @param {Object} bcState the Bitcoin blockchain state
+ * @param {Object} btcConfig the Bitcoin blockchain configuration
+ * @param {Object} btcState the Bitcoin blockchain state
  */
-async function initAccounts(bcConfig, bcState) {
-    _blockchainName = bcConfig.name;
-    _bcState = bcState;
+async function initAccounts(btcConfig, btcState) {
+    _blockchainName = btcConfig.name;
+    _btcState = btcState;
     log.trace(_blockchainName, 'Initialising Bitcoin accounts management...');
 
     // Wallet synchronisation parameters
-    if (bcConfig.transactionBatchSize) _transactionBatchSize = bcConfig.transactionBatchSize;
+    if (btcConfig.transactionBatchSize) _transactionBatchSize = btcConfig.transactionBatchSize;
 
     // If configured, create new account if none exists
-    if (bcConfig.createAccount &amp;&amp; _bcState.accounts.length === 0) {
+    if (btcConfig.createAccount &amp;&amp; _btcState.accounts.length === 0) {
         createAccount(null)
         .then(account => {
             log.info(_blockchainName, `Bitcoin account created automatically: ${account.address}`);
@@ -94,7 +94,7 @@ async function initAccounts(bcConfig, bcState) {
         .catch(err => log.warn(_blockchainName, err.message));
     } else {
         // Upgrade data structure of existing accounts
-        for (let account of _bcState.accounts) {
+        for (let account of _btcState.accounts) {
             upgradeAccountData(account);
         }
     }
@@ -114,7 +114,7 @@ async function initAccounts(bcConfig, bcState) {
  */
 function getAccount(address) {
     return new Promise((resolve, reject) => {
-        let account = _bcState.accounts.find(item => item.address === address);
+        let account = _btcState.accounts.find(item => item.address === address);
         if (!account) {
             return reject(new ProcessingError(`The ${_blockchainName} account does not exist: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
@@ -134,7 +134,7 @@ function checkAccount(address) {
         getAccount(address)
         .then(account => {
             if (account.syncing === true) {
-                return reject(new ProcessingError(`The ${_blockchainName} account cannot be used because it is currently syncing at block: ${account.lastBlock}/${_bcState.status.currentBlock}`, null, 'WF_API_NOT_AVAILABLE'));
+                return reject(new ProcessingError(`The ${_blockchainName} account cannot be used because it is currently syncing at block: ${account.lastBlock}/${_btcState.status.currentBlock}`, null, 'WF_API_NOT_AVAILABLE'));
             }
             resolve(account);
         })
@@ -155,11 +155,11 @@ async function createAccount(wif = null) {
         try {
             if (wif !== null) {
                 log.trace(_blockchainName, 'Creating Bitcoin account from WIF');
-                account = generateAccount(bitcoin.ECPair.fromWif(wif, _bcState.parameters.network));
+                account = generateAccount(bitcoin.ECPair.fromWif(wif, _btcState.parameters.network));
             } else {
                 log.trace(_blockchainName, 'Creating new Bitcoin account with generated keys');
-                account = generateAccount(bitcoin.ECPair.makeRandom({ network: _bcState.parameters.network }));
-                bcRpc.getBlockCount()
+                account = generateAccount(bitcoin.ECPair.makeRandom({ network: _btcState.parameters.network }));
+                btcRpc.getBlockCount()
                 .then(highestBlock => {
                     account.firstBlock = highestBlock;
                     account.lastBlock = highestBlock;
@@ -225,15 +225,15 @@ function deleteAccount(address) {
 
     return new Promise((resolve, reject) => {
         // Get index of account in state
-        const index = _bcState.accounts.findIndex(item => item.address === address);
+        const index = _btcState.accounts.findIndex(item => item.address === address);
         if (index &lt; 0) {
             return reject(new ProcessingError(`Could not find ${_blockchainName} account: ${address}`, null, 'WF_API_NO_RESOURCE'));
         }
         // Remove account from state after double check
-        const account = _bcState.accounts[index];
+        const account = _btcState.accounts[index];
         if (account.address === address) {
-            _bcState.accounts.splice(index, 1);
-            wfState.updateBlockchainData(_blockchainName, _bcState);
+            _btcState.accounts.splice(index, 1);
+            wfState.updateBlockchainData(_blockchainName, _btcState);
         } else {
             return reject(new Error(`Could not not delete ${_blockchainName} account: ${address}`));
         }
@@ -288,7 +288,7 @@ function deleteAccount(address) {
  * @param {Object} block the full block including transactions
  */
 function processBlockUtxos(blockNumber, block) {
-    for (let account of _bcState.accounts) {
+    for (let account of _btcState.accounts) {
         // Only process the next block and if not already syncing
         if (account.syncing === true) break;
         if (account.lastBlock === (blockNumber - 1)) {
@@ -318,7 +318,7 @@ function generateAccount(bcKeyPair) {
     return {
         address: bitcoin.payments.p2pkh({
             pubkey: bcKeyPair.publicKey,
-            network: _bcState.parameters.network
+            network: _btcState.parameters.network
         }).address,
         publicKey: bcKeyPair.publicKey.toString('hex'),
         privateKey: bcKeyPair.privateKey.toString('hex'),
@@ -362,15 +362,15 @@ function upsertAccount(account) {
         delete account.privateKey;
     }
     // Inserting or updating
-    let existingAccount = _bcState.accounts.find(item => item.address === account.address);
+    let existingAccount = _btcState.accounts.find(item => item.address === account.address);
     if (!existingAccount) {
         // Insert new account
-        _bcState.accounts.push(account);
+        _btcState.accounts.push(account);
     } else {
         // Update account
         object.update(account, existingAccount);
     }
-    wfState.updateBlockchainData(_blockchainName, _bcState);
+    wfState.updateBlockchainData(_blockchainName, _btcState);
 }
 
 /**
@@ -378,7 +378,7 @@ function upsertAccount(account) {
  * @private
  */
 function synchroniseAccounts() {
-    for (let account of _bcState.accounts) {
+    for (let account of _btcState.accounts) {
         scheduleSynchroniseAccount(account.address);
     }
 }
@@ -407,21 +407,21 @@ function scheduleSynchroniseAccount(address) {
  */
 function synchroniseAccount(account) {
     // To sync or not to sync
-    if (account.lastBlock >= _bcState.status.currentBlock) {
+    if (account.lastBlock >= _btcState.status.currentBlock) {
         if (account.syncing) {
-            log.info(_blockchainName, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_bcState.status.highestBlock}`);
+            log.info(_blockchainName, `Completed synchronisation of account ${account.address} at block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
             account.syncing = false;
         }
         return Promise.resolve();
     }
     if (!account.syncing) {
-        log.info(_blockchainName, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_bcState.status.highestBlock}`);
+        log.info(_blockchainName, `Starting synchronisation of account ${account.address} from block: ${account.lastBlock}/${_btcState.status.highestBlock}`);
         account.syncing = true;
     }
     // Get next block
     let thisBlock = account.lastBlock + 1;
-    log.trace(_blockchainName, `Synchronising account ${account.address} with block: ${thisBlock}/${_bcState.status.highestBlock}`);
-    bcRpc.getBlockByNumber(thisBlock, true)
+    log.trace(_blockchainName, `Synchronising account ${account.address} with block: ${thisBlock}/${_btcState.status.highestBlock}`);
+    btcRpc.getBlockByNumber(thisBlock, true)
     .then(block => {
         return processAccountTransactions(0, block.tx, account);
     })
@@ -561,13 +561,13 @@ function checkAccountUtxosSpent(transaction, index, account) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common_crypto.html">lib/blockchains/common/crypto</a></li><li><a href="module-lib_blockchains_common_format.html">lib/blockchains/common/format</a></li><li><a href="module-lib_blockchains_common_rpc.html">lib/blockchains/common/rpc</a></li><li><a href="module-lib_blockchains_common_state.html">lib/blockchains/common/state</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Aug 16 2025 12:40:46 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
