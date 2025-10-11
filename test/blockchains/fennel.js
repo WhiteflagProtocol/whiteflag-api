@@ -35,7 +35,7 @@ testCase('Fennel blockchain module', function() {
     testCase('Fennel accounts', function() {
         assertion(' 1. should correctly create account from seed', function(done) {
             account = fnlAccounts.test.createAccountEntry(testVector.accounts['1'].seed);
-            keypair = fnlAccounts.createKeypair(account.publicKey, account.privateKey);
+            keypair = fnlAccounts.test.createKeypair(account.publicKey, account.privateKey);
             assert.strictEqual(account.address, testVector.accounts['1'].address);
             assert.strictEqual(account.publicKey, testVector.accounts['1'].publicKey);
             return done();
@@ -53,7 +53,7 @@ testCase('Fennel blockchain module', function() {
         assertion(' 3. should correctly create and verify Whiteflag signature', function(done) {
             // Create hexadecimal signature
             const payload = testVector.accounts['1'].payload;
-            const input1 = jws.createSignInput(payload, 'sr25519');
+            const input1 = jws.createSignInput(payload, 'sr25519', false);
             const output = fnlAccounts.test.generateSignature(input1, account.publicKey, account.privateKey);
             const wfSignature = jws.createFlattened(input1, hexToBase64u(output));
             

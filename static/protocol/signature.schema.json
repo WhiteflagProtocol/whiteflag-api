@@ -99,17 +99,17 @@
             "additionalProperties": false,
             "required": [
                 "blockchain",
-                "originatorPubKey",
-                "wfSignature"
+                "pubkey",
+                "jws"
             ],
             "properties": {
                 "blockchain" : {
                     "$ref": "metaheader.schema.json#/properties/blockchain"
                 },
-                "originatorPubKey": {
+                "pubkey": {
                     "$ref": "metaheader.schema.json#/properties/originatorPubKey"
                 },
-                "wfSignature": {
+                "jws": {
                     "$ref": "#/definitions/wfSignature"
                 }
             }

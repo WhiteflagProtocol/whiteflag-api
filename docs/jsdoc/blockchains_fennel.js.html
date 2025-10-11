@@ -35,13 +35,14 @@
  * @tutorial fennel
  */
 module.exports = {
-    // Fennel parachain functions
     init: initFennel,
+    scanBlocks,
     sendMessage,
     getMessage,
-    requestKeys,
     requestSignature,
     verifySignature,
+    getBinaryAddress,
+    transferFunds,
     createAccount,
     updateAccount,
     deleteAccount
@@ -61,12 +62,13 @@ const wfState = require('../protocol/state');
 
 // Common blockchain functions //
 const { getEmptyState } = require('./_common/state');
-const { noKeyHexPrefix } = require('./_common/format')
+const { noHexPrefix } = require('./_common/format')
 
 // Fennel sub-modules //
 const fnlRpc = require('./fennel/rpc');
 const fnlAccounts = require('./fennel/accounts');
 const fnlListener = require('./fennel/listener');
+const fnlTransactions =  require('./fennel/transactions');
 
 // Module constants //
 const MODULELOG = 'fennel';
@@ -101,6 +103,7 @@ function initFennel(fnConfig, callback) {
         fnlAccounts.init(fnConfig, _fnlState)
         .then(() => fnlRpc.init(fnConfig, _fnlState))
         .then(() => fnlListener.init(fnConfig, _fnlState))
+        .then(() => fnlTransactions.init(fnConfig))
         .then(() => {
             wfState.updateBlockchainData(_fnlChain, _fnlState);
             return callback(null, _fnlChain);
@@ -110,21 +113,49 @@ function initFennel(fnConfig, callback) {
 }
 
 /**
+ * Scans a number of blocks for Whiteflag messages
+ * @function scanBlocks
+ * @alias module:lib/fennel.scanBlocks
+ * @param {number} firstBlock the starting block
+ * @param {number} lastBlock the ending block
+ * @param {*} callback function to be called upon completion
+ */
+function scanBlocks(firstBlock, lastBlock, callback) {
+    log.debug(MODULELOG, `Scanning block ${firstBlock} to ${lastBlock}`)
+    fnlListener.scanBlocks(firstBlock, lastBlock)
+    .then(wfMessages => {
+        return callback(null, wfMessages);
+    })
+    .catch(err => {
+        return callback(err);
+    });
+}
+
+/**
  * Sends an encoded message on the blockchain
- * @todo Implement funcion
+ * @todo Return blocknumber
  * @function sendMessage
  * @alias module:lib/blockchains/fennel.sendMessage
  * @param {wfMessage} wfMessage the Whiteflag message to be sent on the blockchain
  * @param {bcSendMessageCb} callback function to be called after sending Whiteflag message
  */
 function sendMessage(wfMessage, callback) {
-    ignore(wfMessage);
-    return callback(new ProcessingError('Function not implemented for this blockchain', null, 'WF_API_NOT_IMPLEMENTED'), wfMessage);
+    fnlAccounts.get(wfMessage.MetaHeader.originatorAddress)
+    .then(account => {
+        return fnlTransactions.sendSignal(account, wfMessage.MetaHeader.encodedMessage);
+    })
+    .then(transactionHash => {
+        return callback(null, transactionHash);
+    })
+    .catch(err => {
+        log.error(MODULELOG, `Error sending Whiteflag message: ${err.message}`);
+        return callback(err);
+    });
 }
 
 /**
  * Performs a simple query to find a message by transaction hash
- * @todo Implement funcion
+ * @todo Implement function
  * @function getMessage
  * @alias module:lib/blockchains/fennel.getMessage
  * @param {Object} wfQuery the property of the transaction to look up
@@ -134,39 +165,11 @@ function getMessage(wfQuery, callback) {
     const transactionHash = wfQuery['MetaHeader.transactionHash'];
     ignore(transactionHash);
     let wfMessage = null;
-    return callback(new ProcessingError('Function not implemented for this blockchain', null, 'WF_API_NOT_IMPLEMENTED'), wfMessage);
-}
-
-/**
- * Requests the address and correctly encoded pubic key for an originator
- * @todo Implemenyt function
- * @function requestKeys
- * @alias module:lib/blockchains/fennel.requestKeys
- * @param {string} fnlPublicKey the raw hex public key of the originator
- * @param {bcRequestKeysCb} callback function to be called upon completion
- */
-function requestKeys(fnlPublicKey, callback) {
-    log.trace(MODULELOG, `Getting address for ${_fnlChain} public key: ${btcPublicKey}`);
-    let originatorKeys = {
-        address: null,
-        publicKey: {
-            hex: noKeyHexPrefix(fnlPublicKey)
-        }
-    };
-    fnlAccounts.getAddress(noKeyHexPrefix(fnlPublicKey))
-    .then(fnlAddress => {
-        originatorKeys.address = fnlAddress;
-    })
-    .catch(err => {
-        log.error(MODULELOG, `Could not determine ${_fnlChain} address: ${err.message}`);
-        return callback(err);
-    });
-    return callback(null, originatorKeys);
+    return callback(new ProcessingError('Function to query messages on the blockchain not yet implemented', null, 'WF_API_NOT_IMPLEMENTED'), wfMessage);
 }
 
 /**
  * Requests a Whiteflag signature for a specific Fennel address
- * @todo Complete and test function
  * @function requestSignature
  * @alias module:lib/blockchains/fennel.requestSignature
  * @param {wfSignPayload} wfSignPayload the JWS payload for the Whiteflag signature
@@ -174,7 +177,7 @@ function requestKeys(fnlPublicKey, callback) {
  */
 function requestSignature(wfSignPayload, callback) {
     log.trace(MODULELOG, `Generating Whiteflag authentication signature: ${JSON.stringify(wfSignPayload)}`);
-    const input = jws.createSignInput(wfSignPayload, SIGNALGORITHM)
+    const input = jws.createSignInput(wfSignPayload, SIGNALGORITHM);
     fnlAccounts.sign(input, wfSignPayload.addr)
     .then(output => {
         const signature = hexToBase64u(output);
@@ -189,7 +192,6 @@ function requestSignature(wfSignPayload, callback) {
 
 /** 
  * Verifies a Whiteflag signature for the Fennel blockchain
- * @todo Complete and test function
  * @function verifySignature
  * @alias module:lib/blockchains/fennel.verifySignature
  * @param {wfSignature} wfSignature the Whiteflag authentication signature
@@ -213,7 +215,7 @@ function verifySignature(wfSignature, fnlAddress, fnlPublicKey, callback) {
     fnlAccounts.verify(input, signature, fnlPublicKey)
     .then(valid => {
         if (!valid) signErrors.push('Signature does not match payload or public key');
-        fnlAccounts.getAddress(noKeyHexPrefix(fnlPublicKey))
+        fnlAccounts.getAddress(noHexPrefix(fnlPublicKey))
         .then(signAddress =>{
             if (signAddress !== fnlAddress) signErrors.push(`Public key address does not correspond with address in signature`);
             if (signErrors.length > 0) {
@@ -227,6 +229,46 @@ function verifySignature(wfSignature, fnlAddress, fnlPublicKey, callback) {
 }
 
 /**
+ * Returns a Fennel address in binary encoded form
+ * @function getBinaryAddress
+ * @alias module:lib/blockchains/fennel.getBinaryAddress
+ * @param {string} fnlAddress the Fennel blockchain address
+ * @param {bcBinaryAddressCb} callback function to be called upon completion
+ */
+function getBinaryAddress(fnlAddress, callback) {
+    let addressBuffer;
+    try {
+        addressBuffer = dotCrypto.decodeAddress(fnlAddress);
+    } catch(err) {
+        return callback(new ProcessingError(`Invalid ${_btcChain} address: ${btcAddress}`, err.message, 'WF_API_BAD_REQUEST'));
+    }
+    return callback(null, addressBuffer);
+}
+
+/**
+ * Transfers fennel from one Fennel address to an other address
+ * @todo Return bloc knumber
+ * @function transferFunds
+ * @alias module:lib/blockchains/fennel.transferFunds
+ * @param {wfTransfer} transfer the transaction details for the funds transfer
+ * @param {bcSendTransactionCb} callback function to be called upon completion
+ */
+function transferFunds(transfer, callback) {
+    log.trace(MODULELOG, `Transferring funds: ${JSON.stringify(transfer)}`);
+    fnlAccounts.get(transfer.fromAddress)
+    .then(account => {
+        return fnlTransactions.sendTokens(account, transfer.toAddress, transfer.value);
+    })
+    .then(transactionHash => {
+        return callback(null, transactionHash)
+    })
+    .catch(err => {
+        log.error(MODULELOG, `Error transferring funds: ${err.message}`);
+        return callback(err);
+    });
+}
+
+/**
  * Creates a new Fennel blockchain account
  * @function createAccount
  * @alias module:lib/blockchains/fennel.createAccount
@@ -234,7 +276,7 @@ function verifySignature(wfSignature, fnlAddress, fnlPublicKey, callback) {
  * @param {bcAccountCb} callback function to be called upon completion
  */
  function createAccount(seed, callback) {
-    fnlAccounts.create(seed)
+    fnlAccounts.create(noHexPrefix(seed))
     .then(account => {
         log.info(MODULELOG, `Created ${_fnlChain} account: ${account.address}`);
         return callback(null, account);
@@ -246,7 +288,7 @@ function verifySignature(wfSignature, fnlAddress, fnlPublicKey, callback) {
  * Updates Fennel blockchain account attributes
  * @function updateAccount
  * @alias module:lib/blockchains/fennel.updateAccount
- * @param {Object} account the account information including address to be updated
+ * @param {wfAccount} account the account information including address to be updated
  * @param {bcAccountCb} callback function to be called upon completion
  */
 function updateAccount(account, callback) {
@@ -289,7 +331,7 @@ function deleteAccount(fnlAddress, callback) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

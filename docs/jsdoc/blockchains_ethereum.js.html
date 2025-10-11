@@ -31,16 +31,15 @@
  * @module lib/blockchains/ethereum
  * @summary Whiteflag API Ethereum blockchain implementation
  * @description Module to use Ethereum as underlying blockchain for Whiteflag
- * @todo The Ethereum moduele has not been maintained and needs updating
+ * @todo The Ethereum module has not been maintained and needs evaluation
  * @tutorial modules
  * @tutorial ethereum
  */
 module.exports = {
-    // Ethereum blockchain functions
     init: initEthereum,
+    scanBlocks,
     sendMessage,
     getMessage,
-    requestKeys,
     requestSignature,
     verifySignature,
     getBinaryAddress,
@@ -51,8 +50,7 @@ module.exports = {
 };
 
 // Node.js core and external modules //
-const keccak = require('keccak');
-const { pubToAddress}  = require('ethereumjs-util');
+const { pubToAddress }  = require('ethereumjs-util');
 
 // Common internal functions and classes //
 const log = require('../_common/logger');
@@ -68,9 +66,8 @@ const { getEmptyState } = require('./_common/state');
 const { getPrivateKeyId } = require('./_common/keys');
 const { createJWS, verifyJWS } = require('./_common/crypto');
 const { withHexPrefix,
-        noKeyHexPrefix,
-        noAddressHexPrefix,
-        noPubkeyHexPrefix
+        noHexPrefix,
+        noAddressHexPrefix
     } = require('./_common/format');
 
 // Ethereum sub-modules //
@@ -126,6 +123,20 @@ function initEthereum(ethConfig, callback) {
 }
 
 /**
+ * Scans a number of blocks for Whiteflag messages
+ * @todo Implement block scan for Ethereum
+ * @function scanBlocks
+ * @alias module:lib/ethereum.scanBlocks
+ * @param {number} firstBlock the starting block
+ * @param {number} lastBlock the ending block
+ * @param {*} callback function to be called upon completion
+ */
+function scanBlocks(firstBlock, lastBlock, callback) {
+    ignore(firstBlock, lastBlock);
+    return callback(new ProcessingError('Block scan not implemented for the Ethereum blockchain', null, 'WF_API_NOT_IMPLEMENTED'));
+}
+
+/**
  * Sends an encoded message on the Ethereum blockchain
  * @function sendMessage
  * @alias module:lib/blockchains/ethereum.sendMessage
@@ -173,47 +184,6 @@ function getMessage(wfQuery, callback) {
 }
 
 /**
- * Requests the Ethereum address and correctly encoded public key of an originator
- * @function requestKeys
- * @alias module:lib/blockchains/ethereum.requestKeys
- * @param {string} ethPublicKey the raw hex public key of the originator
- * @param {bcRequestKeysCb} callback function to be called upon completion
- */
-function requestKeys(ethPublicKey, callback) {
-    log.trace(MODULELOG, `Getting address and encoded keys for Ethereum public key: ${ethPublicKey}`);
-
-    // Create data structure for requested keys
-    let originatorKeys = {
-        address: null,
-        publicKey: {
-            hex: noPubkeyHexPrefix(ethPublicKey)
-        },
-        check: {
-            keccak: null
-        }
-    };
-    try {
-        const publicKeyBuffer = hexToBuffer(publicKeyHex);
-
-        // Keccak double check
-        let keccakPubkeyBuffer;
-        if (publicKeyHex.length === 130) {
-            keccakPubkeyBuffer = hexToBuffer(publicKeyHex.substring(2));
-        } else {
-            keccakPubkeyBuffer = publicKeyBuffer;
-        }
-        originatorKeys.check.keccak = keccak('keccak256').update(keccakPubkeyBuffer).digest('hex');
-
-        // Ethereum Address
-        originatorKeys.address = noAddressHexPrefix(bufferToHex(pubToAddress(publicKeyBuffer, true)));
-    } catch(err) {
-        log.error(MODULELOG, `Could not determine Ethereum address and Keccak: ${err.message}`);
-        return callback(err);
-    }
-    return callback(null, originatorKeys);
-}
-
-/**
  * Requests a Whiteflag signature for the specified Ethereum address
  * @todo Refactor to use with new JWS functions and native blockchain signature
  * @function requestSignature
@@ -238,7 +208,7 @@ function requestSignature(wfSignPayload, callback) {
             // Create signature
             let wfSignature;
             try {
-                wfSignature = createJWS(wfSignPayload, noKeyHexPrefix(ethPrivateKey), SIGNKEYTYPE, SIGNALGORITHM);
+                wfSignature = createJWS(wfSignPayload, noHexPrefix(ethPrivateKey), SIGNKEYTYPE, SIGNALGORITHM);
             } catch(err) {
                 log.error(MODULELOG, `Could not create Whiteflag authentication signature for address ${account.address}: ${err.message}`);
                 return callback(err);
@@ -274,7 +244,10 @@ function verifySignature(wfSignature, ethAddress, ethPublicKey, callback) {
         return callback(err);
     }
     //TODO: Check public key and address
-    ignore(ethAddress);
+    const publicKeyBuffer = hexToBuffer(ethPublicKey);
+    const address = noAddressHexPrefix(bufferToHex(pubToAddress(publicKeyBuffer, true)));
+    ignore(ethAddress, address);
+
     return callback(null, result);
 }
 
@@ -283,20 +256,20 @@ function verifySignature(wfSignature, ethAddress, ethPublicKey, callback) {
  * @function getBinaryAddress
  * @alias module:lib/blockchains/ethereum.getBinaryAddress
  * @param {string} ethAddress the blockchain address
- * @param {blockchainBinaryAddressCb} callback function to be called upon completion
+ * @param {bcBinaryAddressCb} callback function to be called upon completion
  */
 function getBinaryAddress(ethAddress, callback) {
     if (_ethApi.utils.isAddress(withHexPrefix(ethAddress))) {
         return callback(null, hexToBuffer(noAddressHexPrefix(ethAddress)));
     }
-    return callback(new ProcessingError(`Invalid ${_ethChain} address: ${ethAddress}`, null, 'WF_API_PROCESSING_ERROR'));
+    return callback(new ProcessingError(`Invalid ${_ethChain} address: ${ethAddress}`, null, 'WF_API_BAD_REQUEST'));
 }
 
 /**
  * Transfers ether from one Ethereum address to an other address
  * @function transferFunds
  * @alias module:lib/blockchains/ethereum.transferFunds
- * @param {Object} transfer the object with the transaction details to transfer funds
+ * @param {wfTransfer} transfer the object with the transaction details to transfer funds
  * @param {bcSendTransactionCb} callback function to be called upon completion
  */
 function transferFunds(transfer, callback) {
@@ -332,7 +305,7 @@ function transferFunds(transfer, callback) {
  * Updates Ethereum blockchain account attributes
  * @function updateAccount
  * @alias module:lib/blockchains/ethereum.updateAccount
- * @param {Object} account the account information including address to be updated
+ * @param {wfAccount} account the account information including address to be updated
  * @param {bcAccountCb} callback function to be called upon completion
  */
 function updateAccount(account, callback) {
@@ -375,7 +348,7 @@ function deleteAccount(ethAddress, callback) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

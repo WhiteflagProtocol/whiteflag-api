@@ -9,6 +9,7 @@ enabled = true
 interval = 12000
 maxBlockDepth = 8
 updateEachBlock = false
+doubleCheck = false
 
 [[blockchains]]
 name = "fennel-solonet"

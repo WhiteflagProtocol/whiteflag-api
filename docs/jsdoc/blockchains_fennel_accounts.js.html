@@ -39,20 +39,23 @@ module.exports = {
     update: updateAccount,
     delete: deleteAccount,
     getAddress,
-    createKeypair,
+    getPublicKey,
+    getKeypair,
+    getKeyring,
     sign: getSignature,
     verify: verifySignature,
-    // Private account functions for testing
     test: {
         createAccountEntry,
+        createKeypair,
         generateSignature,
         testSignature,
     }
 };
 
 // Node.js core and external modules //
-const crypto = require('crypto');
-const fnlCrypto = require('@polkadot/util-crypto');
+const { randomBytes } = require('crypto');
+const { Keyring } = require('@polkadot/keyring');
+const dotCrypto = require('@polkadot/util-crypto');
 
 // Common internal functions and classes //
 const log = require('../../_common/logger');
@@ -69,7 +72,7 @@ const wfState = require('../../protocol/state');
 
 // Common blockchain functions //
 const { getPrivateKeyId } = require('../_common/keys');
-const { noKeyHexPrefix,
+const { noHexPrefix,
         noPubkeyHexPrefix } = require('../_common/format');
 
 // Fennel sub-modules //
@@ -79,10 +82,13 @@ const fnlRpc = require('./rpc');
 const MODULELOG = 'fennel';
 const STATUSINTERVAL = 60000; // Every minute
 const SEEDBYTELENGTH = 32;
+const SIGNALGORITHM = 'sr25519';
 
 // Module variables //
 let _fnlChain;
 let _fnlState;
+let _fnlKeyring;
+let _accountScheduleId;
 
 /**
  * Initialises Fennel accounts management
@@ -97,6 +103,7 @@ async function initAccounts(fnlConfig, fnlState) {
     log.trace(MODULELOG, 'Initialising Fennel accounts management');
     _fnlChain = fnlConfig.name;
     _fnlState = fnlState;
+    _fnlKeyring = new Keyring({ type: SIGNALGORITHM });
 
     // If configured, create new account if none exists
     if (fnlConfig.createAccount &amp;&amp; _fnlState.accounts.length === 0) {
@@ -107,8 +114,7 @@ async function initAccounts(fnlConfig, fnlState) {
         .catch(err => log.warn(MODULELOG, err.message));
     }
     // Periodically update account balances
-    // WIP: updateAccounts();
-    // WIP: setInterval(updateAccounts, STATUSINTERVAL);
+    scheduleAccountsUpdate();
 
     // Succesfully completed initialisation
     return Promise.resolve();
@@ -150,8 +156,7 @@ function createAccount(seed = null) {
         }
         if (seed) {
             seed = undefined;
-            // WIP: updateAccountBalance(account)
-            // WIP: updateAccountTransactions(account)
+            updateAccountStatus(account)
         } else {
             account.balance = 0;
             account.transactionCount = 0;
@@ -165,8 +170,9 @@ function createAccount(seed = null) {
         })
         .catch(err => ignore(err)); // all good if account does not yet exist
 
-        // Save and return result
+        // Save account, reschedule account updates and return result
         upsertAccount(account);
+        scheduleAccountsUpdate();
         return resolve(account);
     });
 }
@@ -175,7 +181,7 @@ function createAccount(seed = null) {
  * Updates Fennel blockchain account attributes
  * @function updateAccount
  * @alias module:lib/blockchains/fennel.updateAccount
- * @param {Object} account the account information including address to be updated
+ * @param {wfAccount} account the account information including address to be updated
  * @returns {Promise} resolves to updated account
  */
 function updateAccount(account) {
@@ -223,7 +229,8 @@ function deleteAccount(address) {
         } else {
             return reject(new Error(`Could not not delete ${_fnlChain} account: ${address}`));
         }
-        // Log and return result
+        // Reschedule account updates and return result
+        scheduleAccountsUpdate();
         return resolve(account);
     });
 }
@@ -236,35 +243,77 @@ function deleteAccount(address) {
  * @returns {string} the Fennel address
  */
 function getAddress(fnlPublicKey) {
+    let fnlAddress;
+    try {
+        fnlAddress = dotCrypto.encodeAddress(hexToU8a(fnlPublicKey));
+    } catch(err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(fnlAddress);
+}
+
+/**
+ * Derives a public key from a Fennel address
+ * @function getPublicKey
+ * @alias module:lib/blockchains/fennel/accounts.getPublicKey
+ * @param {string} fnlAddress a Fennel address
+ * @returns {string} the hexadecimal encoded public key
+ */
+function getPublicKey(fnlAddress) {
+    let fnlPublicKey;
+    try {
+        fnlPublicKey = noPubkeyHexPrefix(u8aToHex(dotCrypto.decodeAddress(fnlAddress)));
+    } catch(err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(fnlPublicKey);
+}
+
+/**
+ * Gets a Polkadot keypair from hexadecimal keys
+ * @function getKeypair
+ * @alias module:lib/blockchains/fennel.getKeypair
+ * @param {string} publicKey the hexadecimal public key
+ * @param {string} secretKey the hexadecimal private key
+ * @returns {Promise} resolves to a keypair
+ */
+function getKeypair(publicKey, secretKey) {
+    return Promise.resolve(createKeypair(publicKey, secretKey))
+}
+
+/**
+ * Gets a Polkadot keyring from an address
+ * @param {string} address the address of the account used to sign
+ * @returns {Promise} resolves to a keyring
+ */
+function getKeyring(address) {
     return new Promise((resolve, reject) => {
-        let fnlAddress;
-        try {
-            fnlAddress = fnlCrypto.encodeAddress(hexToU8a(fnlPublicKey));
-        } catch(err) {
-            return reject(err);
+        let account = _fnlState.accounts.find(item => item.address === address);
+        if (account) {
+            getPrivateKey(account.address)
+            .then(fnlPrivateKey => {
+                return getKeypair(account.publicKey, fnlPrivateKey)
+            })
+            .then(keypair => {
+                const originator = _fnlKeyring.addFromPair(keypair);
+                return resolve(originator);
+            })
+            .catch(err => {
+                return reject(err)
+            });
+        } else {
+            try {
+                const originator = _fnlKeyring.addFromAddress(address);
+                return resolve(originator);
+            } catch (err) {
+                return reject(err);
+            }
         }
-        return resolve(fnlAddress);
     });
 }
 
 /**
- * Creates a Polkadot keypair from hexadecimal keys
- * @function createKeypair
- * @alias module:lib/blockchains/fennel.createKeypair
- * @param {string} publicKey the hexadecimal public key
- * @param {string} secretKey the hexadecimal private key
- * @returns {Object} a keypair
- */
-function createKeypair(publicKey, secretKey) {
-    return {
-        publicKey: hexToU8a(publicKey),
-        secretKey: hexToU8a(secretKey)
-    };
-}
-
-/**
  * Signs an arbitrary input with an account's private key 
- * @todo Complete and test function; move signing to testable private function
  * @function getSignature
  * @alias module:lib/blockchains/fennel.getSignature
  * @param {string} input the input to be signed
@@ -272,26 +321,25 @@ function createKeypair(publicKey, secretKey) {
  * @returns {Promise} resolves to the hexadecmial encoded signature
  */
 function getSignature(input, address) {
-    log.trace(MODULELOG, `Signing input for address ${address}: ${input}`);
     return new Promise((resolve, reject) => {
-        getAccount(address)
-        .then(account => {
-            const privateKeyId = getPrivateKeyId(_fnlChain, account.address);
-            wfState.getKey('blockchainKeys', privateKeyId, function fnlGetKeyCb(err, fnlPrivateKey) {
-                if (err) reject(err);
-                if (!fnlPrivateKey) return reject(new ProcessingError(`No private key available for address ${account.address}`, null, 'WF_API_PROCESSING_ERROR'));
+        let account = _fnlState.accounts.find(item => item.address === address);
+        if (account) {
+            log.trace(MODULELOG, `Signing input for address ${account.address}: ${input}`);
+            getPrivateKey(account.address)
+            .then(fnlPrivateKey => {
                 const signature = generateSignature(input, account.publicKey, fnlPrivateKey);
-                log.trace(MODULELOG, `Created signature for address ${address}: ${signature}`);
+                log.trace(MODULELOG, `Created signature for address ${account.address}: ${signature}`);
                 return resolve(signature);
-            });
-        })
-        .catch(err => reject(err));
+            })
+            .catch(err => reject(err));
+        } else {
+            return reject(new ProcessingError(`No existing ${_fnlChain} account with address: ${address}`, null, 'WF_API_NO_RESOURCE')); 
+        }
     });
 }
 
 /**
  * Verifies if the signature is valid for the arbitrary input and address
- * @todo Complete and test function; move verification to testable private function
  * @param {string} input the input that has been signed
  * @param {string} signature the hexadecmial encoded signature to be verified
  * @param {string} publicKey the hexadecmial encoded public key of the signature
@@ -299,14 +347,12 @@ function getSignature(input, address) {
  */
 function verifySignature(input, signature, publicKey) {
     log.trace(MODULELOG, `Verifying signed input against public key ${publicKey}: ${input}`);
-    return new Promise((resolve, reject) => {
-        try {
-            const valid = testSignature(input, signature, publicKey);
-            return resolve(valid);
-        } catch(err) {
-            return reject(new ProcessingError(`Error verifying signature: ${err.message}`, null, 'WF_SIGN_ERROR'));
-        }
-    });
+    try {
+        const valid = testSignature(input, signature, publicKey);
+        return Promise.resolve(valid);
+    } catch(err) {
+        return Promise.reject(new ProcessingError(`Error verifying signature: ${err.message}`, null, 'WF_SIGN_ERROR'));
+    }
 }
 
 // PRIVATE ACCOUNT FUNCTIONS //
@@ -323,46 +369,104 @@ function verifySignature(input, signature, publicKey) {
         seedBuffer = hexToBuffer(seed);
     } else {
         log.trace(MODULELOG, `Creating new ${_fnlChain} account with generated secret key`);
-        seedBuffer = crypto.randomBytes(SEEDBYTELENGTH);
+        seedBuffer = randomBytes(SEEDBYTELENGTH);
     }
-    const keypair = fnlCrypto.sr25519PairFromSeed(seedBuffer);
+    const keypair = dotCrypto.sr25519PairFromSeed(seedBuffer);
     zeroise(seedBuffer);
     return {
-        address: fnlCrypto.encodeAddress(keypair.publicKey),
+        address: dotCrypto.encodeAddress(keypair.publicKey),
         publicKey: noPubkeyHexPrefix(u8aToHex(keypair.publicKey)),
-        privateKey: noKeyHexPrefix(u8aToHex(keypair.secretKey)),
+        privateKey: noHexPrefix(u8aToHex(keypair.secretKey)),
         balance: null,
         transactionCount: null
     };
 }
 
 /**
- * Updates all Fennel blockchain accounts
+ * Creates a Polkadot keypair from hexadecimal keys
  * @private
+ * @param {string} publicKey the hexadecimal public key
+ * @param {string} secretKey the hexadecimal private key
+ * @returns {Object} a keypair
  */
-function updateAccounts() {
-    _fnlState.accounts.forEach(account => {
-        Promise.all([
-            updateAccountBalance(account),
-            updateAccountTransactions(account)
-        ])
-        .then(() => {
-            wfState.updateBlockchainData(_fnlChain, _fnlState);
+function createKeypair(publicKey, secretKey) {
+    return {
+        publicKey: hexToU8a(publicKey),
+        secretKey: hexToU8a(secretKey)
+    };
+}
+
+/**
+ * Get the private key of an account
+ * @private
+ * @param {string} address the address ssociated the private key
+ */
+function getPrivateKey(address) {
+    return new Promise((resolve, reject) => {
+        const privateKeyId = getPrivateKeyId(_fnlChain, address);
+        wfState.getKey('blockchainKeys', privateKeyId, function fnlGetKeyCb(err, fnlPrivateKey) {
+            if (err) reject(err);
+            if (!fnlPrivateKey) return reject(new ProcessingError(`No private key available for address ${account.address}`, null, 'WF_API_PROCESSING_ERROR'));
+            return resolve(fnlPrivateKey);
         });
     });
 }
 
 /**
+ * Stops any currently scheduled account updates and reschedules
+ * @private
+ */
+function scheduleAccountsUpdate() {
+    if (_accountScheduleId) clearInterval(_accountScheduleId);
+    _accountScheduleId = setInterval(updateAccounts, STATUSINTERVAL);
+}
+
+/**
+ * Updates all Fennel blockchain accounts status
+ * @private
+ */
+function updateAccounts() {
+    let updateBatch = [];
+    _fnlState.accounts.forEach(account => {
+        updateBatch.push(updateAccountStatus(account));
+    });
+    return Promise.allSettled(updateBatch)
+    .then(() => {
+        wfState.updateBlockchainData(_fnlChain, _fnlState);
+    });
+}
+
+/**
+ * Updates a Fennel blockchain account status
+ * @private
+ * @param {wfAccount} account the account to be updated
+ * @returns {Promise}
+ */
+function updateAccountStatus(account) {
+    log.trace(MODULELOG, `Updating balance and transaction count of account: ${account.address}`);
+    return Promise.allSettled([
+        updateAccountBalance(account),
+        updateAccountTransactions(account)
+    ]);
+}
+
+/**
  * Updates the balance of a Fennel blockchain account
  * @private
- * @param {Object} account
+ * @param {wfAccount} account
  * @returns {Promise}
  */
 function updateAccountBalance(account) {
-    log.trace(MODULELOG, `Updating balance of account: ${account.address}`);
     return fnlRpc.getBalance(account.address)
     .then(balance => {
-        account.balance = balance;
+        const newBalance = Number(balance);
+        const diffBalance = balance - account.balance;
+        if (diffBalance &lt; 0) {
+            log.info(MODULELOG, `Account ${account.address} spent ${-diffBalance} tokens`);
+        } else if (diffBalance > 0) {
+            log.info(MODULELOG, `Account ${account.address} received ${diffBalance} tokens`);
+        }
+        account.balance = newBalance;
         return Promise.resolve(account.balance);
     })
     .catch(err => log.warn(MODULELOG, `Could not update balance for account ${account.address}: ${err.message}`));
@@ -371,29 +475,28 @@ function updateAccountBalance(account) {
  /**
  * Updates the number of transactions of a Fennel blockchain account
  * @private
- * @param {Object} account
+ * @param {wfAccount} account
  * @returns {Promise}
  */
 function updateAccountTransactions(account) {
-    log.trace(MODULELOG, `Updating transaction count of ${_fnlChain} account: ${account.address}`);
     return fnlRpc.getTransactionCount(account.address)
     .then(transactionCount => {
         account.transactionCount = transactionCount;
         return Promise.resolve(account.transactionCount);
     })
-    .catch(err => log.warn(MODULELOG, `Could not update transaction count for ${_fnlChain} account ${account.address}: ${err.message}`));
+    .catch(err => log.warn(MODULELOG, `Could not update transaction count for account ${account.address}: ${err.message}`));
 }
 
 /**
  * Updates or inserts an Fennel account in the blockchain state
  * @private
- * @param {Object} account Fennel account to be upserted
+ * @param {wfAccount} account Fennel account to be upserted
  */
 function upsertAccount(account) {
     // Securely store the private key in state
     if (Object.hasOwn(account, 'privateKey')) {
         const privateKeyId = getPrivateKeyId(_fnlChain, account.address);
-        wfState.upsertKey('blockchainKeys', privateKeyId, noKeyHexPrefix(account.privateKey));
+        wfState.upsertKey('blockchainKeys', privateKeyId, noHexPrefix(account.privateKey));
         delete account.privateKey;
     }
     // Inserting or updating
@@ -420,7 +523,7 @@ function upsertAccount(account) {
  */
 function generateSignature(input, publicKey, privateKey) {
     const keypair = createKeypair(publicKey, privateKey);
-    const signature = u8aToHex(fnlCrypto.sr25519Sign(input, keypair));
+    const signature = u8aToHex(dotCrypto.sr25519Sign(input, keypair));
     zeroise(keypair.secretKey);
     return signature;
 }
@@ -434,7 +537,7 @@ function generateSignature(input, publicKey, privateKey) {
  * @returns {boolean} true if valid, else false
  */
 function testSignature(input, signature, publicKey) {
-    return fnlCrypto.sr25519Verify(input, hexToU8a(signature), hexToU8a(publicKey));
+    return dotCrypto.sr25519Verify(input, hexToU8a(signature), hexToU8a(publicKey));
 }
 </code></pre>
         </article>
@@ -452,7 +555,7 @@ function testSignature(input, signature, publicKey) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

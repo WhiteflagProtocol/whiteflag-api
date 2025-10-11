@@ -9,7 +9,6 @@ module.exports = {
     init: initBlockchain,
     sendMessage,
     getMessage,
-    requestKeys,
     requestSignature,
     verifySignature,
     transferFunds,
@@ -118,20 +117,6 @@ function getMessage(wfQuery, callback) {
 }
 
 /**
- * Requests the address and correctly encoded pubic key for an originator
- * @todo Implement function
- * @function requestKeys
- * @alias module:lib/blockchains/.requestKeys
- * @param {string} bcPublicKey the raw hex public key of the originator
- * @param {bcRequestKeysCb} callback function to be called upon completion
- */
-function requestKeys(bcPublicKey, callback) {
-    // TODO: Do stuff to get the required keys
-    let originatorKeys = ignore(bcPublicKey);
-    return callback(new ProcessingError('Function not implemented for this blockchain', null, 'WF_API_NOT_IMPLEMENTED'), originatorKeys);
-}
-
-/**
  * Requests a Whiteflag signature for a specific blockchain address
  * @todo Implement function
  * @function requestSignature
@@ -160,11 +145,21 @@ function verifySignature(wfSignature, bcPublicKey, callback) {
 }
 
 /**
+ * Returns a blockchain address in binary encoded form
+ * @todo Implement function
+ * @function getBinaryAddress
+ * @alias module:lib/blockchains/.getBinaryAddress
+ * @param {string} bcAddress the blockchain address
+ * @param {bcBinaryAddressCb} callback function to be called upon completion
+ */
+function getBinaryAddress(bcAddress, callback) {}
+
+/**
  * Transfers funds from one blockchain address to an other address
  * @todo Implement function
  * @function transferFunds
  * @alias module:lib/blockchains/.transferFunds
- * @param {Object} transfer the transaction details for the funds transfer
+ * @param {wfTransfer} transfer the transaction details for the funds transfer
  * @param {bcSendTransactionCb} callback function to be called upon completion
  */
 function transferFunds(transfer, callback) {
@@ -191,7 +186,7 @@ function createAccount(secret, callback) {
  * @todo Implement function
  * @function updateAccount
  * @alias module:lib/blockchains/.updateAccount
- * @param {Object} account the account information including address to be updated
+ * @param {wfAccount} account the account information including address to be updated
  * @param {bcAccountCb} callback function to be called upon completion
  */
 function updateAccount(account, callback) {

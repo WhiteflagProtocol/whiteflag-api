@@ -395,6 +395,34 @@
                 }
             }
         },
+        "/blockchains/{blockchain}/scan": {
+            "get": {
+                "tags": [ "Blockchains", "Messages" ],
+                "description": "Scans a range of blocks for Whiteflag messages. This operation may be disabled in the configuration.",
+                "operationId": "scanBlocks",
+                "parameters": [
+                    { "in": "query", "name": "from", "type": "integer", "required": true },
+                    { "in": "query", "name": "to", "type": "integer", "required": true }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessages"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
         "/blockchains/{blockchain}/accounts": {
             "get": {
                 "tags": [ "Blockchains", "Accounts", "State" ],
@@ -1469,7 +1497,7 @@
                 }
             },
             "wfMessages": {
-                "description": "Successfully processed Whiteflag message query and returning an array of messages",
+                "description": "Successfully processed Whiteflag message query or blockchain scan and returning an array of messages",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1479,7 +1507,7 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "description": "Array with resulting messages from a database query",
+                                    "description": "Array with resulting messages from a database query or blockchain scan",
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/wfMessage"

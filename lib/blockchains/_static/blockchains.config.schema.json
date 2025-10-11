@@ -19,11 +19,11 @@
             "additionalProperties": false,
             "properties": {
                 "enabled": {
-                    "description": "Indicated whether to track block depth of message for confirmation",
+                    "description": "Indicates whether to track block depth of messages for confirmation",
                     "type": "boolean"
                 },
                 "interval": {
-                    "description": "Interval in miliseconds to check blockdepth of message",
+                    "description": "Interval in miliseconds to check blockdepth of messages",
                     "type": "number"
                 },
                 "maxBlockDepth": {
@@ -31,7 +31,11 @@
                     "type": "number"
                 },
                 "updateEachBlock": {
-                    "description": "Indicates if block depth should be updated in data store for each block, otherwise only when confirmed",
+                    "description": "Indicates if the block depth of messages on the confirmation queue should be updated upon each new block, or only when confirmed",
+                    "type": "boolean"
+                },
+                "doubleCheck": {
+                    "description": "Indicates if a message duplicate should be retrieved from the blockchain for double check upon confirmation",
                     "type": "boolean"
                 }
             }

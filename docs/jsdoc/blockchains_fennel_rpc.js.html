@@ -41,6 +41,7 @@ module.exports = {
     getBlockHash,
     getBlockHeader,
     getChainType,
+    getEvents,
     getFullBlock,
     getHighestBlock,
     getNodeRoles,
@@ -52,13 +53,18 @@ module.exports = {
     getSystemVersion,
     getTransactionCount,
     isSyncing,
+    sendSignal,
+    sendTokens,
 };
 
 // External modules //
 const { ApiPromise, WsProvider } = require('@polkadot/api');
+const WebSocket = require('ws');
 
 // Common internal functions and classes //
 const log = require('../../_common/logger');
+const { ignore } = require('../../_common/processing')
+const { ProcessingError } = require('../../_common/errors');
 const { timeoutPromise } = require('../../_common/processing');
 
 // Whiteflag modules //
@@ -66,7 +72,6 @@ const wfState = require('../../protocol/state');
 
 // Common blockchain functions //
 const { rpcCall, getFullURL } = require('../_common/rpc');
-const { ProcessingError } = require('../../_common/errors');
 
 // Module constants //
 const MODULELOG = 'fennel';
@@ -78,7 +83,7 @@ const INFOINTERVAL = 3600000; // Every hour
 let _fnlChain = 'fennel';
 let _fnlState;
 let _fnlApi;
-let _websocket = false;
+let _rpcInit = false;
 let _rpcTimeout = 10000;
 let _rpcAuthURL;
 let _rpcUser;
@@ -110,18 +115,16 @@ function initRpc(fnlConfig, fnlState) {
     _rpcPass = fnlConfig.rpcPassword;
 
     // Connect to Fennel node
+    _rpcInit = true;
     return new Promise((resolve, reject) => {
         switch (fnlConfig.rpcProtocol) {
             // Connect using websocket
             case 'ws':
             case 'wss': {
                 log.trace(MODULELOG, `Setting up web socket connection with ${_fnlChain} node: ${rpcCleanURL}`);
-                _websocket = true;
-
                 const wsProvider = new WsProvider(_rpcAuthURL);
                 timeoutPromise(ApiPromise.create({ provider: wsProvider }), _rpcTimeout)
                 .then(api => {
-                    // We have a connection
                     _fnlApi = api;
                     log.info(MODULELOG, `Connected to ${_fnlApi.runtimeVersion.specName} through ${_fnlChain} node: ${rpcCleanURL}`);
 
@@ -133,6 +136,7 @@ function initRpc(fnlConfig, fnlState) {
                     return resolve(_fnlApi);
                 })
                 .catch(err => {
+                    _rpcInit = false;
                     wsProvider.disconnect();
                     return reject(new Error(`Could not make a web socket connection with ${_fnlChain} node: ${err.message}`), _fnlChain);
                 });
@@ -142,17 +146,9 @@ function initRpc(fnlConfig, fnlState) {
             case 'http':
             case 'https': {
                 log.trace(MODULELOG, `Setting up web connection with ${_fnlChain} node: ${rpcCleanURL}`);
-                
                 getRuntimeVersion()
                 .then(fnlRuntime => {
-                    // We have a connection
                     log.info(MODULELOG, `Connected to ${fnlRuntime.specName} through ${_fnlChain} node: ${rpcCleanURL}`);
-
-                    // RPC timeout period
-                    if (fnlConfig.rpcTimeout &amp;&amp; fnlConfig.rpcTimeout > 500) {
-                        _rpcTimeout = fnlConfig.rpcTimeout;
-                    }
-                    log.info(MODULELOG, `Timeout for remote calls to the ${_fnlChain} node: ${_rpcTimeout} ms`);
 
                     // Initialise node status monitoring
                     updateNodeInfo(); setInterval(updateNodeInfo, INFOINTERVAL);
@@ -161,7 +157,10 @@ function initRpc(fnlConfig, fnlState) {
                     // Succesfully completed initialisation
                     return resolve();
                 })
-                .catch(err => reject(new Error(`Could not make web connection with ${_fnlChain} node: ${err.message}`), _fnlChain));
+                .catch(err => {
+                    _rpcInit = false;
+                    reject(new Error(`Could not make web connection with ${_fnlChain} node: ${err.message}`), _fnlChain)}
+                );
                 break;
             }
             // Unknown protocol
@@ -181,8 +180,15 @@ function initRpc(fnlConfig, fnlState) {
  * @returns {Promise}
  */
 function getBalance(address) {
-    ignore(address);
-    return Promise.reject(new ProcessingError('No method implemented to get balance for an account' ,null , 'WF_API_NOT_IMPLEMENTED'));
+    if (_fnlApi) {
+        return _fnlApi.query.system.account(address)
+        .then(({ nonce, data: balance }) => { 
+            ignore(nonce);
+            return Promise.resolve(Number(balance.free));
+        });
+    } else {
+        return Promise.reject(new ProcessingError('No method implemented to get balance' ,null , 'WF_API_NOT_IMPLEMENTED'));
+    }
 }
 
 /**
@@ -211,7 +217,7 @@ function getBlock(blockHash) {
  * @returns {Promise} resolves to block hash
  */
 function getBlockHash(blockNumber) {
-    if (_websocket) return _fnlApi.rpc.chain.getBlockHash(blockNumber);
+    if (_fnlApi) return _fnlApi.rpc.chain.getBlockHash(blockNumber);
     return rpc('chain_getBlockHash', [ blockNumber ]);
 }
 
@@ -220,11 +226,11 @@ function getBlockHash(blockNumber) {
  * @function getBlockByHash
  * @alias module:lib/blockchains/fennel/rpc.getBlockByHash
  * @param {string} blockHash
- * @param {boolean} extrinsics get the block including all extrinsics
+ * @param {boolean} [full] get the full block including extrinsics (default)
  * @returns {Promise} resolves to a JSON representation of the block
  */
-function getBlockByHash(blockHash, extrinsics = false) {
-    if (extrinsics) return getBlock(blockHash);
+function getBlockByHash(blockHash, full = true) {
+    if (full) return getBlock(blockHash);
     return getBlockHeader(blockHash);
 }
 
@@ -233,13 +239,13 @@ function getBlockByHash(blockHash, extrinsics = false) {
  * @function getBlockByNumber
  * @alias module:lib/blockchains/fennel/rpc.getBlockByNumber
  * @param {Object} blockNumber
- * @param {boolean} extrinsics get the block including all extrinsics
+ * @param {boolean} [full] get the full block including extrinsics (default)
  * @returns {Promise} resolves to block including extrinsics
  */
-function getBlockByNumber(blockNumber, extrinsics = false) {
+function getBlockByNumber(blockNumber, full = true) {
     return getBlockHash(blockNumber)
     .then(blockHash => {
-        return getBlockByHash(blockHash, extrinsics);
+        return getBlockByHash(blockHash, full);
     })
     .catch(err => {
         return Promise.reject(err);
@@ -253,8 +259,8 @@ function getBlockByNumber(blockNumber, extrinsics = false) {
  * @param {string} blockHash
  * @returns {Promise} resolves to a JOSN representation of the block header
  */
-function getBlockHeader(blockHash) {
-    if (_websocket) return _fnlApi.rpc.chain.getHeader(blockHash);
+async function getBlockHeader(blockHash) {
+    if (_fnlApi) return _fnlApi.rpc.chain.getHeader(blockHash);
     return rpc('chain_getHeader', [ blockHash ]);
 }
 
@@ -266,8 +272,22 @@ function getBlockHeader(blockHash) {
 */
 function getChainType() {
     // WORKORUND: websocket does not return does not return correct value
-    // if (_websocket) return _fnlApi.rpc.system.chainType();
+    // if (_fnlApi) return _fnlApi.rpc.system.chainType();
     return rpc('system_chainType');
+}
+
+function getEvents(blockNumber) {
+    if (_fnlApi) {
+        return getBlockHash(blockNumber)
+        .then(blockHash => {
+            return _fnlApi.at(blockHash);
+        })
+        .then(apiAt => {
+            return apiAt.query.system.events();
+        });
+    } else {
+        return Promise.reject(new ProcessingError('No web rpc method implemented to get events' ,null , 'WF_API_NOT_IMPLEMENTED'));
+    }
 }
 
 /**
@@ -278,7 +298,7 @@ function getChainType() {
  * @returns {Promise} resolves to a JOSN representation of the block
  */
 function getFullBlock(blockHash) {
-    if (_websocket) return _fnlApi.rpc.chain.getBlock(blockHash);
+    if (_fnlApi) return _fnlApi.rpc.chain.getBlock(blockHash);
     return rpc('chain_getBlock', [ blockHash ]);
 }
 
@@ -291,8 +311,8 @@ function getFullBlock(blockHash) {
 function getHighestBlock() {
     return getSyncState()
     .then(result => {
-        if (result instanceof Map) return Promise.resolve(result.get('highestBlock'));
-        return Promise.resolve(result.highestBlock);
+        if (result instanceof Map) return Promise.resolve(Number(result.get('highestBlock')));
+        return Promise.resolve(Number(result.highestBlock));
     })
     .catch(err => {
         return Promise.reject(err);
@@ -306,8 +326,8 @@ function getHighestBlock() {
  * @returns {Promise} resolves to array with node roles
  */
 function getNodeRoles() {
-    // WORKORUND: websocket does not return does not return correct value
-    // if (_websocket) return _fnlApi.rpc.system.nodeRoles();
+    // BUG: websocket does not return does not return correct value
+    // if (_fnlApi) return _fnlApi.rpc.system.nodeRoles();
     return rpc('system_nodeRoles');
 }
 
@@ -320,8 +340,8 @@ function getNodeRoles() {
 function getPeerCount() {
     return getSystemHealth()
     .then(result => {
-        if (result instanceof Map) return Promise.resolve(result.get('peers'));
-        return Promise.resolve(result.peers);
+        if (result instanceof Map) return Promise.resolve(Number(result.get('peers')));
+        return Promise.resolve(Number(result.peers));
     })
     .catch(err => {
         return Promise.reject(err);
@@ -335,7 +355,7 @@ function getPeerCount() {
 * @returns {Promise} resolves to version info
 */
 function getRuntimeVersion() {
-    if (_websocket) return _fnlApi.rpc.state.getRuntimeVersion();
+    if (_fnlApi) return _fnlApi.rpc.state.getRuntimeVersion();
     return rpc('state_getRuntimeVersion');
 }
 
@@ -346,7 +366,7 @@ function getRuntimeVersion() {
  * @returns {Promise} resolves to connection count
  */
 function getSyncState() {
-    if (_websocket) return _fnlApi.rpc.system.syncState();
+    if (_fnlApi) return _fnlApi.rpc.system.syncState();
     return rpc('system_syncState');
 }
 
@@ -357,7 +377,7 @@ function getSyncState() {
  * @returns {Promise} resolves to the node's system health
  */
 function getSystemHealth() {
-    if (_websocket) return _fnlApi.rpc.system.health();
+    if (_fnlApi) return _fnlApi.rpc.system.health();
     return rpc('system_health');
 }
 
@@ -368,7 +388,7 @@ function getSystemHealth() {
  * @returns {Promise} resolves to system name
  */
 function getSystemName() {
-    if (_websocket) return _fnlApi.rpc.system.name();
+    if (_fnlApi) return _fnlApi.rpc.system.name();
     return rpc('system_name');
 }
 
@@ -379,20 +399,27 @@ function getSystemName() {
  * @returns {Promise} resolves to connection count
  */
 function getSystemVersion() {
-    if (_websocket) return _fnlApi.rpc.system.version();
+    if (_fnlApi) return _fnlApi.rpc.system.version();
     return rpc('system_version');
 }
 
 /**
- * Gets the balance of the specified Fennel blockchain account
+ * Gets the transaction count of the specified Fennel blockchain account
  * @function getTransactionCount
  * @alias module:lib/blockchains/fennel/rpc.getTransactionCount
  * @param {string} address
  * @returns {Promise}
  */
 function getTransactionCount(address) {
-    ignore(address);
-    return Promise.reject(new ProcessingError('No method implemented to get transaction count for an account' ,null , 'WF_API_NOT_IMPLEMENTED'));
+    if (_fnlApi) {
+        return _fnlApi.query.system.account(address)
+        .then(({ nonce, data: balance }) => { 
+            ignore(balance);
+            return Promise.resolve(Number(nonce));
+        });
+    } else {
+        return rpc('system_accountNextIndex', [ address ]);
+    }
 }
 
 /**
@@ -410,6 +437,39 @@ function isSyncing() {
     .catch(err => {
         return Promise.reject(err);
     });
+}
+
+/**
+ * Send a signal transaction to the Fennel blockchain
+ * @param {Object} keyring the Polkadot keyring to sign the transaction
+ * @param {string} data the data to be sent as a signal
+ * @returns {Promise} resolves to the transaction hash
+ */
+function sendSignal(keyring, data) {
+    if (_fnlApi) {
+        return _fnlApi.tx.signal
+            .sendSignal(data)
+            .signAndSend(keyring, { nonce: -1 });
+    } else {
+        return Promise.reject(new ProcessingError('No web rpc method implemented to send signals', null, 'WF_API_NOT_IMPLEMENTED'));
+    }
+}
+
+/**
+ * Sends a token transfer transaction to the Fennel blockchain
+ * @param {Object} keyring the Polkadot keyring to sign the transaction
+ * @param {string} toAddress the address to transfer the tokens to
+ * @param {number} amount the amount of tokens to transfer
+ * @returns {Promise} resolves to the transaction hash
+ */
+function sendTokens(keyring, toAddress, amount) {
+    if (_fnlApi) {
+        return _fnlApi.tx.balances
+            .transferKeepAlive(toAddress, parseInt(amount))
+            .signAndSend(keyring, { nonce: -1 });
+    } else {
+        return Promise.reject(new ProcessingError('No web rpc method implemented to send tokens', null, 'WF_API_NOT_IMPLEMENTED'));
+    }
 }
 
 // PRIVATE BLOCKCHAIN STATUS FUNCTIONS //
@@ -432,9 +492,9 @@ async function updateNodeInfo() {
     await getRuntimeVersion()
     .then(fnlRuntime => {
         _fnlState.parameters.specName = fnlRuntime.specName || '';
-        _fnlState.parameters.specVersion = fnlRuntime.specVersion || '';
+        _fnlState.parameters.specVersion = Number(fnlRuntime.specVersion) || '';
         _fnlState.parameters.implName = fnlRuntime.implName || '';
-        _fnlState.parameters.implVersion = fnlRuntime.implVersion || '';
+        _fnlState.parameters.implVersion = Number(fnlRuntime.implVersion) || '';
     })
     .catch(err => log.warn(MODULELOG, `Could not get chain runtime information from node: ${err.message}`));
 
@@ -458,7 +518,7 @@ async function updateNodeStatus() {
 
     // Get peer status
     await getPeerCount()
-    .then(peers => (_fnlState.status.peers = peers  || ''))
+    .then(peers => (_fnlState.status.peers = Number(peers)  || ''))
     .catch(err => log.warn(MODULELOG, `Could not get peer status: ${err.message}`));
 
     // Get synchronisation status
@@ -469,9 +529,9 @@ async function updateNodeStatus() {
     // Get synchronisation status
     await getSyncState()
     .then(syncState => {
-        _fnlState.status.startingBlock = syncState.startingBlock || '';
-        _fnlState.status.currentBlock = syncState.currentBlock || '';
-        _fnlState.status.highestBlock = syncState.highestBlock || '';
+        _fnlState.status.startingBlock = Number(syncState.startingBlock) || '';
+        _fnlState.status.currentBlock = Number(syncState.currentBlock) || '';
+        _fnlState.status.highestBlock = Number(syncState.highestBlock) || '';
     })
     .catch(err => log.warn(MODULELOG, `Could not get synchronisation status: ${err.message}`));
 
@@ -498,7 +558,17 @@ function saveNodeStatus() {
  * @returns {Promise}
  */
 function rpc(method, params = []) {
+    if (!_rpcInit) return Promise.reject(notInitialized());
     return rpcCall(method, params, _rpcAuthURL, _rpcUser, _rpcPass, _rpcTimeout);
+}
+
+/**
+ * Returns an error that the connextion has not been initializes
+ * @private
+ * @returns {ProtocolError}
+ */
+function notInitialized() {
+    return new ProcessingError('No connection to a Fennel node has been initialized', null, 'WF_API_NOT_AVAILABLE');
 }
 </code></pre>
         </article>
@@ -516,7 +586,7 @@ function rpc(method, params = []) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -175,9 +175,9 @@ testCase('Whiteflag protocol state management module', function() {
     testCase('Blockchain state functions', function() {
         // Test 8
         assertion(' 8. should return processing error when requesting non existing blockchain', function(done) {
-            wfState.getBlockchainData('iuqwp', function test8GetBlockchainCb(err, blockchainState) {
+            wfState.getBlockchainData('iuqwp', function test8GetBlockchainCb(err, bcState) {
                 if (err) return done(err);
-                assert.strictEqual(blockchainState, null);
+                assert.strictEqual(bcState, null);
                 return done();
             });
         });
@@ -193,11 +193,11 @@ testCase('Whiteflag protocol state management module', function() {
             if (stateError) return done(stateError);
 
             // Check data after adding new blockchain
-            wfState.getBlockchainData(blockchain, function test9GetBlockchainCb(err, blockchainState) {
+            wfState.getBlockchainData(blockchain, function test9GetBlockchainCb(err, bcState) {
                 if (err) return done(err);
-                assert(blockchainState);
-                assert.strictEqual(blockchainState.accounts.length, 1);
-                assert.strictEqual(blockchainState.accounts[0].address, testVector['9'].account.address);
+                assert(bcState);
+                assert.strictEqual(bcState.accounts.length, 1);
+                assert.strictEqual(bcState.accounts[0].address, testVector['9'].account.address);
                 return done();
             });
         });
@@ -289,10 +289,10 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 16
         assertion('16. should correctly enclose and encrypt state', function(done) {
             // Some test data with old private keys
-            let blockchainState = {};
-            blockchainState.accounts = [];
-            blockchainState.accounts.push(testVector['16']);
-            wfState.updateBlockchainData(testVector['16'].blockchain, blockchainState);
+            let bcState = {};
+            bcState.accounts = [];
+            bcState.accounts.push(testVector['16']);
+            wfState.updateBlockchainData(testVector['16'].blockchain, bcState);
 
             // Check state against state schema
             let stateError = validateState();

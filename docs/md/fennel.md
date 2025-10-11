@@ -7,7 +7,7 @@ the [Substrate/Polkadot SDK](https://polkadot.com/platform/sdk/).
 
 |                                |               |
 |--------------------------------|---------------|
-| Whiteflag message embedding:   | signal pallet |
+| Whiteflag message embedding:   | `signal` pallet |
 | Maximum message length:        | (t.b.d.)  |
 | Signature algorithm:           | sr25519   |
 | Transaction hash:              | 256 bits (64 hexadecimals) |

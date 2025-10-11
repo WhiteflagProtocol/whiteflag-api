@@ -40,12 +40,13 @@ module.exports = {
     update: updateAccount,
     delete: deleteAccount,
     getAddress,
-    createKeypair,
+    getKeypair,
     updateUtxosSpent: updateAccountUtxosSpent,
     updateBalance: updateAccountBalance,
     processBlock: processBlockUtxos,
     test: {
-        createAccountEntry
+        createAccountEntry,
+        createKeypair
     }
 };
 
@@ -267,43 +268,42 @@ function deleteAccount(address) {
  * @param {string} btcPublicKey a hexadecimal encoded public key
  * @param {Object} [btcNetwork] the Bitcoin network
  * @param {string} [script] the script to locks an output to a public key hash
- * @returns {string} the Bitcoin address
+ * @returns {Promise} resolves to the the Bitcoin address
  */
 function getAddress(btcPublicKey, btcNetwork = _btcState.parameters.network, script = DEFAULTSCRIPT) {
-    return new Promise((resolve, reject) => {
-        let btcAddress;
-        try {
-            btcAddress = deriveAaddress(btcPublicKey, btcNetwork, script);
-        } catch(err) {
-            return reject(err);
-        }
-        return resolve(btcAddress);
-    });
+    let btcAddress;
+    try {
+        btcAddress = deriveAaddress(btcPublicKey, btcNetwork, script);
+    } catch(err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(btcAddress);
 }
 
 /**
  * Creates a Bitcoin keypair from a hexadecimal private key
- * @function createKeypair
- * @alias module:lib/blockchains/bitcoin/accounts.createKeypair
+ * @function getKeypair
+ * @alias module:lib/blockchains/bitcoin/accounts.getKeypair
  * @param {string} privateKey the hexadecimal private key
  * @param {Object} [btcNetwork] the Bitcoin network to create the keypair for
- * @returns {Object} a keypair
+ * @returns {Promise} resolves to a keypair
  */
-function createKeypair(privateKey, btcNetwork = _btcState.parameters.network) {
-    const ECPair = ECPairFactory(ecc);
-    return ECPair.fromPrivateKey(
-        hexToBuffer(privateKey), 
-        { network: btcNetwork }
-    );
+function getKeypair(privateKey, btcNetwork = _btcState.parameters.network) {
+    let keypair;
+    try {
+        keypair = createKeypair(privateKey, btcNetwork);
+    } catch(err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(keypair);
 }
 
 /**
  * Updates the status of the UTXOs for an account
  * @function updateAccountUtxosSpent
  * @alias module:lib/blockchains/bitcoin/accounts.updateUtxos
- * @param {Object} account the Bitcoin account
+ * @param {wfAccount} account the Bitcoin account
  * @param {Array} spentUtxos the UTXOs spent by a transaction
- * @returns {Object} the updated account
  */
  function updateAccountUtxosSpent(account, spentUtxos) {
     // Check account UTXOs against the provided UTXOs
@@ -321,7 +321,7 @@ function createKeypair(privateKey, btcNetwork = _btcState.parameters.network) {
  * Updates the account balance based on unspent UTXOs
  * @function updateAccountBalance
  * @alias module:lib/blockchains/bitcoin/accounts.updateBalance
- * @param {Object} account the account to be updated
+ * @param {wfAccount} account the account to be updated
  */
  function updateAccountBalance(account) {
     // Get unspent UTXOs
@@ -394,6 +394,22 @@ function createAccountEntry(wif = null, btcNetwork = _btcState.parameters.networ
     };
 }
 
+
+/**
+ * Creates a Bitcoin keypair from a private key
+ * @private
+ * @param {string} privateKey the hexadecimal private key
+ * @param {Object} btcNetwork the Bitcoin network to create the keypair for
+ * @returns {Object} a keypair
+ */
+function createKeypair(privateKey, btcNetwork) {
+    const ECPair = ECPairFactory(ecc);
+    return ECPair.fromPrivateKey(
+        hexToBuffer(privateKey), 
+        { network: btcNetwork }
+    );
+}
+
 /**
  * Derives the P2WPKH (Pay To Witness Public Key Hash) address
  * @private
@@ -422,7 +438,7 @@ function deriveAaddress(btcPubkey, btcNetwork, script = DEFAULTSCRIPT) {
 /**
  * Upgrades Bitcoin account data structure to current version
  * @private
- * @param {Object} account the account data
+ * @param {wfAccount} account the account data
  */
 function upgradeAccountData(account) {
     // Upgrade UTXO spent values
@@ -441,7 +457,7 @@ function upgradeAccountData(account) {
 /**
  * Updates or inserts an Bitcoin account in the blockchain state without private key
  * @private
- * @param {Object} account Bitcoin account to be upserted
+ * @param {wfAccount} account Bitcoin account to be upserted
  */
 function upsertAccount(account) {
     // Securely store the private key in state
@@ -491,7 +507,7 @@ function scheduleSynchroniseAccount(address, delay = SYNCTIMER) {
 /**
  * Syncronises an account with the blockchain by looking for utxos
  * @private
- * @param {Object} account the account to synchronise
+ * @param {wfAccount} account the account to synchronise
  */
 function synchroniseAccount(account) {
     // To sync or not to sync
@@ -530,7 +546,7 @@ function synchroniseAccount(account) {
  * @private
  * @param {number} index the transaction in the array to process
  * @param {Array} transactions the transactions to process
- * @param {Object} account the account to check transaction for
+ * @param {wfAccount} account the account to check transaction for
  * @returns {Promise} resolves if all transactions are successfully processed
  */
  function processAccountTransactions(index, transactions, account) {
@@ -558,7 +574,7 @@ function synchroniseAccount(account) {
  * @private
  * @param {number} index the transaction in the array to process
  * @param {Array} transactions the transactions to process
- * @param {Object} account the account to check transaction for
+ * @param {wfAccount} account the account to check transaction for
  * @returns {Array} Array with transaction Promises
  */
 function createTransactionBatch(index, transactions, account) {
@@ -583,7 +599,7 @@ function createTransactionBatch(index, transactions, account) {
  * Checks a list of transactions for utxos related to an account
  * @private
  * @param {Object} transaction the transaction to check for UTXOs
- * @param {Object} account the account to check the transaction for
+ * @param {wfAccount} account the account to check the transaction for
  */
  function processTransaction(transaction, account) {
     // Check transaction for received UTXOs
@@ -605,7 +621,7 @@ function createTransactionBatch(index, transactions, account) {
  * @private
  * @param {Object} transaction the transaction to check
  * @param {Object} index the UTXO index within the transaction
- * @param {Object} account the account to check against
+ * @param {wfAccount} account the account to check against
  */
 function checkAccountUtxosReceived(transaction, index, account) {
     if (account.address === transaction.vout[index].scriptPubKey.addresses[0]) {
@@ -616,7 +632,7 @@ function checkAccountUtxosReceived(transaction, index, account) {
                 value: parseInt((transaction.vout[index].value * SATOSHI).toFixed(0)),
                 spent: false
             };
-            log.info(MODULELOG, `Received ${utxo.value} satoshis on account: ${account.address}`);
+            log.info(MODULELOG, `Account ${account.address} received ${utxo.value} satoshis`);
             account.utxos.push(utxo);
             updateAccountBalance(account);
         }
@@ -628,14 +644,14 @@ function checkAccountUtxosReceived(transaction, index, account) {
  * @private
  * @param {Object} transaction the transaction to check
  * @param {Object} index the UTXO index within the transaction
- * @param {Object} account the account to check against
+ * @param {wfAccount} account the account to check against
  */
 function checkAccountUtxosSpent(transaction, index, account) {
     for (let utxo of account.utxos) {
         if (utxo.txid === transaction.vin[index].txid
             &amp;&amp; +transaction.vin[index].vout === +utxo.index
         ) {
-            log.info(MODULELOG, `Spent ${utxo.value} satoshis from account: ${account.address}`);
+            log.info(MODULELOG, `Account ${account.address} spent ${utxo.value} satoshis`);
             utxo.spent = transaction.txid;
             updateAccountBalance(account);
         }
@@ -657,7 +673,7 @@ function checkAccountUtxosSpent(transaction, index, account) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Sep 27 2025 15:15:15 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Oct 11 2025 09:17:25 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
