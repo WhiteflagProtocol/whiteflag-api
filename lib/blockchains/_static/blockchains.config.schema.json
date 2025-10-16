@@ -92,6 +92,10 @@
                         "description": "The number of retries if a specific block cannot be retrieved before going to the next block",
                         "type": "number"
                     },
+                     "blockBatchSize": {
+                        "description": "The number of blocks to be processed in parallel",
+                        "type": "number"
+                    },
                     "transactionBatchSize": {
                         "description": "The number of transactions in a block to be processed in parallel",
                         "type": "number"
