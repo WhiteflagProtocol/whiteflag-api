@@ -44,7 +44,7 @@ testCase('Whiteflag cryptography module', function() {
 
             // Test the Whiteflag message encryption function for method 1
             const ciphertextBuffer1 = wfCrypto.test.encrypt(plaintextBuffer, '1', keyBuffer, ivBuffer);
-            const outcome1 = ciphertextBuffer1.slice(4).toString(BINENCODING);
+            const outcome1 = ciphertextBuffer1.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome1,
                 testVector['1'].ciphertext1
                 + testVector['1'].ciphertext2
@@ -53,7 +53,7 @@ testCase('Whiteflag cryptography module', function() {
             );
             // Test the Whiteflag message encryption function for method 2
             const ciphertextBuffer2 = wfCrypto.test.encrypt(plaintextBuffer, '2', keyBuffer, ivBuffer);
-            const outcome2 = ciphertextBuffer2.slice(4).toString(BINENCODING);
+            const outcome2 = ciphertextBuffer2.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome2,
                 testVector['1'].ciphertext1
                 + testVector['1'].ciphertext2
@@ -74,7 +74,7 @@ testCase('Whiteflag cryptography module', function() {
 
             // Test the Whiteflag message encryption function for method 1
             const ciphertextBuffer1 = wfCrypto.test.decrypt(encryptedMessageBuffer, '1', keyBuffer, ivBuffer);
-            const outcome1 = ciphertextBuffer1.slice(4).toString(BINENCODING);
+            const outcome1 = ciphertextBuffer1.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome1,
                 testVector['2'].plaintext1
                 + testVector['2'].plaintext2
@@ -83,7 +83,7 @@ testCase('Whiteflag cryptography module', function() {
             );
             // Test the Whiteflag message encryption function for method 2
             const ciphertextBuffer2 = wfCrypto.test.decrypt(encryptedMessageBuffer, '2', keyBuffer, ivBuffer);
-            const outcome2 = ciphertextBuffer2.slice(4).toString(BINENCODING);
+            const outcome2 = ciphertextBuffer2.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome2,
                 testVector['2'].plaintext1
                 + testVector['2'].plaintext2

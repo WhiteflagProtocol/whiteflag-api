@@ -67,7 +67,7 @@ naming conventions may be used:
 * `dev/<feature>` is a branch from `develop` in which a specific feature is
   developed; such a branch may exist for a limited period of time for a very
   specific feature, or longer for larger work over multiple major and minor
-  versions (e.g. `dev/protocol`, `dev/ethereum`, `dev/bitcoin`); a development
+  versions (e.g. `dev/protocol`, `dev/blockchains`); a development
   branch may only be merged into `develop`.
 
 ## Testing
@@ -148,7 +148,7 @@ The project style has the following deviations from StandardJS:
 10. Use asynchronous code (callbacks or promises) to process results:
     * Functions exposed by a module MUST be asynchronous, except:
     * Functions in so called common project modules
-      (i.e. either in a directory `common/` or a single module `common.js`)
+      (i.e. either in a directory `_common/` or a single module `common.js`)
       MAY be synchronous and MAY ONLY require other common project modules
     * Private functions inside a module may be synchronous
 11. Always place a `return` statement before invoking a callback:

@@ -17,7 +17,7 @@ const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
 // Project modules required for test //
-const msg = require('../../lib/_common/messages');
+const msg = require('../../lib/protocol/_common/messages');
 
 // Constants //
 /**
