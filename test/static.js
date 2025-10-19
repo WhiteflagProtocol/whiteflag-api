@@ -5,7 +5,7 @@
  * @description Script for testing Whiteflag API static data
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
@@ -13,18 +13,18 @@ const fs = require('fs');
 const semver = require('semver');
 const jsonValidate = require('jsonschema').validate;
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../lib/_common/processing');
 const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const arr = require('../lib/_common/arrays');
 
-// Constants //
+/* Constants */
 const _metaSchema = JSON.parse(fs.readFileSync('./test/_static/json-schema.schema.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag API static data tests', function() {
     // Version numbers
     testCase('OpenAPI definition', function() {
@@ -73,7 +73,7 @@ testCase('Whiteflag API static data tests', function() {
     });
 });
 
-// PRIVATE TEST FUNCTIONS //
+/* PRIVATE TEST FUNCTIONS */
 /**
  * Validates a JSON specification against a JSON schema
  * @private

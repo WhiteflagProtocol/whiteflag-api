@@ -5,31 +5,31 @@
  * @description Script for testing Whiteflag protocol state management functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../../lib/_common/processing');
 const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const wfState = require('../../lib/protocol/state');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { hash } = require('../../lib/_common/crypto');
 
-// Constants //
+/* Constants */
 /**
  * @constant {Object} testVector
  * @description Defines state test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/state.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag protocol state management module', function() {
     // Queue
     testCase('Queuing initialisation vector data', function() {
@@ -330,12 +330,12 @@ testCase('Whiteflag protocol state management module', function() {
     });
 });
 
-// PRIVATE TEST FUNCTIONS //
+/* PRIVATE TEST FUNCTIONS */
 /**
  * Validates state
  * @private
  */
-// Check state against state schema
+/* Check state against state schema
 function validateState(stateData) {
     let stateErrors = wfState.test.validate(stateData);
     if (stateErrors.length > 0) return new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));

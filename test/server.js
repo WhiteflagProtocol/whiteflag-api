@@ -5,24 +5,24 @@
  * @description Script for testing the server functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../lib/_common/processing');
 const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const wfServer = require('../lib/server');
 
-// Constants //
+/* Constants */
 const OPENAPIFILE = './static/openapi.json';
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag API server module', function() {
     testCase('Starting and stopping the server', function() {
         assertion(' 1. should succesfully start the server', function(done) {

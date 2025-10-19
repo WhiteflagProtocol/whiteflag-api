@@ -9,14 +9,14 @@
  * @tutorial modules
  */
 
-// Change working directory to process directory
+/* Change working directory to process directory
 process.chdir(__dirname);
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const log = require('./lib/_common/logger');
 const { ignore } = require('./lib/_common/processing');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfConfig = require('./lib/config');
 const wfServer = require('./lib/server');
 const wfDatastores = require('./lib/datastores');
@@ -29,11 +29,11 @@ const wfRxEvent = require('./lib/protocol/events').rxEvent;
 const wfTxEvent = require('./lib/protocol/events').txEvent;
 const wfStateEvent = require('./lib/protocol/events').stateEvent;
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'main';
 const SHUTDOWNTIMEOUT = 10000;
 
-// PROCESS CONTROL //
+/* PROCESS CONTROL */
 /*
  * Gracefully crash if an uncaught exception occurs and
  * ensure proper shutdown when process is stopped
@@ -49,7 +49,7 @@ process.on('SIGTERM', shutdown);
 log.redirectStream(process.stdout, log.trace);
 log.redirectStream(process.stderr, log.debug);
 
-// EXECUTE MAIN PROCESS FUNCTION //
+/* EXECUTE MAIN PROCESS FUNCTION */
 /**
  * @Callback errorCb
  * @param {Error} err any error
@@ -62,7 +62,7 @@ main(function errorCb(err) {
     shutdown();
 });
 
-// MAIN FUNCTIONS //
+/* MAIN FUNCTIONS */
 /**
  * Main process function that reads the configuration and starts all functionality
  * @function main
@@ -211,7 +211,7 @@ function shutdown() {
     }
 }
 
-// CALLBACK AND HANDLER FUNCTIONS //
+/* CALLBACK AND HANDLER FUNCTIONS */
 /**
  * Callback to log uncaught exceptions
  * @callback uncaughtExceptionCb

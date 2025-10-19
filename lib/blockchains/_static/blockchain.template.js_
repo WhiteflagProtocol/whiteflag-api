@@ -16,28 +16,28 @@ module.exports = {
     deleteAccount
 };
 
-// Node.js core and external modules //
-// eslint-disable-next-line no-unused-vars
+/* Node.js core and external modules */
+/* eslint-disable-next-line no-unused-vars
 const someBlockchain = require('someBlockchain');
 
-// Common internal functions and classes //
-// eslint-disable-next-line no-unused-vars
+/* Common internal functions and classes */
+/* eslint-disable-next-line no-unused-vars
 const log = require('../common/logger');
 const { ignore } = require('../common/processing');
 const { ProcessingError, ProtocolError } = require('../common/errors');
 const { getEmptyState } = require('./common/state');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfState = require('../protocol/state');
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'blockchain'
 
-// Module variables //
+/* Module variables */
 let _bcName = 'someBlockchain';
 let _bcState = {};
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Initialises configured blockchains
  * @todo Implement function

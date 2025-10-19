@@ -4,31 +4,31 @@
  * @description Script for testing Fennel accounts
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../../lib/_common/processing');
 const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const jws = require('../../lib/_common/jws');
 const { base64uToHex,
         hexToBase64u } = require('../../lib/_common/encoding');
 const fnlAccounts = require('../../lib/blockchains/fennel/accounts');
 
-// Constants //
+/* Constants */
 /**
  * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/_static/blockchains/fennel.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Fennel blockchain module', function() {
     let account;
     let keypair;

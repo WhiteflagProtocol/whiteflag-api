@@ -5,19 +5,19 @@
  * @description Script to listen for incoming Whiteflag messages on the API socket
  */
 
-// Get current environment
+/* Get current environment
 const baseURL = window.location.origin;
 const socket = io.connect(baseURL, { path: '/socket' });
 
-// Print initial message
+/* Print initial message
 printLog('Connecting to Whiteflag API running on ' + baseURL);
 
-// Set event listener for incomming messages
+/* Set event listener for incomming messages
 socket.on('message', data => {
     printMessage((data));
 });
 
-// MAIN SCRIPT FUNCTIONS //
+/* MAIN SCRIPT FUNCTIONS */
 /**
  * Prints logging data to html element with id 'wfdata'
  * @private

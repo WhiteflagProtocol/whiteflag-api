@@ -13,21 +13,21 @@ module.exports = {
     getState
 };
 
-// Node.js core and external modules //
-// eslint-disable-next-line no-unused-vars
+/* Node.js core and external modules */
+/* eslint-disable-next-line no-unused-vars
 const someDatabase = require('someDatabase');
 
-// Common internal functions and classes //
-// eslint-disable-next-line no-unused-vars
+/* Common internal functions and classes */
+/* eslint-disable-next-line no-unused-vars
 const log = require('../common/logger');
 const { ignore } = require('../common/processing');
 const { ProcessingError } = require('../common/errors');
 
-// Module variables //
+/* Module variables */
 let _dbName;
 let _db;
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Initialises the database
  * @function initDatastore

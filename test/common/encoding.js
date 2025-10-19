@@ -5,28 +5,28 @@
  * @description Script for testing all common JWS functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../../lib/_common/processing');
 const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const encode = require('../../lib/_common/encoding');
 
-// Constants //
+/* Constants */
 /**
  * @constant {Object} testVector
  * @description Defines the common array functions test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/_static/common/encoding.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Common encoding module', function() {
     testCase('Standard string encoding', function() {
         assertion(' 1. should correctly transform to buffer', function(done) {

@@ -5,28 +5,28 @@
  * @description Script for testing common message functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const { ignore } = require('../../lib/_common/processing');
 const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const msg = require('../../lib/protocol/_common/messages');
 
-// Constants //
+/* Constants */
 /**
  * @constant {Object} testVector
  * @description Defines the common protocol functions test data
  */
 const testVector = JSON.parse(fs.readFileSync('./test/_static/common/messages.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Common messages module', function() {
     testCase('Determining message types', function() {
         assertion(' 1. should return "NULL" if no message', function(done) {

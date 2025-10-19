@@ -108,7 +108,7 @@ The `.eslintrc.json` file contains the style rules for usage with
 
 Modules, classes and functions must be documented in code using [JSDoc](http://usejsdoc.org/).
 A comment starting with a `/**` sequence is a JSDoc comment. Non-JSDoc comments
-must start with `//` if it is a single line comment, or with `/*` for a
+must start with `//` if it is an in-line comment, or with `/*` for a title or
 comment block.
 
 Originally, the project used only [callbacks](https://nodejs.dev/learn/javascript-asynchronous-programming-and-callbacks).
