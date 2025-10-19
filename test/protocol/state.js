@@ -332,10 +332,9 @@ testCase('Whiteflag protocol state management module', function() {
 
 /* PRIVATE TEST FUNCTIONS */
 /**
- * Validates state
+ * Validates state against schema
  * @private
  */
-/* Check state against state schema
 function validateState(stateData) {
     let stateErrors = wfState.test.validate(stateData);
     if (stateErrors.length > 0) return new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));
