@@ -85,7 +85,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
     });
     // Originators
-    let authMessagesLength = testVector['5A'].authenticationMessages.length;
+    let authMessagesLength = testVector['5A'].authMessages.length;
     testCase('Originator state functions', function() {
         // Test 5
         assertion(' 5a. should successfully put new originator in state', function(done) {
@@ -114,8 +114,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.getOriginatorData(testVector['5B'].address, function test5GetOriginator2Cb(err, originator2) {
                 if (err) return done(err);
                 assert(originator2);
-                assert(!originator2.authenticationValid);
-                assert.strictEqual(originator2.authenticationMessages.length, (authMessagesLength + 1));
+                assert(!originator2.authValid);
+                assert.strictEqual(originator2.authMessages.length, (authMessagesLength + 1));
                 return done();
             });
         });
@@ -147,8 +147,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.getOriginatorData(testVector['5A'].address, function test6GetOriginatorAuthTokenCb(err, originator) {
                 if (err) return done(err);
                 assert(originator);
-                assert(originator.authenticationValid);
-                assert.strictEqual(originator.authenticationMessages.length, (authMessagesLength + 2));
+                assert(originator.authValid);
+                assert.strictEqual(originator.authMessages.length, (authMessagesLength + 2));
                 return done();
             });
         });
