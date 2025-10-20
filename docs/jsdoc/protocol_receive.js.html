@@ -39,30 +39,31 @@ module.exports = {
     init: initRx
 };
 
-// Type defintitions //
+/* Type defintitions */
 /**
  * @callback wfMessageCb
  * @param {error} err any error
  * @param {wfMessage} message the resulting Whiteflag message
  */
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const log = require('../_common/logger');
 const arr = require('../_common/arrays');
-const { type } = require('../_common/protocol');
+const { type } = require('./_common/messages');
+const { noHexPrefix } = require('../_common/format');
 const { ProtocolError } = require('../_common/errors');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfState = require('./state');
 const wfCodec = require('./codec');
 const wfReference = require('./references');
 const wfAuthenticate = require('./authenticate');
 const wfRxEvent = require('./events').rxEvent;
 
-// Whiteflag configuration data //
+/* Whiteflag configuration data */
 const wfConfigData = require('./config').getConfig();
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'receive';
 const MSGENCODING = 'hex';
 const AUTHMESSAGECODE = 'A';
@@ -162,7 +163,7 @@ function initRx(callback) {
     if (callback) return callback(null);
 }
 
-// PRIVATE RX EVENT HANDLERS //
+/* PRIVATE RX EVENT HANDLERS */
 /**
  * Logs success and calls the callback passed through the rx event chain
  * @private
@@ -186,26 +187,27 @@ function rxCompleted(wfMessage, callback) {
  */
 function rxError(err, wfMessage, callback) {
     if (!err) err = new Error('Unspecified error in rx event chain');
+    const { MetaHeader: meta } = wfMessage;
 
     // Log the error based on the available information
-    let messageStr = '';
-    let messageType = '';
+    let msgStr = '';
+    let msgType = '';
     if (wfMessage?.MetaHeader) {
-        if (wfMessage.MessageHeader) messageType = type(wfMessage) + ' ';
-        if (wfMessage.MetaHeader.transactionHash) {
-            messageStr = ' ' + wfMessage.MetaHeader.transactionHash + ':';
+        if (wfMessage?.MessageHeader) msgType = type(wfMessage) + ' ';
+        if (meta.transactionHash) {
+            msgStr = ' ' + meta.transactionHash + ':';
         } else {
-            messageStr = ' ' + JSON.stringify(wfMessage.MetaHeader) + ':';
+            msgStr = ' ' + JSON.stringify(meta) + ':';
         }
     }
     if (err instanceof ProtocolError) {
         if (err.causes) {
-            log.debug(MODULELOG, `Could not process ${messageType}message:` + `${messageStr} ${err.message}: ` + JSON.stringify(err.causes));
+            log.debug(MODULELOG, `Could not process ${msgType}message:` + `${msgStr} ${err.message}: ` + JSON.stringify(err.causes));
         } else {
-            log.debug(MODULELOG, `Could not process ${messageType}message:` + `${messageStr} ${err.message}`);
+            log.debug(MODULELOG, `Could not process ${msgType}message:` + `${msgStr} ${err.message}`);
         }
     } else {
-        log.error(MODULELOG, `Error processing ${messageType}message:` + `${messageStr} ${err.message}`);
+        log.error(MODULELOG, `Error processing ${msgType}message:` + `${msgStr} ${err.message}`);
     }
     // Finally, call the callback function passing the error
     if (callback) return callback(err, wfMessage);
@@ -220,20 +222,22 @@ function rxError(err, wfMessage, callback) {
  */
 function rxVerifyMetadata(wfMessage, callback) {
     // Check incoming message for critical metadata errors
-    let messageErrors = checkRxMetaHeaderErrors(wfMessage);
-    if (messageErrors.length > 0) {
-        return wfRxEvent.emit('error', new ProtocolError('Invalid message metaheader', messageErrors, 'WF_METAHEADER_ERROR'), wfMessage, callback);
+    let msgErrors = checkRxMetaHeaderErrors(wfMessage);
+    if (msgErrors.length > 0) {
+        return wfRxEvent.emit('error', new ProtocolError('Invalid message metaheader', msgErrors, 'WF_METAHEADER_ERROR'), wfMessage, callback);
     }
+    let { MetaHeader: meta } = wfMessage;
+
     // Set transceive direction and transaction time
-    wfMessage.MetaHeader.transceiveDirection = 'RX';
+    meta.transceiveDirection = 'RX';
 
     /*
     *  Messages are given a transactionTime, which is the time of earliest known existence;
     *  if the blockchain does not provide a time (e.g. blocktime or transaction time),
     *  the receive function gives it a timestamp if the message is on a blockchain.
     */
-    if (!wfMessage.MetaHeader.transactionTime) {
-        wfMessage.MetaHeader.transactionTime = new Date().toISOString();
+    if (!meta.transactionTime) {
+        meta.transactionTime = new Date().toISOString();
     }
     // Emit event upon completion and pass data
     return wfRxEvent.emit('metadataVerified', wfMessage, callback);
@@ -248,8 +252,10 @@ function rxVerifyMetadata(wfMessage, callback) {
  * @emits module:lib/protocol/events.rxEvent:messageDecoded
  */
 function rxDecodeMessage(wfMessage, callback) {
+    let { MetaHeader: meta } = wfMessage;
+
     // Calls message decoder and emits positive result
-    wfState.getBlockchainData(wfMessage.MetaHeader.blockchain, function rxGetBlockchainAddressesCb(err, bcState) {
+    wfState.getBlockchainData(meta.blockchain, function rxGetBlockchainAddressesCb(err, bcState) {
         if (err) return wfRxEvent.emit('error', err, wfMessage, callback);
 
         // Get accounts for this blockchain
@@ -260,8 +266,8 @@ function rxDecodeMessage(wfMessage, callback) {
             accounts = bcState.accounts;
         }
         // Kick-off first decryption/decoding iteration
-        wfMessage.MetaHeader.recipientAddress = null;
-        log.trace(MODULELOG, `Trying to decode/decrypt message ${wfMessage.MetaHeader.transactionHash}`);
+        meta.recipientAddress = null;
+        log.trace(MODULELOG, `Trying to decode/decrypt message ${meta.transactionHash}`);
         rxDecodeIterate(accounts, 0);
     });
 
@@ -272,32 +278,38 @@ function rxDecodeMessage(wfMessage, callback) {
      * @param {number} a Account counter
      */
     function rxDecodeIterate(accounts = [], a = 0) {
-        // Calls message decoder and checks result
+        // Call message decoder and check result
         wfCodec.decode(wfMessage, function rxDecodeCb(err, wfMessage, ivMissing) {
             if (ivMissing) return wfRxEvent.emit('messageEncrypted', wfMessage, callback);
             if (err) {
+                meta.recipientAddress = null;
                 if (err instanceof ProtocolError &amp;&amp; err.code === 'WF_ENCRYPTION_ERROR') {
-                    if (wfMessage.MetaHeader.encryptionKeyInput || a &lt; 0) {
+                    if (meta.encryptionKeyInput || a &lt; 0) {
+                        meta.encryptionKeyInput = null;
                         return wfRxEvent.emit('error', err, wfMessage, callback);
                     }
                     if (a >= accounts.length) {
                         // None of the keys from the different accounts were valid
-                        wfMessage.MetaHeader.recipientAddress = undefined;
-
                         // Try with test key from config file
-                        log.trace(MODULELOG, `Trying key from config file to decrypt message ${wfMessage.MetaHeader.transactionHash}`);
-                        wfMessage.MetaHeader.encryptionKeyInput = wfConfigData.encryption.psk;
+                        log.trace(MODULELOG, `Trying key from config file to decrypt message ${meta.transactionHash}`);
+                        meta.encryptionKeyInput = wfConfigData.encryption.psk;
                         return rxDecodeIterate(accounts, -1);
                     }
                     // Try next recipient address to look up possible key
-                    log.trace(MODULELOG, `Trying key ${(a + 1)}/${accounts.length} for receiving account ${accounts[a].address} to decrypt message ${wfMessage.MetaHeader.transactionHash}`);
-                    wfMessage.MetaHeader.recipientAddress = accounts[a].address;
+                    log.trace(MODULELOG, `Trying key ${(a + 1)}/${accounts.length} for receiving account ${accounts[a].address} to decrypt message ${meta.transactionHash}`);
+                    meta.recipientAddress = accounts[a].address;
                     return rxDecodeIterate(accounts, (a + 1));
                 }
-                wfMessage.MetaHeader.encryptionKeyInput = undefined;
                 return wfRxEvent.emit('error', err, wfMessage, callback);
             }
-            wfMessage.MetaHeader.encryptionKeyInput = undefined;
+            // Clean up metaheader
+            if (meta.recipientAddress === null) {
+                delete meta.recipientAddress;
+            }
+            if (meta.encryptionKeyInput) {
+                meta.encryptionKeyInput = null;
+                delete meta.encryptionKeyInput;
+            }
             return wfRxEvent.emit('messageDecoded', wfMessage, callback);
         });
     }
@@ -311,17 +323,18 @@ function rxDecodeMessage(wfMessage, callback) {
  * @emits module:lib/protocol/events.rxEvent:metadataVerified
  */
 function rxGetInitVector(wfMessage, callback) {
-    wfState.getQueueData('initVectors', 'referencedMessage', wfMessage.MetaHeader.transactionHash, function rxGetInitVectorQueueCb(err, ivObject) {
+    const { MetaHeader: meta } = wfMessage;
+    wfState.getQueueData('initVectors', 'referencedMessage', meta.transactionHash, function rxGetInitVectorQueueCb(err, ivObject) {
         if (err) log.error(MODULELOG, `Error getting initialisation vector from queue: ${err.message}`);
         if (ivObject) {
             // Initialisation vector found
-            log.trace(MODULELOG, 'Found initialisation vector on queue for incoming encrypted message: ' + JSON.stringify(wfMessage.MetaHeader.transactionHash));
-            wfMessage.MetaHeader.encryptionInitVector = ivObject.initVector;
-            wfState.removeQueueData('initVectors', 'referencedMessage', wfMessage.MetaHeader.transactionHash);
+            log.trace(MODULELOG, 'Found initialisation vector on queue for incoming encrypted message: ' + JSON.stringify(meta.transactionHash));
+            meta.encryptionInitVector = ivObject.initVector;
+            wfState.removeQueueData('initVectors', 'referencedMessage', meta.transactionHash);
             return wfRxEvent.emit('metadataVerified', wfMessage, callback);
         }
         // No iv available yet, so done processing encrypted message for now
-        log.debug(MODULELOG, `Received encrypted message (method ${wfMessage.MessageHeader.EncryptionIndicator}) without initialisation vector: ` + JSON.stringify(wfMessage.MetaHeader));
+        log.debug(MODULELOG, `Received encrypted message (method ${wfMessage.MessageHeader.EncryptionIndicator}) without initialisation vector: ` + JSON.stringify(meta));
         wfRxEvent.emit('messageProcessed', wfMessage);
         if (callback) return callback(null, wfMessage);
     });
@@ -335,6 +348,8 @@ function rxGetInitVector(wfMessage, callback) {
  * @emits module:lib/protocol/events.rxEvent:originatorVerified
  */
 function rxVerifyOriginator(wfMessage, callback) {
+    let { MetaHeader: meta } = wfMessage;
+
     // Skip reference check for incoming message if configured
     if (!wfConfigData.rx.verifyOriginator) {
         return wfRxEvent.emit('originatorSkipped', wfMessage, callback);
@@ -357,14 +372,14 @@ function rxVerifyOriginator(wfMessage, callback) {
             }
             // Log and preserve orginiator verification errors in metaheader
             if (err.causes) {
-                log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
-                wfMessage.MetaHeader.validationErrors = arr.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
+                log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
+                meta.validationErrors = arr.addArray(meta.validationErrors, err.causes);
             } else {
-                log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
+                log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}`);
             }
         }
         // Log general originator verification error
-        if (err &amp;&amp; !(err instanceof ProtocolError)) log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
+        if (err &amp;&amp; !(err instanceof ProtocolError)) log.trace(MODULELOG, `Could not verify originator of ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}`);
 
         // Completed authentication check
         return wfRxEvent.emit('originatorVerified', wfMessage, callback);
@@ -404,18 +419,18 @@ function rxVerifyReference(wfMessage, callback) {
     }
     // Verify references
     wfReference.verify(wfMessage, function rxVerifyReferenceCb(err, wfMessage) {
-        // Check for reference errors
+        let { MetaHeader: meta } = wfMessage;
         if (err &amp;&amp; err instanceof ProtocolError) {
             // Log and preserve reference errors in metaheader
             if (err.causes) {
-                log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
-                wfMessage.MetaHeader.validationErrors = arr.addArray(wfMessage.MetaHeader.validationErrors, err.causes);
+                log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
+                meta.validationErrors = arr.addArray(meta.validationErrors, err.causes);
             } else {
-                log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
+                log.trace(MODULELOG, `Invalid reference in ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}`);
             }
         }
         // Log general reference verification error
-        if (err &amp;&amp; !(err instanceof ProtocolError)) log.trace(MODULELOG, `Could not verify reference of ${type(wfMessage)} message ${wfMessage.MetaHeader.transactionHash}: ${err.message}`);
+        if (err &amp;&amp; !(err instanceof ProtocolError)) log.trace(MODULELOG, `Could not verify reference of ${type(wfMessage)} message ${meta.transactionHash}: ${err.message}`);
 
         // Completed reference check
         return wfRxEvent.emit('referenceVerified', wfMessage, callback);
@@ -432,7 +447,7 @@ function rxSocketSendMessage(wfMessage) {
     return wfServer.sendSocket(wfMessage);
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Checks received message for critical metadata errors
  * @private
@@ -440,43 +455,45 @@ function rxSocketSendMessage(wfMessage) {
  * @returns {Array} message metaheader errors
  */
 function checkRxMetaHeaderErrors(wfMessage) {
-    let messageErrors = [];
-    if (!wfMessage.MetaHeader) {
-        messageErrors.push('Missing metaheader');
-        return messageErrors;
+    let msgErrors = [];
+    if (!wfMessage?.MetaHeader) {
+        msgErrors.push('Missing metaheader');
+        return msgErrors;
     }
+    const { MetaHeader: meta } = wfMessage;
+
     // Check blockchain
-    if (!wfMessage.MetaHeader.blockchain) messageErrors.push('Originating blockchain not specified');
+    if (!meta.blockchain) msgErrors.push('Originating blockchain not specified');
 
     // Check transaction hash
-    if (!wfMessage.MetaHeader.transactionHash) {
-        messageErrors.push('Transaction hash is missing');
+    if (!meta.transactionHash) {
+        msgErrors.push('Transaction hash is missing');
     } else {
-        wfMessage.MetaHeader.transactionHash = wfMessage.MetaHeader.transactionHash.toLowerCase();
+        meta.transactionHash = noHexPrefix(meta.transactionHash).toLowerCase();
     }
     // Check encoded message
-    if (!wfMessage.MetaHeader.encodedMessage) {
-        messageErrors.push('Encoded message is missing');
+    if (!meta.encodedMessage) {
+        msgErrors.push('Encoded message is missing');
     } else {
-        wfMessage.MetaHeader.encodedMessage = wfMessage.MetaHeader.encodedMessage.toLowerCase();
-        if (MSGENCODING === 'hex' &amp;&amp; (wfMessage.MetaHeader.encodedMessage.length % 2) !== 0) {
-            messageErrors.push(`Encoded message does not have a valid ${MSGENCODING} encoding`);
+        meta.encodedMessage = noHexPrefix(meta.encodedMessage).toLowerCase();
+        if (MSGENCODING === 'hex' &amp;&amp; (meta.encodedMessage.length % 2) !== 0) {
+            msgErrors.push(`Encoded message does not have a valid ${MSGENCODING} encoding`);
         }
     }
     // Check originator address
-    if (!wfMessage.MetaHeader.originatorAddress) {
-        messageErrors.push('Originator address is missing');
+    if (!meta.originatorAddress) {
+        msgErrors.push('Originator address is missing');
     }
     // Check public key, unless own message is received
-    if (!wfMessage.MetaHeader.originatorPubKey) {
-        if (wfMessage.MetaHeader.transceiveDirection !== 'TX') {
-            log.warn(MODULELOG, `Public key of originator is missing for message: ${wfMessage.MetaHeader.transactionHash}`);
+    if (!meta.originatorPubKey) {
+        if (meta.transceiveDirection !== 'TX') {
+            log.warn(MODULELOG, `Public key of originator is missing for message: ${meta.transactionHash}`);
         }
     } else {
-        wfMessage.MetaHeader.originatorPubKey = wfMessage.MetaHeader.originatorPubKey.toLowerCase();
+        meta.originatorPubKey = noHexPrefix(meta.originatorPubKey).toLowerCase();
     }
     // Return error array
-    return messageErrors;
+    return msgErrors;
 }
 </code></pre>
         </article>
@@ -494,7 +511,7 @@ function checkRxMetaHeaderErrors(wfMessage) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

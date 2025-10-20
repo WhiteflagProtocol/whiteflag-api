@@ -45,21 +45,22 @@ module.exports = {
     getSequence
 };
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const arr = require('../_common/arrays');
+const msg = require('../protocol/_common/messages');
 const { ProcessingError } = require('../_common/errors');
 const { createBody,
         sendImperative,
-        sendIndicative } = require('../_common/httpres');
+        sendIndicative } = require('./_common/response');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfCodec = require('../protocol/codec');
 const wfRetrieve = require('../protocol/retrieve');
 const wfReference = require('../protocol/references');
 const wfRxEvent = require('../protocol/events').rxEvent;
 const wfTxEvent = require('../protocol/events').txEvent;
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Transmits messages to the blockchain through the tx event chain
  * @function send
@@ -75,6 +76,7 @@ function send(req, res, operationId, callback) {
     wfTxEvent.emit('messageCommitted', wfMessage, function opsSendCb(err, wfMessage) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
+        if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
 
         // Send response using common endpoint response function
         return sendImperative(res, err, resBody, wfMessage, callback);
@@ -95,6 +97,9 @@ function receive(req, res, operationId, callback) {
     wfRxEvent.emit('messageReceived', wfMessage, function opsReceiveCb(err, wfMessage) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
+
+        // Add message info to meta data
+        if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
 
         // Send response using common endpoint response function
         return sendImperative(res, err, resBody, wfMessage, callback);
@@ -119,10 +124,9 @@ function validate(req, res, operationId, callback) {
         // Return response if format is not valid
         if (err) return sendIndicative(res, err, resBody, wfMessage, callback);
 
-        // Add info message if format is valid
-        if (wfMessage.MetaHeader.formatValid) {
-            resBody.meta.info = arr.addItem(resBody.meta.info, 'Message format is valid');
-        }
+        // Add message info to meta data
+        resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
+
         // Verify message reference
         wfReference.verify(wfMessage, function opsVerifyReferenceCb(err, wfMessage) {
             if (!err &amp;&amp; wfMessage.MetaHeader.referenceValid) {
@@ -148,10 +152,9 @@ function encode(req, res, operationId, callback) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
 
-        // Add info message if format is valid
-        if (wfMessage.MetaHeader.formatValid) {
-            resBody.meta.info = arr.addItem(resBody.meta.info, 'Message format is valid');
-        }
+        // Add message info to meta data
+        if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
+
         // Send response using common endpoint response function
         return sendImperative(res, err, resBody, wfMessage, callback);
     });
@@ -180,10 +183,9 @@ function decode(req, res, operationId, callback) {
         if (!err &amp;&amp; ivMissing) {
             err = new ProcessingError('Could not decrypt message', [ 'Initialisation vector is missing' ], 'WF_API_BAD_REQUEST');
         }
-        // Add info message if format is valid
-        if (wfMessage.MetaHeader.formatValid) {
-            resBody.meta.info = arr.addItem(resBody.meta.info, 'Message format is valid');
-        }
+        // Add message info to meta data
+        if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
+
         // Send response using common endpoint response function
         return sendImperative(res, err, resBody, wfMessage, callback);
     });
@@ -303,7 +305,7 @@ function getSequence(req, res, operationId, callback) {
     return processMessages(err, res, resBody, null, callback);
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Returns messages from queries on resource endpoints
  * @private
@@ -323,6 +325,29 @@ function processMessages(err, res, resBody, wfMessages, callback) {
     // Send response using common endpoint response function
     return sendIndicative(res, err, resBody, resData, callback);
 }
+
+/**
+ * Adds message inforamtion to the meta property of the response body
+ * @private
+ * @param {@wfMessage} wfMessage 
+ * @param {Object} meta the meta property of the response body
+ * @returns {Object} the updated meta property of the response body
+ */
+function addMessageMetaInfo(wfMessage, meta) {
+    meta.message = msg.type(wfMessage);
+    meta.type = msg.title(wfMessage);
+    meta.info = arr.addItem(meta.info, msg.descr(wfMessage));
+    if (wfMessage.MetaHeader.formatValid) {
+        meta.info = arr.addItem(meta.info, 'Message format is valid');
+    }
+    if (wfMessage.MetaHeader.referenceValid) {
+        meta.info = arr.addItem(meta.info, 'Message reference is valid');
+    }
+    if (wfMessage.MetaHeader.originatorValid) {
+        meta.info = arr.addItem(meta.info, 'Message originator has been authenticated');
+    }
+    return meta;
+}
 </code></pre>
         </article>
     </section>
@@ -339,7 +364,7 @@ function processMessages(err, res, resBody, wfMessages, callback) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

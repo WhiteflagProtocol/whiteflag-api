@@ -47,19 +47,19 @@ module.exports = {
     createSignature
 };
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const  arr = require('../_common/arrays');
 const { ProcessingError } = require('../_common/errors');
 const { createBody,
         sendImperative,
-        sendIndicative } = require('../_common/httpres');
+        sendIndicative } = require('./_common/response');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfBlockchains = require('../blockchains');
 const wfAuthenticate = require('../protocol/authenticate');
 const wfState = require('../protocol/state');
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Provides current state of all blockchains from state module
  * @function getBlockchains
@@ -226,26 +226,27 @@ function getAccount(req, res, operationId, callback) {
 function createAccount(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     let secret = req.body.secret || null;
-    wfBlockchains.createAccount(blockchain, secret, function opsCreateAccountCb(err, result = {}) {
+    wfBlockchains.createAccount(blockchain, secret, function opsCreateAccountCb(err, result) {
         // Create response body and preserve information before responding
         let resData = {};
         let resBody = createBody(req, operationId);
 
         // Check results
-        if (result.address) {
+        if (result?.address) {
             resBody.meta.resource = `/blockchains/${blockchain}/accounts/${result.address}`;
-        } else if (!err) err = new Error('Could not determine address of created blockchain account');
+        } else if (!err) {
+            err = new Error('Could not determine address of created blockchain account');
+        }
         if (!err) {
-            resData = result;
             resBody.meta.blockchain = blockchain;
             resBody.meta.account = result.address;
             resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account created');
+            resData = result;
         }
         // Send response using common endpoint response function
         return sendImperative(res, err, resBody, resData, callback);
    });
-   // Hopefully the garbage collector will do its work
-   secret = undefined;
+   secret = null;
 }
 
 /**
@@ -267,12 +268,15 @@ function updateAccount(req, res, operationId, callback) {
         let resBody = createBody(req, operationId);
 
         // Send response using common endpoint response function
-        if (!err &amp;&amp; !result) resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'No errors occured when updating blockchain account, but did not receive result');
-        if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; result) {
-            resData = result;
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
             resBody.meta.account = address;
-            resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account updated');
+            if (result) {
+                resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account updated');
+                resData = result;
+            } else {
+                resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Did not receive result of account update');
+            }
         }
         return sendImperative(res, err, resBody, resData, callback);
     });
@@ -296,12 +300,15 @@ function deleteAccount(req, res, operationId, callback) {
         let resBody = createBody(req, operationId);
 
         // Send response using common endpoint response function
-        if (!err &amp;&amp; !result) resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'No errors occured when deleting blockchain account, but did not receive result');
-        if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; result) {
-            resData = result;
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
             resBody.meta.account = address;
-            resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account deleted');
+            if (result) {
+                resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account deleted');
+                resData = result;
+            } else {
+                resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Did not receive result of account deletion');
+            }
         }
         return sendImperative(res, err, resBody, resData, callback);
     });
@@ -325,10 +332,14 @@ function createSignature(req, res, operationId, callback) {
         let resBody = createBody(req, operationId);
 
         // Send response using common endpoint response function
-        if (!err) resBody.meta.blockchain = blockchain;
-        if (!err &amp;&amp; (!wfSignature || !wfSignDecoded)) err = new Error('Did not receive valid signature from blockchain');
-        if (wfSignDecoded) {
+        if (!err) {
+            resBody.meta.blockchain = blockchain;
             resBody.meta.account = address;
+            if (!wfSignature || !wfSignDecoded) {
+                err = new Error('Did not receive valid signature for blockchain account');
+            }
+        }
+        if (wfSignDecoded) {
             resBody.meta.decoded = wfSignDecoded;
         }
         return sendImperative(res, err, resBody, wfSignature, callback);
@@ -358,8 +369,11 @@ function transferFunds(req, res, operationId, callback) {
             resBody.meta.blockchain = blockchain;
             resBody.meta.account = address;
             resData = transfer;
-            if (txHash) resData.transactionHash = txHash;
-                else resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Could not retrieve transaction hash');
+            if (txHash) {
+                resData.transactionHash = txHash;
+            } else {
+                resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Could not retrieve transaction hash');
+            }
             if (blockNumber) resData.blockNumber = blockNumber;
         }
         return sendImperative(res, err, resBody, resData, callback);
@@ -381,7 +395,7 @@ function transferFunds(req, res, operationId, callback) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -40,25 +40,27 @@ module.exports = {
     verifyFormat
 };
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const fs = require('fs');
 const jsonValidate = require('jsonschema').validate;
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const arr = require('../_common/arrays');
 const obj = require('../_common/objects');
-const { type } = require('../_common/protocol');
-const { ProcessingError, ProtocolError } = require('../_common/errors');
+const { type } = require('./_common/messages');
 const { hexToBuffer } = require('../_common/encoding');
+const { noHexPrefix } = require('../_common/format');
+const { ProcessingError,
+        ProtocolError } = require('../_common/errors');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfCrypto = require('./crypto');
 
-// Module constants //
+/* Module constants */
 const BYTELENGTH = 8;
 const wfMessageSchema = JSON.parse(fs.readFileSync('./static/protocol/message.schema.json'));
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Checks if message formate validates against schema and updates metaheader accordingly
  * @function verifyFormat
@@ -71,10 +73,18 @@ function verifyFormat(wfMessage, callback) {
     if (!wfMessage.MetaHeader) {
         return callback(new ProtocolError('Missing metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
     }
-    delete wfMessage.MetaHeader.formatValid;
+    let { MetaHeader: meta } = wfMessage;
+    delete meta.formatValid;
     
-    // Validate message format
+    // Check for message components
     let formatErrors = [];
+    if (!wfMessage.MessageHeader) formatErrors.push('Missing message header');
+    if (!wfMessage.MessageBody) formatErrors.push('Missing message body');
+    if (formatErrors.length > 0) {
+        meta.formatValid = false;
+        return callback(new ProtocolError('Invalid message format', formatErrors, 'WF_FORMAT_ERROR'), wfMessage);
+    }
+    // Validate against JSON Schema
     try {
         // Check against schema
         formatErrors = formatErrors.concat(
@@ -87,10 +97,10 @@ function verifyFormat(wfMessage, callback) {
     }
     // Check for format errors, update metaheader and return result
     if (formatErrors.length > 0) {
-        wfMessage.MetaHeader.formatValid = false;
+        meta.formatValid = false;
         return callback(new ProtocolError('Invalid message format', formatErrors, 'WF_FORMAT_ERROR'), wfMessage);
     }
-    wfMessage.MetaHeader.formatValid = true;
+    meta.formatValid = true;
     return callback(null, wfMessage);
 }
 
@@ -161,7 +171,7 @@ function encodeMessage(wfMessage, callback) {
                     });
                 }
             }
-            // fallthrough //
+            // fallthrough */
             case 'P':
             case 'D':
             case 'S':
@@ -225,12 +235,17 @@ function decodeMessage(wfMessage, callback) {
     if (!wfMessage.MetaHeader) {
         return callback(new ProtocolError('Missing metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
     }
-    delete wfMessage.MetaHeader.formatValid;
-    if (!wfMessage.MetaHeader.encodedMessage) {
+    let { MetaHeader: meta } = wfMessage;
+    delete meta.formatValid;
+
+    // Check encoded message
+    if (!meta.encodedMessage) {
         return callback(new ProtocolError('No encoded message in metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
+    } else {
+        meta.encodedMessage = noHexPrefix(meta.encodedMessage);
     }
     // Create character string of the binary representation
-    const encryptedMessage = hexToBuffer(wfMessage.MetaHeader.encodedMessage);
+    const encryptedMessage = hexToBuffer(meta.encodedMessage);
     let messageBinStr = decodeBin2BinStr(encryptedMessage);
 
     // Create empty message header and body objects
@@ -241,7 +256,7 @@ function decodeMessage(wfMessage, callback) {
     let { MessageHeader: header } = wfMessage;
     header.Prefix = decodeBinStr(messageBinStr, 0, 16, 'utf');
     if (header.Prefix !== 'WF') {
-        wfMessage.MetaHeader.formatValid = false;
+        meta.formatValid = false;
         return callback(new ProtocolError('Encoded message does not have WF prefix', null, 'WF_FORMAT_ERROR'), wfMessage);
     }
     header.Version = decodeBinStr(messageBinStr, 16, 24, 'utf');
@@ -252,7 +267,7 @@ function decodeMessage(wfMessage, callback) {
         case '1':
         case '2': {
             // Check initialisation Vector
-            if (!wfMessage.MetaHeader.encryptionInitVector) {
+            if (!meta.encryptionInitVector) {
                 /**
                  * @callback decodeMessageCb
                  * @param {Error} err any error
@@ -366,7 +381,7 @@ function decodeMessage(wfMessage, callback) {
     });
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Checks if message content is compliant with the WF specification
  * @private
@@ -434,8 +449,8 @@ function encodeBDX2BinStr(fieldStr, nBits) {
 
     // Run through characters of the string and convert to binary one by one
     // Treating all integers as hexadecimals always results in correct binary encoding
-    for (let i = 0; i &lt; fieldStr.length; i++) {
-        let binCNum = parseInt(fieldStr[i], 16).toString(2);
+    for (const bdx of fieldStr) {
+        const binCNum = parseInt(bdx, 16).toString(2);
         binStr += (padbits + binCNum).slice(-padding);
     }
     return binStr;
@@ -454,14 +469,14 @@ function encodeUTF2BinStr(fieldStr, nBits) {
     let binStr = '';
 
     // Run through characters of the string and convert to binary one by one
-    for (let i = 0; i &lt; fieldStr.length; i++) {
-        let binChar = fieldStr[i].charCodeAt(0).toString(2);
+    for (const char of fieldStr) {
+        const binChar = char.charCodeAt(0).toString(2);
         binStr += (padbits + binChar).slice(-BYTELENGTH);
     }
     // Add 0s to fill all nBits of the field with UTF-8 NULL character, unless nBits = 0
     if (nBits === 0) return binStr;
 
-    let nullstr = new Array(nBits - binStr.length).join('0');
+    const nullstr = new Array(nBits - binStr.length).join('0');
     return (binStr + nullstr);
 }
 
@@ -476,8 +491,8 @@ function encodeDatum2BinStr(fieldStr) {
     let sign = '';
 
     // Sign of lat long coordinates
-    if (fieldStr.charAt(0) === '-') sign = '0';
-    if (fieldStr.charAt(0) === '+') sign = '1';
+    if (fieldStr.startsWith('-')) sign = '0';
+    if (fieldStr.startsWith('+')) sign = '1';
 
     // Prepare string by removing fixed characters
     const fieldStrCl = fieldStr.replace(/[-+:.A-Z]/g, '');
@@ -486,8 +501,8 @@ function encodeDatum2BinStr(fieldStr) {
     const padding = 4;
     const padbits = new Array(padding).join('0');
     let binStr = '';
-    for (let i = 0; i &lt; fieldStrCl.length; i++) {
-        let binCNum = parseInt(fieldStrCl[i], 10).toString(2);
+    for (const char of fieldStrCl) {
+        const binCNum = parseInt(char, 10).toString(2);
         binStr += (padbits + binCNum).slice(-padding);
     }
     return (sign + binStr);
@@ -497,7 +512,7 @@ function encodeDatum2BinStr(fieldStr) {
  * Converts a character string representing the binary encoding to a buffer
  * @private
  * @param {string} binStr representation of the binary encoding
- * @returns {buffer} binary ncoding
+ * @returns {Buffer} binary ncoding
  */
 function encodeBinStr2Buffer(binStr) {
     // Split the string in an array of strings representing 8-bit bytes
@@ -521,16 +536,16 @@ function encodeBinStr2Buffer(binStr) {
  * Converts a binary buffer/array to a character string representation
  * of the binary encoding of a message
  * @private
- * @param {buffer} BufArr binary encoding of a message
+ * @param {Buffer} buffer binary encoding of a message
  * @returns {string} representation of the binary encoding
  */
-function decodeBin2BinStr(BufArr) {
+function decodeBin2BinStr(buffer) {
     const padbits = new Array(BYTELENGTH).join('0');
     let binStr = '';
 
     // Run through characters of the string and convert to binary one by one
-    for (let i = 0; i &lt; BufArr.length; i++) {
-        let binChars = BufArr[i].toString(2);
+    for (const byte of buffer) {
+        const binChars = byte.toString(2);
         binStr += (padbits + binChars).slice(-BYTELENGTH);
     }
     return binStr;
@@ -574,7 +589,7 @@ function decodeBinStr(binStr, beginBit, endBit, type) {
             // Make sure BCD decoding below skips the sign bit; no break needed here!
             beginBit++;
         }
-        // fallthrough  //
+        // fallthrough  */
         case 'dec':
         case 'datetime':
         case 'duration': {
@@ -640,7 +655,7 @@ function decodeBinStr(binStr, beginBit, endBit, type) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

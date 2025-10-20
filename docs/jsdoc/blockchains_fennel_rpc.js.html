@@ -44,6 +44,7 @@ module.exports = {
     getEvents,
     getFullBlock,
     getHighestBlock,
+    getNodePeerId,
     getNodeRoles,
     getPeerCount,
     getRuntimeVersion,
@@ -57,30 +58,31 @@ module.exports = {
     sendTokens,
 };
 
-// External modules //
+/* External modules */
 const { ApiPromise,
         WsProvider } = require('@polkadot/api');
 
-// Common internal functions and classes //
+/* Common internal functions and classes */
 const log = require('../../_common/logger');
 const { ignore } = require('../../_common/processing')
 const { ProcessingError } = require('../../_common/errors');
 const { timeoutPromise } = require('../../_common/processing');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfState = require('../../protocol/state');
 
-// Common blockchain functions //
+/* Common blockchain functions */
 const { rpcCall,
-        getFullURL } = require('../_common/rpc');
+        getNodeURL } = require('../_common/rpc');
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'fennel';
 const DEFAULTPORT = '8844';
+const TOKENPRECISION = 1e12;
 const STATUSINTERVAL = 60000; // Every minute
 const INFOINTERVAL = 3600000; // Every hour
 
-// Module variables //
+/* Module variables */
 let _fnlChain = 'fennel';
 let _fnlState;
 let _fnlApi;
@@ -103,14 +105,14 @@ function initRpc(fnlConfig, fnlState) {
     _fnlState = fnlState;
 
     // RPC timeout period
-    if (fnlConfig.rpcTimeout &amp;&amp; fnlConfig.rpcTimeout > 500) {
+    if (Object.hasOwn(fnlConfig, 'rpcTimeout') &amp;&amp; fnlConfig.rpcTimeout > 500) {
         _rpcTimeout = fnlConfig.rpcTimeout;
     }
     log.info(MODULELOG, `Timeout for remote calls to the ${_fnlChain} node: ${_rpcTimeout} ms`);
 
     // Get Node URL and credentials
-    const rpcCleanURL = getFullURL(fnlConfig, true, DEFAULTPORT);   // no credentials
-    _rpcAuthURL = getFullURL(fnlConfig, false, DEFAULTPORT);        // include credentials
+    const rpcCleanURL = getNodeURL(fnlConfig, true, DEFAULTPORT);   // no credentials
+    _rpcAuthURL = getNodeURL(fnlConfig, false, DEFAULTPORT);        // include credentials
     _fnlState.parameters.rpcURL = rpcCleanURL;
     _rpcUser = fnlConfig.rpcUsername;
     _rpcPass = fnlConfig.rpcPassword;
@@ -172,7 +174,7 @@ function initRpc(fnlConfig, fnlState) {
     });
 }
 
-// RPC CALL WRAPPER FUNCTIONS //
+/* RPC CALL WRAPPER FUNCTIONS */
 /**
  * Gets the balance of the specified Fennel blockchain account
  * @function getBalance
@@ -185,10 +187,10 @@ function getBalance(address) {
         return _fnlApi.query.system.account(address)
         .then(({ nonce, data: balance }) => { 
             ignore(nonce);
-            return Promise.resolve(Number(balance.free));
+            return Promise.resolve(toTokens(balance.free));
         });
     } else {
-        return Promise.reject(new ProcessingError('No method implemented to get balance' ,null , 'WF_API_NOT_IMPLEMENTED'));
+        return Promise.reject(new ProcessingError('No RPC method available to get balance', null, 'WF_API_NOT_IMPLEMENTED'));
     }
 }
 
@@ -318,6 +320,17 @@ function getHighestBlock() {
     .catch(err => {
         return Promise.reject(err);
     });
+}
+
+/**
+ * Gets the system peer id
+ * @function getNodePeerId
+ * @alias module:lib/blockchains/fennel/rpc.getNodePeerId
+ * @returns {Promise} resolves to system name
+ */
+function getNodePeerId() {
+    if (_fnlApi) return _fnlApi.rpc.system.localPeerId();
+    return rpc('system_localPeerId');
 }
 
 /**
@@ -466,14 +479,34 @@ function sendSignal(keyring, data) {
 function sendTokens(keyring, toAddress, amount) {
     if (_fnlApi) {
         return _fnlApi.tx.balances
-            .transferKeepAlive(toAddress, parseInt(amount))
+            .transferKeepAlive(toAddress, toUnits(amount))
             .signAndSend(keyring, { nonce: -1 });
     } else {
         return Promise.reject(new ProcessingError('No web rpc method implemented to send tokens', null, 'WF_API_NOT_IMPLEMENTED'));
     }
 }
 
-// PRIVATE BLOCKCHAIN STATUS FUNCTIONS //
+/* PRIVATE BLOCKCHAIN STATUS FUNCTIONS */
+/**
+ * Converts units to tokens
+ * @private
+ * @param {number} unit the number of units
+ * @returns {number} the amount of tokens
+ */
+function toTokens(unit) {
+    return (Number(unit) / TOKENPRECISION);
+}
+
+/**
+ * Converts tokens to units
+ * @private
+ * @param {number} token the amount of tokens
+ * @returns {number} the number of units
+ */
+function toUnits(token) {
+    return (Number(token) * TOKENPRECISION);
+}
+
 /**
  * Requests some semi-static Fennel parachain information
  * @private
@@ -504,6 +537,11 @@ async function updateNodeInfo() {
     .then(chainType => (_fnlState.parameters.chainType = chainType || ''))
     .catch(err => log.warn(MODULELOG, `Could not get chain type from node: ${err.message}`));
 
+    // Get peer id
+    await getNodePeerId()
+    .then(peerId => (_fnlState.parameters.peerId = peerId || ''))
+    .catch(err => log.warn(MODULELOG, `Could not get peer id from node: ${err.message}`));
+
     // Get node roles
     await getNodeRoles()
     .then(nodeRoles => (_fnlState.parameters.nodeRoles = nodeRoles || ''))
@@ -524,14 +562,18 @@ async function updateNodeStatus() {
 
     // Get synchronisation status
     await isSyncing()
-    .then(syncing => (_fnlState.status.syncing = syncing  || ''))
+    .then(syncing => (_fnlState.status.syncing = syncing  || null))
     .catch(err => log.warn(MODULELOG, `Could not get synchronisation status: ${err.message}`));
 
     // Get synchronisation status
     await getSyncState()
     .then(syncState => {
-        _fnlState.status.startingBlock = Number(syncState.startingBlock) || '';
-        _fnlState.status.currentBlock = Number(syncState.currentBlock) || '';
+        if (_fnlState.status.startingBlock) delete _fnlState.status.startingBlock;
+        if (_fnlState.status.syncing) {
+            _fnlState.status.syncingBlock = Number(syncState.currentBlock) || '';
+        } else {
+            delete _fnlState.status.syncingBlock;
+        }
         _fnlState.status.highestBlock = Number(syncState.highestBlock) || '';
     })
     .catch(err => log.warn(MODULELOG, `Could not get synchronisation status: ${err.message}`));
@@ -546,10 +588,10 @@ async function updateNodeStatus() {
  */
 function saveNodeStatus() {
     wfState.updateBlockchainData(_fnlChain, _fnlState);
-    log.info(MODULELOG, `Status: {${JSON.stringify(_fnlState.parameters)}, ${JSON.stringify(_fnlState.status)}}`);
+    log.debug(MODULELOG, `Status: {${JSON.stringify(_fnlState.parameters)}, ${JSON.stringify(_fnlState.status)}}`);
 }
 
-// PRIVATE RPC FUNCTIONS //
+/* PRIVATE RPC FUNCTIONS */
 /**
  * Calls the common RPC function
  * @function rpc
@@ -587,7 +629,7 @@ function notInitialized() {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun Oct 12 2025 00:33:27 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
