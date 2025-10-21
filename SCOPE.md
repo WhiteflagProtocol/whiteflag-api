@@ -22,13 +22,14 @@ The API should provide all message handling i.a.w. the standard:
 * processing of test messages (v1.0) - issue #4
 * checking for correct subject codes and object types (v1.0) - issue #13
 
-### Blockchain
+### Blockchains
 
 The API should demonstrate blockchain agnosticy of the protocol by
-interfacing with at least two blockchains, namely:
+interfacing with the following blockchains:
 
 * ethereum (v0.8)
 * bitcoin (v1.0)
+* fennel/polkadot (v1.1)
 
 The API is able to read Whiteflag history from the blockchain into database.
 
@@ -64,6 +65,7 @@ The API supports:
 The following functionality is in scope, but currently not implemented:
 
 * message and area concatenation with reference code 3 - issue #2
+* evaluation of message sequences
 
 ## Outside scope
 

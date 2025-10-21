@@ -57,9 +57,10 @@ There are two main branches with infinite lifetime:
 In addition, a number of support branches with the following
 naming conventions may be used:
 
-* `hotfix-<version>` is a branch from `master` in which urgent bugs are fixed
-  and then pulled into `master` for a bugfix release (with the `<version>`
-  being `1.0.z` for example); a hotfix should also be merged into `develop`.
+* `patch-<version>` is a branch from `master` in which problems and bugs
+  are fixed and then pulled into `master` for a bugfix release (with the
+  `<version>` being `1.0.z` for example); a hotfix should also be merged
+  into `develop`.
 * `release-<version>` is a branch from `develop` used, as required, for
   integration and testing of a specific major or minor release (with the
   `<version>` being `x.y.0`); upon completion the release is pulled into
