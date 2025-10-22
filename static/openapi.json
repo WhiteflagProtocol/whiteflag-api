@@ -103,7 +103,7 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader and MessageHeader fields as optional query parameters. This operation may be disabled in the configuration.",
                 "operationId": "getMessages",
                 "parameters": [
                     { "$ref": "#/components/parameters/blockchainQuery" },
@@ -111,7 +111,18 @@
                     { "$ref": "#/components/parameters/originatorAddressQuery" },
                     { "$ref": "#/components/parameters/originatorPubKeyQuery" },
                     { "$ref": "#/components/parameters/recipientAddressQuery" },
-                    { "$ref": "#/components/parameters/transceiveDirectionQuery" }
+                    { "$ref": "#/components/parameters/transceiveDirectionQuery" },
+                    { "$ref": "#/components/parameters/blockNumberQuery" },
+                    { "$ref": "#/components/parameters/confirmedQuery" },
+                    { "$ref": "#/components/parameters/originatorValidQuery" },
+                    { "$ref": "#/components/parameters/referenceValidQuery" },
+                    { "$ref": "#/components/parameters/formatValidQuery" },
+                    { "$ref": "#/components/parameters/versionQuery" },
+                    { "$ref": "#/components/parameters/encryptionIndicatorQuery" },
+                    { "$ref": "#/components/parameters/messageCodeQuery" },
+                    { "$ref": "#/components/parameters/duressIndicatorQuery" },
+                    { "$ref": "#/components/parameters/referenceIndicatorQuery" },
+                    { "$ref": "#/components/parameters/referencedMessageQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -288,8 +299,8 @@
                 "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageReferences",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/blockchainQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -322,8 +333,8 @@
                 "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageSequence",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/blockchainQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -1035,18 +1046,9 @@
                     "type": "string"
                 }
             },
-            "transactionHash": {
-                "description": "The hash of a blockchain transaction",
-                "name": "transactionHash",
-                "in": "query",
-                "required": true,
-                "schema": {
-                    "type": "string"
-                }
-            },
-            "blockchain": {
-                "description": "The name of a blockchain",
-                "name": "blockchain",
+            "blockNumberQuery": {
+                "description": "The number of a block",
+                "name": "blockchainNumber",
                 "in": "query",
                 "required": false,
                 "schema": {
@@ -1101,6 +1103,96 @@
             "transceiveDirectionQuery": {
                 "description": "The transceive direction indicating if a message has been sent (TX) or has been received (RX)",
                 "name": "transceiveDirection",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "confirmedQuery": {
+                "description": "Indicates if the message has been confirmed",
+                "name": "confirmed",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "originatorValidQuery": {
+                "description": "Indicates if the originator of the message has been authenticated",
+                "name": "originatorValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "referenceValidQuery": {
+                "description": "Inidcates if the messages references another message correctly",
+                "name": "referenceValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "formatValidQuery": {
+                "description": "Indicates if the message format is valid",
+                "name": "formatValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "versionQuery": {
+                "description": "Indicates which version of the standard is used to generate the message",
+                "name": "Version",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "encryptionIndicatorQuery": {
+                "description": "Indicates if and which encryption is used",
+                "name": "EncryptionIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "messageCodeQuery": {
+                "description": "Indicates the type of message",
+                "name": "MessageCode",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "duressIndicatorQuery": {
+                "description": "Indicates whether the message was sent under force or threat",
+                "name": "DuressIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "referenceIndicatorQuery": {
+                "description": "Indicates how this message relates to an earlier message",
+                "name": "ReferenceIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "referencedMessageQuery": {
+                "description": "Blockchain dependend reference to a related earlier message",
+                "name": "ReferencedMessage",
                 "in": "query",
                 "required": false,
                 "schema": {
