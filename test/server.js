@@ -5,41 +5,41 @@
  * @description Script for testing the server functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../lib/common/processing');
-const log = require('../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../lib/_common/processing');
+const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
-const wfApiServer = require('../lib/server');
+/* Project modules required for test */
+const wfServer = require('../lib/server');
 
-// Constants //
+/* Constants */
 const OPENAPIFILE = './static/openapi.json';
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag API server module', function() {
     testCase('Starting and stopping the server', function() {
         assertion(' 1. should succesfully start the server', function(done) {
-            wfApiServer.start(function test1StartServerCb(err, url) {
+            wfServer.start(function test1StartServerCb(err, url) {
                 if (err) return done(err);
                 assert(url);
                 return done();
             });
         });
         assertion(' 2. should succesfully create server endpoints', function(done) {
-            wfApiServer.createEndpoints(function dummy() {}, function test2EndpointsCb(err) {
+            wfServer.createEndpoints(function dummy() {}, function test2EndpointsCb(err) {
                 if (err) return done(err);
                 return done();
             });
         });
         assertion(' 3. should succesfully stop the server', function(done) {
-            wfApiServer.stop(function test3StopServerCb(err) {
+            wfServer.stop(function test3StopServerCb(err) {
                 if (err) return done(err);
                 return done();
             });
@@ -50,7 +50,7 @@ testCase('Whiteflag API server module', function() {
         const PATH = 0;
         const METHOD = 1;
         const OPERATIONID = 2;
-        const endpoints = wfApiServer.test.getEndpoints();
+        const endpoints = wfServer.test.getEndpoints();
 
         // OpenAPI definition data
         const openapi = JSON.parse(fs.readFileSync(OPENAPIFILE)).paths;

@@ -35,62 +35,72 @@
  * @tutorial protocol
  */
 module.exports = {
-    // Codec functions
     encode: encodeMessage,
     decode: decodeMessage,
-    // Verification functions
     verifyFormat
 };
 
-// Node.js core and external modules //
-const fs = require('fs');
+/* Node.js core and external modules */
 const jsonValidate = require('jsonschema').validate;
 
-// Whiteflag common functions and classes //
-const array = require('../common/arrays');
-const object = require('../common/objects');
-const { type } = require('../common/protocol');
-const { ProcessingError, ProtocolError } = require('../common/errors');
+/* Common internal functions and classes */
+const arr = require('../_common/arrays');
+const obj = require('../_common/objects');
+const { hexToBuffer } = require('../_common/encoding');
+const { noHexPrefix } = require('../_common/format');
+const { ProcessingError,
+        ProtocolError } = require('../_common/errors');
+const { type,
+        getSchema } = require('./_common/messages');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfCrypto = require('./crypto');
 
-// Module constants //
+/* Module constants */
 const BYTELENGTH = 8;
-const BINENCODING = 'hex';
-const wfMessageSchema = JSON.parse(fs.readFileSync('./static/protocol/message.schema.json'));
+const wfMsgSchema = getSchema();
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Checks if message formate validates against schema and updates metaheader accordingly
  * @function verifyFormat
  * @alias module:lib/protocol/codec.verifyFormat
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {wfMessageCb} callback function called on completion
  */
 function verifyFormat(wfMessage, callback) {
     // Check for metaheader
     if (!wfMessage.MetaHeader) {
         return callback(new ProtocolError('Missing metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
     }
-    // Validate message format
+    let { MetaHeader: meta } = wfMessage;
+    delete meta.formatValid;
+    
+    // Check for message components
     let formatErrors = [];
+    if (!wfMessage.MessageHeader) formatErrors.push('Missing message header');
+    if (!wfMessage.MessageBody) formatErrors.push('Missing message body');
+    if (formatErrors.length > 0) {
+        meta.formatValid = false;
+        return callback(new ProtocolError('Invalid message format', formatErrors, 'WF_FORMAT_ERROR'), wfMessage);
+    }
+    // Validate against JSON Schema
     try {
         // Check against schema
         formatErrors = formatErrors.concat(
-            array.pluck(jsonValidate(wfMessage, wfMessageSchema).errors, 'stack')
+            arr.pluck(jsonValidate(wfMessage, wfMsgSchema).errors, 'stack')
         );
         // Check field vaues
-        formatErrors = array.addArray(formatErrors, verifyValues(wfMessage));
+        formatErrors = arr.addArray(formatErrors, verifyValues(wfMessage));
     } catch(err) {
         return callback(err, wfMessage);
     }
     // Check for format errors, update metaheader and return result
     if (formatErrors.length > 0) {
-        wfMessage.MetaHeader.formatValid = false;
+        meta.formatValid = false;
         return callback(new ProtocolError('Invalid message format', formatErrors, 'WF_FORMAT_ERROR'), wfMessage);
     }
-    wfMessage.MetaHeader.formatValid = true;
+    meta.formatValid = true;
     return callback(null, wfMessage);
 }
 
@@ -99,7 +109,7 @@ function verifyFormat(wfMessage, callback) {
  * @function encodeMessage
  * @alias lib/protocol/codec.encode
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {wfMessageCb} callback function called on completion
  */
 function encodeMessage(wfMessage, callback) {
     // Validate message format
@@ -161,7 +171,7 @@ function encodeMessage(wfMessage, callback) {
                     });
                 }
             }
-            // fallthrough //
+            // fallthrough */
             case 'P':
             case 'D':
             case 'S':
@@ -218,19 +228,24 @@ function encodeMessage(wfMessage, callback) {
  * @function decodeMessage
  * @alias lib/protocol/codec.decode
  * @param {wfMessage} wfMessage Whiteflag message with encoded message string in MetaHeader
- * @param {function(Error, wfMessage, ivMissing)} callback
- * @typedef {boolean} ivMissing indicates whether initialisation vector for decryption is missing
+ * @param {decodeMessageCb} callback function called on completion
  */
 function decodeMessage(wfMessage, callback) {
     // Check metaheader and encoded message
     if (!wfMessage.MetaHeader) {
         return callback(new ProtocolError('Missing metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
     }
-    if (!wfMessage.MetaHeader.encodedMessage) {
+    let { MetaHeader: meta } = wfMessage;
+    delete meta.formatValid;
+
+    // Check encoded message
+    if (!meta.encodedMessage) {
         return callback(new ProtocolError('No encoded message in metaheader', null, 'WF_METAHEADER_ERROR'), wfMessage);
+    } else {
+        meta.encodedMessage = noHexPrefix(meta.encodedMessage);
     }
     // Create character string of the binary representation
-    const encryptedMessage = Buffer.from(wfMessage.MetaHeader.encodedMessage, BINENCODING);
+    const encryptedMessage = hexToBuffer(meta.encodedMessage);
     let messageBinStr = decodeBin2BinStr(encryptedMessage);
 
     // Create empty message header and body objects
@@ -241,6 +256,7 @@ function decodeMessage(wfMessage, callback) {
     let { MessageHeader: header } = wfMessage;
     header.Prefix = decodeBinStr(messageBinStr, 0, 16, 'utf');
     if (header.Prefix !== 'WF') {
+        meta.formatValid = false;
         return callback(new ProtocolError('Encoded message does not have WF prefix', null, 'WF_FORMAT_ERROR'), wfMessage);
     }
     header.Version = decodeBinStr(messageBinStr, 16, 24, 'utf');
@@ -251,7 +267,13 @@ function decodeMessage(wfMessage, callback) {
         case '1':
         case '2': {
             // Check initialisation Vector
-            if (!wfMessage.MetaHeader.encryptionInitVector) {
+            if (!meta.encryptionInitVector) {
+                /**
+                 * @callback decodeMessageCb
+                 * @param {Error} err any error
+                 * @param {wfMessage} message the Whiteflag message
+                 * @param {boolean} ivMissing true if iv is missing else false
+                 */
                 return callback(null, wfMessage, true);
             }
             break;
@@ -349,7 +371,7 @@ function decodeMessage(wfMessage, callback) {
         if (header.MessageCode === 'T') {
             body.PseudoMessageBody = decodingBody;
         } else {
-            object.update(decodingBody, body);
+            obj.update(decodingBody, body);
         }
         // Validate message format and return message
         verifyFormat(wfMessage, function decodeVerifyFormatCb(err, wfMessage) {
@@ -359,7 +381,7 @@ function decodeMessage(wfMessage, callback) {
     });
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Checks if message content is compliant with the WF specification
  * @private
@@ -369,7 +391,7 @@ function decodeMessage(wfMessage, callback) {
 function verifyValues(wfMessage) {
     // Split message, get specification and prepare error array
     const { MessageHeader: header, MessageBody: body } = wfMessage;
-    const wfSpec = wfMessageSchema.specifications;
+    const wfSpec = wfMsgSchema.specifications;
     let contentErrors = [];
 
     // Find correct message type
@@ -427,8 +449,8 @@ function encodeBDX2BinStr(fieldStr, nBits) {
 
     // Run through characters of the string and convert to binary one by one
     // Treating all integers as hexadecimals always results in correct binary encoding
-    for (let i = 0; i &lt; fieldStr.length; i++) {
-        let binCNum = parseInt(fieldStr[i], 16).toString(2);
+    for (const bdx of fieldStr) {
+        const binCNum = parseInt(bdx, 16).toString(2);
         binStr += (padbits + binCNum).slice(-padding);
     }
     return binStr;
@@ -447,14 +469,14 @@ function encodeUTF2BinStr(fieldStr, nBits) {
     let binStr = '';
 
     // Run through characters of the string and convert to binary one by one
-    for (let i = 0; i &lt; fieldStr.length; i++) {
-        let binChar = fieldStr[i].charCodeAt(0).toString(2);
+    for (const char of fieldStr) {
+        const binChar = char.charCodeAt(0).toString(2);
         binStr += (padbits + binChar).slice(-BYTELENGTH);
     }
     // Add 0s to fill all nBits of the field with UTF-8 NULL character, unless nBits = 0
     if (nBits === 0) return binStr;
 
-    let nullstr = new Array(nBits - binStr.length).join('0');
+    const nullstr = new Array(nBits - binStr.length).join('0');
     return (binStr + nullstr);
 }
 
@@ -469,8 +491,8 @@ function encodeDatum2BinStr(fieldStr) {
     let sign = '';
 
     // Sign of lat long coordinates
-    if (fieldStr.charAt(0) === '-') sign = '0';
-    if (fieldStr.charAt(0) === '+') sign = '1';
+    if (fieldStr.startsWith('-')) sign = '0';
+    if (fieldStr.startsWith('+')) sign = '1';
 
     // Prepare string by removing fixed characters
     const fieldStrCl = fieldStr.replace(/[-+:.A-Z]/g, '');
@@ -479,8 +501,8 @@ function encodeDatum2BinStr(fieldStr) {
     const padding = 4;
     const padbits = new Array(padding).join('0');
     let binStr = '';
-    for (let i = 0; i &lt; fieldStrCl.length; i++) {
-        let binCNum = parseInt(fieldStrCl[i], 10).toString(2);
+    for (const char of fieldStrCl) {
+        const binCNum = parseInt(char, 10).toString(2);
         binStr += (padbits + binCNum).slice(-padding);
     }
     return (sign + binStr);
@@ -490,7 +512,7 @@ function encodeDatum2BinStr(fieldStr) {
  * Converts a character string representing the binary encoding to a buffer
  * @private
  * @param {string} binStr representation of the binary encoding
- * @returns {buffer} binary ncoding
+ * @returns {Buffer} binary ncoding
  */
 function encodeBinStr2Buffer(binStr) {
     // Split the string in an array of strings representing 8-bit bytes
@@ -514,16 +536,16 @@ function encodeBinStr2Buffer(binStr) {
  * Converts a binary buffer/array to a character string representation
  * of the binary encoding of a message
  * @private
- * @param {buffer} BufArr binary encoding of a message
+ * @param {Buffer} buffer binary encoding of a message
  * @returns {string} representation of the binary encoding
  */
-function decodeBin2BinStr(BufArr) {
+function decodeBin2BinStr(buffer) {
     const padbits = new Array(BYTELENGTH).join('0');
     let binStr = '';
 
     // Run through characters of the string and convert to binary one by one
-    for (let i = 0; i &lt; BufArr.length; i++) {
-        let binChars = BufArr[i].toString(2);
+    for (const byte of buffer) {
+        const binChars = byte.toString(2);
         binStr += (padbits + binChars).slice(-BYTELENGTH);
     }
     return binStr;
@@ -567,7 +589,7 @@ function decodeBinStr(binStr, beginBit, endBit, type) {
             // Make sure BCD decoding below skips the sign bit; no break needed here!
             beginBit++;
         }
-        // fallthrough  //
+        // fallthrough  */
         case 'dec':
         case 'datetime':
         case 'duration': {
@@ -627,13 +649,13 @@ function decodeBinStr(binStr, beginBit, endBit, type) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -37,20 +37,18 @@
  * @tutorial openapi
  */
 module.exports = {
-    // Server functions
     start: startServer,
     stop: stopServer,
     createEndpoints,
     sendSocket,
     monitorSocket,
-    // Server functions for testing
     test: {
         getEndpoints,
         getOpenApiEndpoints
     }
 };
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -59,16 +57,17 @@ const express = require('express');
 const auth = require('express-basic-auth');
 const socket = require('socket.io');
 
-// Whiteflag common functions and classes //
-const log = require('./common/logger');
-const { ignore } = require('./common/processing');
-const { ProcessingError } = require('./common/errors');
-const response = require('./common/httpres');
+/* Common internal functions and classes */
+const log = require('./_common/logger');
+const { ignore } = require('./_common/processing');
+const { ProcessingError } = require('./_common/errors');
+const { createBody,
+        sendImperative } = require('./operations/_common/response');
 
-// Whiteflag modules //
-const wfApiConfig = require('./config');
+/* Whiteflag modules */
+const wfConfig = require('./config');
 
-// Whiteflag modules with endpoint operations //
+/* Whiteflag modules with endpoint operations */
 const wfApiMessagesHandler = require('./operations/messages');
 const wfApiBlockchainsHandler = require('./operations/blockchains');
 const wfApiOriginatorsHandler = require('./operations/originators');
@@ -76,35 +75,91 @@ const wfApiSignaturesHandler = require('./operations/signatures');
 const wfApiTokensHandler = require('./operations/tokens');
 const wfApiQueueHandler = require('./operations/queue');
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'server';
 const SOCKETPATH = '/socket';
 const OPENAPIFILE = '../static/openapi.json';
+const PORT_LOWEST = 1
+const PORT_HIGHEST = 65536
 
-// Module objects //
-let _wfApiConfig;
+/**
+ * @constant {Array} wfApiEndpoints
+ */
+const wfApiEndpoints = [
+    // Message resource endpoints
+    [ '/messages', 'GET', 'getMessages', wfApiMessagesHandler.getMessages ],
+    [ '/messages/references', 'GET', 'getMessageReferences', wfApiMessagesHandler.getReferences ],
+    [ '/messages/sequence', 'GET', 'getMessageSequence', wfApiMessagesHandler.getSequence ],
+    [ '/messages/send', 'POST', 'sendMessage', wfApiMessagesHandler.send ],
+    [ '/messages/receive', 'POST', 'receiveMessage', wfApiMessagesHandler.receive ],
+
+    // Message validation endpoints
+    [ '/messages/validate', 'POST', 'validateMessage', wfApiMessagesHandler.validate ],
+    [ '/messages/encode', 'POST', 'encodeMessage', wfApiMessagesHandler.encode ],
+    [ '/messages/decode', 'POST', 'decodeMessage', wfApiMessagesHandler.decode ],
+
+    // Blockchain endpoints
+    [ '/blockchains', 'GET', 'getAllBlockchains', wfApiBlockchainsHandler.getBlockchains ],
+    [ '/blockchains/:blockchain', 'GET', 'getBlockchainState', wfApiBlockchainsHandler.getBlockchain ],
+    [ '/blockchains/:blockchain/scan', 'GET', 'scanBlocks', wfApiBlockchainsHandler.scanBlocks ],
+
+    // Blockchain accounts endpoints
+    [ '/blockchains/:blockchain/accounts', 'GET', 'getAccounts', wfApiBlockchainsHandler.getAccounts ],
+    [ '/blockchains/:blockchain/accounts/:account', 'GET', 'getAccount', wfApiBlockchainsHandler.getAccount ],
+    [ '/blockchains/:blockchain/accounts', 'POST', 'createAccount', wfApiBlockchainsHandler.createAccount ],
+    [ '/blockchains/:blockchain/accounts/:account', 'PATCH', 'updateAccount', wfApiBlockchainsHandler.updateAccount ],
+    [ '/blockchains/:blockchain/accounts/:account', 'DELETE', 'deleteAccount', wfApiBlockchainsHandler.deleteAccount ],
+
+    // Blockchain account signature and transfer value endpoints
+    [ '/blockchains/:blockchain/accounts/:account/sign', 'POST', 'createSignature', wfApiBlockchainsHandler.createSignature ],
+    [ '/blockchains/:blockchain/accounts/:account/transfer', 'POST', 'transferFunds', wfApiBlockchainsHandler.transferFunds ],
+
+    // Originator endpoints
+    [ '/originators', 'GET', 'getAllOriginators', wfApiOriginatorsHandler.getOriginators ],
+    [ '/originators/:address', 'GET', 'getOriginator', wfApiOriginatorsHandler.getOriginator ],
+    [ '/originators/:address', 'PATCH', 'updateOriginator', wfApiOriginatorsHandler.updateOriginator ],
+    [ '/originators/:address', 'DELETE', 'deleteOriginator', wfApiOriginatorsHandler.deleteOriginator ],
+
+    // Originator pre-shared keys
+    [ '/originators/:address/psk/:account', 'GET', 'getPreSharedKey', wfApiOriginatorsHandler.getPreSharedKey ],
+    [ '/originators/:address/psk/:account', 'PUT', 'storePreSharedKey', wfApiOriginatorsHandler.storePreSharedKey ],
+    [ '/originators/:address/psk/:account', 'DELETE', 'deletePreSharedKey', wfApiOriginatorsHandler.deletePreSharedKey ],
+
+    // Originator authentication tokens
+    [ '/originators/tokens/:authTokenId', 'GET', 'getAuthToken', wfApiOriginatorsHandler.getAuthToken ],
+    [ '/originators/tokens', 'POST', 'storeAuthToken', wfApiOriginatorsHandler.storeAuthToken ],
+    [ '/originators/tokens/:authTokenId', 'DELETE', 'deleteAuthToken', wfApiOriginatorsHandler.deleteAuthToken ],
+    [ '/signature/decode', 'POST', 'decodeSignature', wfApiSignaturesHandler.decode ],
+    [ '/signature/verify', 'POST', 'verifySignature', wfApiSignaturesHandler.verify ],
+    [ '/token/create', 'POST', 'createToken', wfApiTokensHandler.create ],
+
+    // Queue endpoint
+    [ '/queues/:queue', 'GET', 'getQueue', wfApiQueueHandler.getQueue ]
+];
+
+/* Module objects */
 let _wfApi;
+let _wfApiConfig;
 let _wfServer;
 let _wfSocket;
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Starts the API http server
  * @function startServer
  * @alias module:lib/server.start
- * @param {function(Error, url)} callback function called after starting the server
- * @typedef {string} url the server url
+ * @param {genericCb} callback function called after starting the server
  */
 function startServer(callback) {
     // Get configuration
-    _wfApiConfig = wfApiConfig.getConfig();
+    _wfApiConfig = wfConfig.getConfig();
     const protocol = _wfApiConfig.server.protocol || 'http';
     const hostname = _wfApiConfig.server.hostname || '';
     const port = process.env.WFPORT || _wfApiConfig.server.port || '5746';
     const url = `${protocol}://${hostname}:${port}`;
 
     // Check for valid port
-    if (port &lt; 0 || port > 65536) {
+    if (port &lt; PORT_LOWEST || port > PORT_HIGHEST) {
         return callback(new Error(`Invalid port number: ${port}`));
     }
     // Create server
@@ -173,7 +228,7 @@ function startServer(callback) {
 
     // Basic http authorization
     let authConfig = {};
-    if (_wfApiConfig.authorization.username &amp;&amp; _wfApiConfig.authorization.password) {
+    if (_wfApiConfig.authorization?.username &amp;&amp; _wfApiConfig.authorization.password) {
         log.info(MODULELOG, 'Enabling basic http authorization');
         try {
             authConfig[_wfApiConfig.authorization.username] = _wfApiConfig.authorization.password;
@@ -208,7 +263,7 @@ function startServer(callback) {
  * Stops the API http server
  * @function stopServer
  * @alias module:lib/server.stop
- * @param {function(Error)} callback function called after stopping the server
+ * @param {errorCb} callback function called after stopping the server
  */
 function stopServer(callback) {
     // Try to shutdown socket
@@ -227,10 +282,9 @@ function stopServer(callback) {
     } else {
         return callback();
     }
-
     /**
      * Returns callback with timeout error
-     * @callback timeout
+     * @callback timeoutCb
      */
     function timeoutCb() {
         return callback(new Error('Timeout while closing server'));
@@ -242,7 +296,7 @@ function stopServer(callback) {
  * @function createEndpoints
  * @alias module:lib/server.createEndpoints
  * @param {logEndpointEventCb} endpointCb function passed to the endpoint handler to be invoked when done
- * @param {function(Error)} callback function to be called upon completion
+ * @param {errorCb} callback function called on completion
  */
 function createEndpoints(endpointCb, callback) {
     // Endpoints array index
@@ -251,17 +305,14 @@ function createEndpoints(endpointCb, callback) {
     const OPERATIONID = 2;
     const HANDLER = 3;
 
-    // Get array with endpoints
-    const endpoints = getEndpoints();
-
     // Check if server is ready
     if (!_wfApi) {
         return callback(new Error('Could not bind endpoint routes to handlers: Server not started'));
     }
     try {
         // Message controller endpoints
-        endpoints.forEach(function endpointsCb(endpoint) {
-            if (!Object.prototype.hasOwnProperty.call(_wfApiConfig.endpoints, endpoint[OPERATIONID])
+        for (const endpoint of wfApiEndpoints) {
+            if (!Object.hasOwn(_wfApiConfig.endpoints, endpoint[OPERATIONID])
                 || _wfApiConfig.endpoints[endpoint[OPERATIONID]]) {
                 log.debug(MODULELOG, `Creating endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
                 createEndpoint(endpoint[PATH], endpoint[METHOD], endpoint[OPERATIONID], endpoint[HANDLER], endpointCb);
@@ -269,7 +320,7 @@ function createEndpoints(endpointCb, callback) {
                 log.info(MODULELOG, `Disabled endpoint: ${endpoint[OPERATIONID]}: ${endpoint[METHOD]} ${endpoint[PATH]}`);
                 createEndpoint(endpoint[PATH], endpoint[METHOD], endpoint[OPERATIONID], forbiddenHandler, endpointCb);
             }
-        });
+        };
         // Catch-all endpoint; MUST be last one to call
         log.trace(MODULELOG, 'Creating endpoint for all undefined routes and methods');
         createEndpoint('*', '_all', 'undefined', undefinedHandler, endpointCb);
@@ -326,7 +377,7 @@ function monitorSocket(callback) {
     });
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Creates an endpoint
  * @private
@@ -386,12 +437,12 @@ function createEndpoint(route, method, operationId, handler, endpointCb) {
  * @param {Object} req the http request
  * @param {Object} res the http response
  * @param {string} operationId the operation id as defined in the openapi definition
- * @param {logEndpointEventCb} callback function to be called upon completion
+ * @param {logEndpointEventCb} callback function called on completion
  */
 function undefinedHandler(req, res, operationId, callback) {
-    let resBody = response.createBody(req, operationId);
+    let resBody = createBody(req, operationId);
     let err = new ProcessingError('Undefined endpoint or illegal method', null, 'WF_API_NO_RESOURCE');
-    return response.sendImperative(res, err, resBody, null, callback);
+    return sendImperative(res, err, resBody, null, callback);
 }
 
 /**
@@ -403,22 +454,22 @@ function undefinedHandler(req, res, operationId, callback) {
  * @param {logEndpointEventCb} callback
  */
 function forbiddenHandler(req, res, operationId, callback) {
-    let resBody = response.createBody(req, operationId);
+    let resBody = createBody(req, operationId);
     let err = new ProcessingError(`Configuration does not allow operation: ${operationId}`, null, 'WF_API_NOT_ALLOWED');
-    return response.sendImperative(res, err, resBody, null, callback);
+    return sendImperative(res, err, resBody, null, callback);
 }
 
 /**
  * Handles middleware errors
  * @private
- * @param {Error} err the error
+ * @param {Error} err any error
  * @param {Object} req the http request
  * @param {Object} res the http response
  * @param {function} next middleware function to be called next
  */
 function errorHandler(err, req, res, next) {
     const statusCode = err.status || 500;
-    let resBody = response.createBody(req, null);
+    let resBody = createBody(req, null);
 
     // Compose error message
     let errorMessage = err.message || 'Unspecified error';
@@ -440,7 +491,7 @@ function errorHandler(err, req, res, next) {
  * @returns {Object} the response body
  */
 function unauthorizedResponse(req) {
-    let resBody = response.createBody(req, null);
+    let resBody = createBody(req, null);
     resBody.errors = [ 'Unauthorized to access this endpoint or resource' ];
     log.warn(MODULELOG, `Unauthorised request: ${JSON.stringify(resBody.meta.request)}`);
     return resBody;
@@ -452,54 +503,7 @@ function unauthorizedResponse(req) {
  * @returns {Array} endpoints
  */
 function getEndpoints() {
-    return [
-        // Message resource endpoints
-        [ '/messages', 'GET', 'getMessages', wfApiMessagesHandler.getMessages ],
-        [ '/messages/references', 'GET', 'getMessageReferences', wfApiMessagesHandler.getReferences ],
-        [ '/messages/sequence', 'GET', 'getMessageSequence', wfApiMessagesHandler.getSequence ],
-        [ '/messages/send', 'POST', 'sendMessage', wfApiMessagesHandler.send ],
-        [ '/messages/receive', 'POST', 'receiveMessage', wfApiMessagesHandler.receive ],
-
-        // Message validation endpoints
-        [ '/messages/validate', 'POST', 'validateMessage', wfApiMessagesHandler.validate ],
-        [ '/messages/encode', 'POST', 'encodeMessage', wfApiMessagesHandler.encode ],
-        [ '/messages/decode', 'POST', 'decodeMessage', wfApiMessagesHandler.decode ],
-
-        // Blockchain endpoints
-        [ '/blockchains', 'GET', 'getAllBlockchains', wfApiBlockchainsHandler.getBlockchains ],
-        [ '/blockchains/:blockchain', 'GET', 'getBlockchainState', wfApiBlockchainsHandler.getBlockchain ],
-
-        // Blockchain accounts endpoints
-        [ '/blockchains/:blockchain/accounts', 'GET', 'getAccounts', wfApiBlockchainsHandler.getAccounts ],
-        [ '/blockchains/:blockchain/accounts/:account', 'GET', 'getAccount', wfApiBlockchainsHandler.getAccount ],
-        [ '/blockchains/:blockchain/accounts', 'POST', 'createAccount', wfApiBlockchainsHandler.createAccount ],
-        [ '/blockchains/:blockchain/accounts/:account', 'PATCH', 'updateAccount', wfApiBlockchainsHandler.updateAccount ],
-        [ '/blockchains/:blockchain/accounts/:account', 'DELETE', 'deleteAccount', wfApiBlockchainsHandler.deleteAccount ],
-
-        // Blockchain account signature and transfer value endpoints
-        [ '/blockchains/:blockchain/accounts/:account/sign', 'POST', 'createSignature', wfApiBlockchainsHandler.createSignature ],
-        [ '/blockchains/:blockchain/accounts/:account/transfer', 'POST', 'transferFunds', wfApiBlockchainsHandler.transferFunds ],
-        [ '/originators', 'GET', 'getAllOriginators', wfApiOriginatorsHandler.getOriginators ],
-        [ '/originators/:address', 'GET', 'getOriginator', wfApiOriginatorsHandler.getOriginator ],
-        [ '/originators/:address', 'PATCH', 'updateOriginator', wfApiOriginatorsHandler.updateOriginator ],
-        [ '/originators/:address', 'DELETE', 'deleteOriginator', wfApiOriginatorsHandler.deleteOriginator ],
-
-        // Originator pre-shared keys
-        [ '/originators/:address/psk/:account', 'GET', 'getPreSharedKey', wfApiOriginatorsHandler.getPreSharedKey ],
-        [ '/originators/:address/psk/:account', 'PUT', 'storePreSharedKey', wfApiOriginatorsHandler.storePreSharedKey ],
-        [ '/originators/:address/psk/:account', 'DELETE', 'deletePreSharedKey', wfApiOriginatorsHandler.deletePreSharedKey ],
-
-        // Originator authentication tokens
-        [ '/originators/tokens/:authTokenId', 'GET', 'getAuthToken', wfApiOriginatorsHandler.getAuthToken ],
-        [ '/originators/tokens', 'POST', 'storeAuthToken', wfApiOriginatorsHandler.storeAuthToken ],
-        [ '/originators/tokens/:authTokenId', 'DELETE', 'deleteAuthToken', wfApiOriginatorsHandler.deleteAuthToken ],
-        [ '/signature/decode', 'POST', 'decodeSignature', wfApiSignaturesHandler.decode ],
-        [ '/signature/verify', 'POST', 'verifySignature', wfApiSignaturesHandler.verify ],
-        [ '/token/create', 'POST', 'createToken', wfApiTokensHandler.create ],
-
-        // Queue
-        [ '/queues/:queue', 'GET', 'getQueue', wfApiQueueHandler.getQueue ]
-    ];
+    return wfApiEndpoints;
 }
 
 /**
@@ -529,13 +533,13 @@ function getOpenApiEndpoints() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

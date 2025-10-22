@@ -4,32 +4,32 @@
  * @description Script for testing and troubleshooting constructs based on external modules
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
-const { ProtocolError } = require('../../lib/common/errors');
+/* Project modules required for test */
+const { ProtocolError } = require('../../lib/_common/errors');
 const jwt = require('jsonwebtoken');
 const KeyEncoder = require('key-encoder').default;
 
-// Constants //
+/* Constants */
 const SIGNKEYTYPE = 'secp256k1';
 /**
  * @constant {Object} testVector
  * @description Defines the encoding and decoding test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/authentication.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/authentication.testvector.json'));
 
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag authentication tests', function() {
     testCase('Key encoding and signature pseudo tests', function() {
         const keyEncoder = new KeyEncoder(SIGNKEYTYPE);

@@ -159,7 +159,7 @@
                     }
                 },
                 "accounts": {
-                    "description": "Account available on this blockchain",
+                    "description": "Accounts available on this blockchain",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/blockchainAccountObject"
@@ -231,11 +231,11 @@
                     "description": "The state crypto identifier of the authentication token for this originator",
                     "type": "string"
                 }, 
-                "authenticationValid": {
+                "authValid": {
                     "description": "Indication whether the originator has been authenticated at some point in time",
                     "type": "boolean"
                 },
-                "authenticationMessages": {
+                "authMessages": {
                     "description": "Transaction hashes of valid original authentication messages",
                     "type": "array",
                     "items": {

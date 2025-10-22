@@ -2,7 +2,7 @@
     "openapi": "3.0.1",
     "info": {
         "title": "Whiteflag API",
-        "version": "1.0.1",
+        "version": "1.1.0",
         "description": "This Whiteflag Application Programming Interface (API) is a [Node.js](https://nodejs.org/en/about/) software implementation of the API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains. It acts as a message transceiver between one or more blockchains and one or more end-user applications.\n\nThis API is a so called Minumum Viable Product (MVP), which means that it only supports the core features of the Whiteflag protocol for development and testing purposes. As such, it serves as the reference implementation of the Whiteflag protocol, but it is not designed and tested for secure usage and performance in a production environment.\n\nThis definition documents the API in [OpenAPI format](https://swagger.io/specification/).\n\nTwo methods are available for interaction with the API: 1. a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) for originators to provide Whiteflag message to be sent on the blockchain, and 2. a [socket.io](https://socket.io/) [web socket](https://en.wikipedia.org/wiki/WebSocket) variant available on `/socket` for clients to listen for incoming Whiteflag messages from a blockchain. A running API has a webpage with embedded socket listener available on [/listen](/listen) and the documented source code at [/docs](/docs).\n\nAll response bodies are structured as `{meta, data, errors}`, based on the [JSON API Specification](https://jsonapi.org/format/), which has been used as a guideline (and as a guideline only).",
         "x-logo": {
             "url": "wflogo.png",
@@ -103,7 +103,7 @@
         "/messages": {
             "get": {
                 "tags": [ "Messages" ],
-                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.",
+                "description": "Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader and MessageHeader fields as optional query parameters. This operation may be disabled in the configuration.",
                 "operationId": "getMessages",
                 "parameters": [
                     { "$ref": "#/components/parameters/blockchainQuery" },
@@ -111,7 +111,18 @@
                     { "$ref": "#/components/parameters/originatorAddressQuery" },
                     { "$ref": "#/components/parameters/originatorPubKeyQuery" },
                     { "$ref": "#/components/parameters/recipientAddressQuery" },
-                    { "$ref": "#/components/parameters/transceiveDirectionQuery" }
+                    { "$ref": "#/components/parameters/transceiveDirectionQuery" },
+                    { "$ref": "#/components/parameters/blockNumberQuery" },
+                    { "$ref": "#/components/parameters/confirmedQuery" },
+                    { "$ref": "#/components/parameters/originatorValidQuery" },
+                    { "$ref": "#/components/parameters/referenceValidQuery" },
+                    { "$ref": "#/components/parameters/formatValidQuery" },
+                    { "$ref": "#/components/parameters/versionQuery" },
+                    { "$ref": "#/components/parameters/encryptionIndicatorQuery" },
+                    { "$ref": "#/components/parameters/messageCodeQuery" },
+                    { "$ref": "#/components/parameters/duressIndicatorQuery" },
+                    { "$ref": "#/components/parameters/referenceIndicatorQuery" },
+                    { "$ref": "#/components/parameters/referencedMessageQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -288,8 +299,8 @@
                 "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageReferences",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/blockchainQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -322,8 +333,8 @@
                 "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
                 "operationId": "getMessageSequence",
                 "parameters": [
-                    { "$ref": "#/components/parameters/transactionHash" },
-                    { "$ref": "#/components/parameters/blockchain" }
+                    { "$ref": "#/components/parameters/transactionHashQuery" },
+                    { "$ref": "#/components/parameters/blockchainQuery" }
                 ],
                 "responses": {
                     "200": {
@@ -379,6 +390,34 @@
                 "responses": {
                     "200": {
                         "$ref": "#/components/responses/blockchainState"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
+        "/blockchains/{blockchain}/scan": {
+            "get": {
+                "tags": [ "Blockchains", "Messages" ],
+                "description": "Scans a range of blocks for Whiteflag messages. This operation may be disabled in the configuration.",
+                "operationId": "scanBlocks",
+                "parameters": [
+                    { "in": "query", "name": "from", "type": "integer", "required": true },
+                    { "in": "query", "name": "to", "type": "integer", "required": true }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessages"
                     },
                     "401": {
                         "$ref": "#/components/responses/error401"
@@ -542,7 +581,7 @@
                 "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature to be used with authentication method 1. This signature should be made available on an internet resource to which an `A1` authentication message refers. This operation may be disabled in the configuration.",
                 "operationId": "createSignature",
                 "requestBody": {
-                    "$ref": "#/components/requestBodies/wfSignaturePayload"
+                    "$ref": "#/components/requestBodies/wfSignPayload"
                 },
                 "responses": {
                     "200": {
@@ -618,7 +657,7 @@
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
+                        "$ref": "#/components/responses/wfSignDecoded"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -645,7 +684,7 @@
                 },
                 "responses": {
                     "200": {
-                        "$ref": "#/components/responses/wfSignatureDecoded"
+                        "$ref": "#/components/responses/wfSignDecoded"
                     },
                     "400": {
                         "$ref": "#/components/responses/error400"
@@ -721,7 +760,7 @@
                 },
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorAccepted"
+                        "$ref": "#/components/responses/originatorUpdated"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -737,7 +776,7 @@
                 "operationId": "deleteOriginator",
                 "responses": {
                     "202": {
-                        "$ref": "#/components/responses/originatorAccepted"
+                        "$ref": "#/components/responses/originatorDeleted"
                     },
                     "404": {
                         "$ref": "#/components/responses/error404"
@@ -1007,18 +1046,9 @@
                     "type": "string"
                 }
             },
-            "transactionHash": {
-                "description": "The hash of a blockchain transaction",
-                "name": "transactionHash",
-                "in": "query",
-                "required": true,
-                "schema": {
-                    "type": "string"
-                }
-            },
-            "blockchain": {
-                "description": "The name of a blockchain",
-                "name": "blockchain",
+            "blockNumberQuery": {
+                "description": "The number of a block",
+                "name": "blockchainNumber",
                 "in": "query",
                 "required": false,
                 "schema": {
@@ -1073,6 +1103,96 @@
             "transceiveDirectionQuery": {
                 "description": "The transceive direction indicating if a message has been sent (TX) or has been received (RX)",
                 "name": "transceiveDirection",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "confirmedQuery": {
+                "description": "Indicates if the message has been confirmed",
+                "name": "confirmed",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "originatorValidQuery": {
+                "description": "Indicates if the originator of the message has been authenticated",
+                "name": "originatorValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "referenceValidQuery": {
+                "description": "Inidcates if the messages references another message correctly",
+                "name": "referenceValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "formatValidQuery": {
+                "description": "Indicates if the message format is valid",
+                "name": "formatValid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            },
+            "versionQuery": {
+                "description": "Indicates which version of the standard is used to generate the message",
+                "name": "Version",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "encryptionIndicatorQuery": {
+                "description": "Indicates if and which encryption is used",
+                "name": "EncryptionIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "messageCodeQuery": {
+                "description": "Indicates the type of message",
+                "name": "MessageCode",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "duressIndicatorQuery": {
+                "description": "Indicates whether the message was sent under force or threat",
+                "name": "DuressIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "referenceIndicatorQuery": {
+                "description": "Indicates how this message relates to an earlier message",
+                "name": "ReferenceIndicator",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "referencedMessageQuery": {
+                "description": "Blockchain dependend reference to a related earlier message",
+                "name": "ReferencedMessage",
                 "in": "query",
                 "required": false,
                 "schema": {
@@ -1207,12 +1327,12 @@
                     }
                 }
             },
-            "wfSignaturePayload": {
+            "wfSignPayload": {
                 "description": "Payload for a Whiteflag Authentication Signature",
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "protocol/signature.schema.json#/definitions/wfSignaturePayload"
+                            "$ref": "protocol/signature.schema.json#/definitions/wfSignPayload"
                         }
                     }
                 }
@@ -1289,8 +1409,8 @@
                             "description": "Blockchain account creation data object",
                             "type": "object",
                             "properties": {
-                                "privateKey": {
-                                    "description": "Optional private key in raw hexadecimal format to create account with",
+                                "secret": {
+                                    "description": "Optional blockchain dependent secret (e.g. private key, wif or seed) to create account with",
                                     "type": "string",
                                     "pattern": "[a-fA-F0-9]"
                                 }
@@ -1469,7 +1589,7 @@
                 }
             },
             "wfMessages": {
-                "description": "Successfully processed Whiteflag message query and returning an array of messages",
+                "description": "Successfully processed Whiteflag message query or blockchain scan and returning an array of messages",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1479,7 +1599,7 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "description": "Array with resulting messages from a database query",
+                                    "description": "Array with resulting messages from a database query or blockchain scan",
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/wfMessage"
@@ -1508,7 +1628,7 @@
                     }
                 }
             },
-            "wfSignatureDecoded": {
+            "wfSignDecoded": {
                 "description": "Successfully processed the Whiteflag authentication signature and returning the result",
                 "content": {
                     "application/json": {
@@ -1519,7 +1639,7 @@
                                     "$ref": "#/components/schemas/responseBodyMetaObject"
                                 },
                                 "data": {
-                                    "$ref": "protocol/signature.schema.json#/definitions/wfSignatureDecoded"
+                                    "$ref": "protocol/signature.schema.json#/definitions/wfSignDecoded"
                                 }
                             }
                         }
@@ -1712,7 +1832,43 @@
                 }
             },
             "originatorAccepted": {
-                "description": "Successfully retrieved and returning known Whiteflag originators",
+                "description": "Successfully created new Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorUpdated": {
+                "description": "Successfully accepted the update request for the Whiteflag originator",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "$ref": "#/components/schemas/responseBodyMetaObject"
+                                },
+                                "data": {
+                                    "$ref": "protocol/state.schema.json#/definitions/originatorObject"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "originatorDeleted": {
+                "description": "Successfully accepted the delete request for the Whiteflag originator",
                 "content": {
                     "application/json": {
                         "schema": {

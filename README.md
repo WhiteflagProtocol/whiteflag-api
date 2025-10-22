@@ -117,7 +117,7 @@ command in the deployment directory:
 wfapi
 ```
 
-Using the `npm start` command in the deployment directory should also work.
+Using the `npm start` command in the deployment directory will also work.
 
 Alternatively, a service may be created. An example `whiteflag-api.service`
 for linux systems using `systemctl` cound be found in `etc/`. Enable the
@@ -156,6 +156,7 @@ Some of the endpoint functionalities
 * `/blockchains/{blockchain}/accounts/{address}` endpoint to PATCH or DELETE to update or remove the specified blockchain account
 * `/blockchains/{blockchain}/accounts/{address}/sign`: endpoint to POST a payload to be signed as a Whiteflag authentication signature
 * `/blockchains/{blockchain}/accounts/{address}/transfer`: endpoint to POST a transaction to transfer value to another account
+* `/blockchains/{blockchain}/scan?from={block}&to={block}`: endpoint to GET messages from a range of blocks
 
 ### Originators
 
@@ -177,7 +178,7 @@ following NPM command in the project root:
 npm test
 ```
 
-Any REST client, such as [Postman](https://www.getpostman.com/) or [cURL](https://everything.curl.dev/cmdline/options.html)
+Any REST client, such as [Postman](https://www.getpostman.com/) or [cURL](https://everything.curl.dev/)
 can be used for manual testing. This is a simple example using cURL from the
 command line, sending an `A1` message from a file:
 

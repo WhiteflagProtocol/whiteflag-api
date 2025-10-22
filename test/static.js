@@ -5,7 +5,7 @@
  * @description Script for testing Whiteflag API static data
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
@@ -13,18 +13,18 @@ const fs = require('fs');
 const semver = require('semver');
 const jsonValidate = require('jsonschema').validate;
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../lib/common/processing');
-const log = require('../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../lib/_common/processing');
+const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
-const array = require('../lib/common/arrays');
+/* Project modules required for test */
+const arr = require('../lib/_common/arrays');
 
-// Constants //
-const _metaSchema = JSON.parse(fs.readFileSync('./test/static/json-schema.schema.json'));
+/* Constants */
+const _metaSchema = JSON.parse(fs.readFileSync('./test/_static/json-schema.schema.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag API static data tests', function() {
     // Version numbers
     testCase('OpenAPI definition', function() {
@@ -35,7 +35,7 @@ testCase('Whiteflag API static data tests', function() {
         // Test
         assertion(' 1. should correspond with the software version', function(done) {
             // Software package version
-            if (!packageObj.version) return done(new Error('Could not determine software package version'));
+            if (!packageObj.version) return done(new Error('Could not determine package version'));
             const packageVersion = semver.clean(packageObj.version);
 
             // OpenAPI definition version
@@ -44,16 +44,16 @@ testCase('Whiteflag API static data tests', function() {
 
             // Compare versions
             if (semver.eq(packageVersion, openapiVersion)) return done();
-            done(new Error(`The OpenAPI definition version ${openapiVersion} does not correspond with the software package version ${packageVersion}`));
+            done(new Error(`The OpenAPI definition version ${openapiVersion} does not correspond with the package version ${packageVersion}`));
         });
     });
     // JSON Schemas
     testCase('JSON schemas', function() {
         // Schemas
         const staticSchemas = [
-            './test/static/json-schema.schema.json',
-            './lib/blockchains/static/blockchains.config.schema.json',
-            './lib/datastores/static/datastores.config.schema.json',
+            './test/_static/json-schema.schema.json',
+            './lib/blockchains/_static/blockchains.config.schema.json',
+            './lib/datastores/_static/datastores.config.schema.json',
             './static/protocol/message.schema.json',
             './static/protocol/metaheader.schema.json',
             './static/protocol/signature.schema.json',
@@ -73,7 +73,7 @@ testCase('Whiteflag API static data tests', function() {
     });
 });
 
-// PRIVATE TEST FUNCTIONS //
+/* PRIVATE TEST FUNCTIONS */
 /**
  * Validates a JSON specification against a JSON schema
  * @private
@@ -83,7 +83,7 @@ testCase('Whiteflag API static data tests', function() {
  */
 function validateJSON(specification, schema = _metaSchema) {
     try {
-        return [].concat(array.pluck(jsonValidate(specification, schema).errors, 'stack'));
+        return [].concat(arr.pluck(jsonValidate(specification, schema).errors, 'stack'));
     } catch(err) {
         console.log(err);
         return [].push(err.message);

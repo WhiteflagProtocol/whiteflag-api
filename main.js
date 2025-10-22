@@ -8,32 +8,32 @@
  * @tutorial configuration
  * @tutorial modules
  */
-// Change working directory to process directory
+
+/* Change working directory to process directory */
 process.chdir(__dirname);
 
-// Whiteflag common functions and classes //
-const log = require('./lib/common/logger');
-const { ignore } = require('./lib/common/processing');
+/* Common internal functions and classes */
+const log = require('./lib/_common/logger');
+const { ignore } = require('./lib/_common/processing');
 
-// Whiteflag modules //
-const wfApiConfig = require('./lib/config');
-const wfApiServer = require('./lib/server');
-const wfApiDatastores = require('./lib/datastores');
-const wfApiBlockchains = require('./lib/blockchains');
+/* Whiteflag modules */
+const wfConfig = require('./lib/config');
+const wfServer = require('./lib/server');
+const wfDatastores = require('./lib/datastores');
+const wfBlockchains = require('./lib/blockchains');
 const wfState = require('./lib/protocol/state');
 const wfTransmit = require('./lib/protocol/transmit');
 const wfReceive = require('./lib/protocol/receive');
 const wfManagement = require('./lib/protocol/management');
-
-// Whiteflag event emitters //
 const wfRxEvent = require('./lib/protocol/events').rxEvent;
 const wfTxEvent = require('./lib/protocol/events').txEvent;
 const wfStateEvent = require('./lib/protocol/events').stateEvent;
 
-// Module constants //
-const MODULELOG = 'api';
+/* Module constants */
+const MODULELOG = 'main';
 const SHUTDOWNTIMEOUT = 10000;
 
+/* PROCESS CONTROL */
 /*
  * Gracefully crash if an uncaught exception occurs and
  * ensure proper shutdown when process is stopped
@@ -42,8 +42,19 @@ process.on('uncaughtException', uncaughtExceptionCb);
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// EXECUTE MAIN PROCESS FUNCTION //
-main(function mainCb(err) {
+/*
+ * Send any uncontrolled output to stdout and stderr to the debug logger
+ * to avoid submodules that do not properly report errors flooding the log
+ */
+log.redirectStream(process.stdout, log.trace);
+log.redirectStream(process.stderr, log.debug);
+
+/* EXECUTE MAIN PROCESS FUNCTION */
+/**
+ * @Callback errorCb
+ * @param {Error} err any error
+ */
+main(function errorCb(err) {
     if (err) {
         log.fatal(MODULELOG, err.message);
         return process.exit(1);
@@ -51,20 +62,19 @@ main(function mainCb(err) {
     shutdown();
 });
 
-// MAIN FUNCTIONS //
+/* MAIN FUNCTIONS */
 /**
  * Main process function that reads the configuration and starts all functionality
  * @function main
- * @param {function(Error)} callback
+ * @param {errorCb} callback
  */
 function main(callback) {
     log.info('whiteflag', 'THE USAGE OF SIGNS AND SIGNALS WITH THIS SOFTWARE IS SUBJECT TO LOCAL AND/OR INTERNATIONAL LAWS');
-
     /*
     * The configuration is retrieved from the configuration module,
     * and in its callback all other modules are initialised
     */
-    wfApiConfig.getConfig(function apiGetConfigCb(err, apiConfig) {
+    wfConfig.getConfig(function apiGetConfigCb(err, apiConfig) {
         // Configuration errors are fatal
         if (err) return callback(new Error(`Configuration error: ${err.message}`));
         log.info(MODULELOG, `Configuration read from ${apiConfig.CONFFILE}`);
@@ -76,6 +86,11 @@ function main(callback) {
         // Set set logging level
         const loglevel = process.env.WFLOGLEVEL || apiConfig.logger.loglevel;
         if (loglevel) {
+            /**
+             * @callback genericCb
+             * @param {Error} err any error
+             * @param {*} result the result
+             */
             log.setLogLevel(loglevel, function loglevelCb(err, loglevel) {
                 if (err) log.error(MODULELOG, `Error setting logging level: ${err.message}`);
                 log.info(MODULELOG, `Logging level: ${loglevel}`);
@@ -101,7 +116,7 @@ function initModules() {
      * @listens module:lib/protocol/transmit.txEvent:initialised
      */
     wfTxEvent.once('initialised', function apiTxInitEndpointsCb() {
-        wfApiServer.createEndpoints(endpointEventCb, endpointsInitCb);
+        wfServer.createEndpoints(endpointEventCb, endpointsInitCb);
     });
     /**
      * Initialises handling of protocol management messages
@@ -116,7 +131,7 @@ function initModules() {
      */
     wfRxEvent.once('initialised', function apiRxInitServerCb() {
         // Start the server
-        wfApiServer.start(function apiServerStartCb(err, url) {
+        wfServer.start(function apiServerStartCb(err, url) {
             serverStartCb(err, url);
 
             // Create rest api endpoints after message transmission chain has been initialised
@@ -124,7 +139,7 @@ function initModules() {
                 transceiveInitCb(err, 'Whiteflag message transmit (tx) event chain initialised');
             });
             // Monitor connections on rx socket
-            wfApiServer.monitorSocket(socketEventCb);
+            wfServer.monitorSocket(socketEventCb);
         });
     });
     /**
@@ -132,7 +147,7 @@ function initModules() {
      * @listens module:lib/protocol/receive.rxEvent:initialised
      */
     wfRxEvent.once('initialised', function apiRxInitBlockchainsCb() {
-        wfApiBlockchains.init(blockhainsInitCb);
+        wfBlockchains.init(blockhainsInitCb);
     });
     /**
      * Initialises rx event chain after state has been initialised
@@ -147,7 +162,7 @@ function initModules() {
     * Connects to datastores and initiliase state,
     * which triggers all other initialisations
     */
-    wfApiDatastores.init(function apiDatastoresInitCb(err, primaryDatastore) {
+    wfDatastores.init(function apiDatastoresInitCb(err, primaryDatastore) {
         datastoresInitCb(err, primaryDatastore);
         wfState.init(stateInitCb);
     });
@@ -156,7 +171,6 @@ function initModules() {
 /**
  * Shuts down the API gracefully
  * @function shutdown
- * @param {Error} err error object if any error
  */
 function shutdown() {
     log.info(MODULELOG, 'Caught SIGINT or SIGTERM. Shutting down...');
@@ -169,8 +183,8 @@ function shutdown() {
      */
     wfStateEvent.once('closed', function apiStateCloseCb() {
         log.info(MODULELOG, 'Whiteflag protocol state closed');
-        wfApiDatastores.close(function apiDatastoresCloseCb(err) {
-            if (err) log.error(MODULELOG, err.message);
+        wfDatastores.close(function apiDatastoresCloseCb(err, primaryDatastore) {
+            datastoresCloseCb(err, primaryDatastore);
 
             // All done
             clearTimeout(timer);
@@ -178,17 +192,18 @@ function shutdown() {
             return process.exit(0);
         });
     });
-    /* Stop the server and close the state
+    /*
+     * Stop the server and close the state
      * whcih triggers all other closing actions
      */
-    wfApiServer.stop(function apiServerStopCb(err) {
+    wfServer.stop(function apiServerStopCb(err) {
         if (err) log.warn(MODULELOG, err.message);
         if (!err) log.info(MODULELOG, 'Server stopped');
         wfState.close();
     });
     /**
      * Shuts down forcefully after timeout
-     * @callback timeout
+     * @callback timeoutCb
      */
     function timeoutCb() {
         log.warn(MODULELOG, 'Taking too much time to close down everything. Exiting now.');
@@ -196,11 +211,11 @@ function shutdown() {
     }
 }
 
-// CALLBACK AND HANDLER FUNCTIONS //
+/* CALLBACK AND HANDLER FUNCTIONS */
 /**
  * Callback to log uncaught exceptions
  * @callback uncaughtExceptionCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  */
 function uncaughtExceptionCb(err) {
     if (err.stack) {
@@ -214,7 +229,7 @@ function uncaughtExceptionCb(err) {
 /**
  * Callback to log endpoint events
  * @callback endpointEventCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  * @param {string} client client information
  * @param {string} event event name
  * @param {string} info event information
@@ -227,7 +242,7 @@ function endpointEventCb(err, client, event, info) {
 /**
  * Callback to log socket events
  * @callback socketEventCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  * @param {string} client client information
  * @param {string} event event name
  * @param {string} info event information
@@ -241,6 +256,7 @@ function socketEventCb(err, client, event, info) {
 /**
  * Callback to log transceive chain initialisation
  * @callback transceiveInitCb
+ * @param {Error} err any error
  * @param {string} info transceive init information
  */
 function transceiveInitCb(err, info) {
@@ -254,7 +270,7 @@ function transceiveInitCb(err, info) {
 /**
  * Callback to log datatstore initialisation
  * @callback datastoresInitCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  */
 function datastoresInitCb(err, primaryDatastore) {
     if (err) {
@@ -265,13 +281,28 @@ function datastoresInitCb(err, primaryDatastore) {
         }
         return process.exit(1);
     }
-    log.info(MODULELOG, `Primary datastore initialised: ${primaryDatastore}`);
+    log.info(MODULELOG, `Primary datastore: ${primaryDatastore}`);
+}
+
+/**
+ * Callback to log datatstore closure
+ * @callback datastoresCloseCb
+ * @param {Error} err any error
+ * @param {string} naem of the primary datastrore
+ */
+function datastoresCloseCb(err, primaryDatastore) {
+    if (err) {
+        log.error(MODULELOG, `Primary datastore did not properly close: ${err.message}`);
+    } else {
+        log.info(MODULELOG, `Primary datastore ${primaryDatastore} closed`);
+    }
 }
 
 /**
  * Callback to log blockchain initialisation
  * @callback blockhainsInitCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
+ * @param {Array} array of blockchain names in the configuration
  */
 function blockhainsInitCb(err, blockchains) {
     if (err) {
@@ -288,7 +319,7 @@ function blockhainsInitCb(err, blockchains) {
 /**
  * Callback to log Whiteflag protocol state initialisation
  * @callback stateInitCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  */
 function stateInitCb(err) {
     if (err) {
@@ -301,7 +332,7 @@ function stateInitCb(err) {
 /**
  * Callback to log Whiteflag protocol management messages handler initialisation
  * @callback managementInitCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  */
 function managementInitCb(err) {
     if (err) {
@@ -314,7 +345,7 @@ function managementInitCb(err) {
 /**
  * Callback to log endpoints initialisation
  * @callback endpointsInitCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  */
 function endpointsInitCb(err) {
     if (err) {
@@ -327,7 +358,7 @@ function endpointsInitCb(err) {
 /**
  * Callback to log server startup
  * @callback serverStartCb
- * @param {Error} err error object if any error
+ * @param {Error} err any error
  * @param {string} url server information
  */
 function serverStartCb(err, url) {

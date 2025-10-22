@@ -9,7 +9,7 @@
     "additionalProperties": true,
     "properties": {
         "MetaHeader": {
-            "$comment": "The contents of the meta header is not part of the Whiteflag message itself and is not standardised.",
+            "$comment": "The contents of the metaheader is not part of the Whiteflag message itself and is not standardised.",
             "description": "Optional container for implementation specific metadata about the message or the underlying blockchain.",
             "type": "object",
             "additionalProperties": true

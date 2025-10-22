@@ -15,7 +15,7 @@
             "type": "string"
         },
         "transceiveDirection": {
-            "description": "Indicates if this message is to be sent (TX) to the blockchain or has been received (RX) from the blockchain",
+            "description": "Indicates if this message is to be transmitted (TX) to the blockchain or has been received (RX) from the blockchain",
             "type": "string",
             "enum": [ "TX", "RX" ]
         },
@@ -28,9 +28,14 @@
             "type": "string"
         },
         "transactionTime": {
-            "description": "The timestamp of the transaction containing the Whiteflag message",
+            "description": "The timestamp of the transaction or block ontaining the Whiteflag message",
             "$comment": "If a transaction time is not provided by the blockchain, it may be set to a derived time of earliest possible existence of the transaction",
             "type": "string"
+        },
+        "transactionIndex": {
+            "description": "The index of the transaction in a block",
+            "$comment": "Some blockchains use block number with an index as a unique identifier for transactions",
+            "type": "integer"
         },
         "blockNumber": {
             "description": "The number of the block the transaction is in",

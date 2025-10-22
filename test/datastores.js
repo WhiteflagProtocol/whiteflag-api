@@ -5,23 +5,23 @@
  * @description Script for testing the blockchain abstraction layer
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../lib/common/processing');
-const log = require('../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../lib/_common/processing');
+const log = require('../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
-// const wfApiDatastores = require('../../lib/datastores');
+/* Project modules required for test */
+/* const wfDatastores = require('../../lib/datastores');
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag API datastores module', function() {
     assertion(' 0. should correctly load', function(done) {
-        const wfApiDatastores = require('../lib/datastores');
-        ignore(wfApiDatastores);
+        const wfDatastores = require('../lib/datastores');
+        ignore(wfDatastores);
         done();
     });
 });

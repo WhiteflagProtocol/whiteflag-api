@@ -161,7 +161,7 @@
 
 
 <div class="description">
-    <p>Requests a authentication signature for the appropriate blockchain</p>
+    <p>Creates a authentication signature for the appropriate blockchain</p>
 </div>
 
 
@@ -203,7 +203,7 @@
             <td class="type">
             
                 
-<span class="param-type">wfSignaturePayload</span>
+<span class="param-type">wfSignPayload</span>
 
 
             
@@ -272,7 +272,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">requestSignatureCb</span>
 
 
             
@@ -282,7 +282,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -323,7 +323,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line202">line 202</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line213">line 213</a>
     </li></ul></dd>
     
 
@@ -359,7 +359,7 @@
     
 
     
-    <h4 class="name" id="~decodeSignature"><span class="type-signature">(inner) </span>decodeSignature<span class="signature">(wfSignature, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~decodeSignature"><span class="type-signature">(inner) </span>decodeSignature<span class="signature">(signature, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -403,7 +403,7 @@
 
         <tr>
             
-                <td class="name"><code>wfSignature</code></td>
+                <td class="name"><code>signature</code></td>
             
 
             <td class="type">
@@ -432,7 +432,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">genericCb</span>
 
 
             
@@ -442,7 +442,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -483,7 +483,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line239">line 239</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line250">line 250</a>
     </li></ul></dd>
     
 
@@ -492,12 +492,211 @@
     
 
     
-    <dt class="tag-todo">To Do:</dt>
-    <dd class="tag-todo">
-        <ul>
-            <li>Detailed error processing after JWT decoding</li>
-        </ul>
-    </dd>
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~generateToken"><span class="type-signature">(inner) </span>generateToken<span class="signature">(authToken, address, blockchain, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Requests verification data of an authentication token for the specified blockchain address</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>authToken</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the secret authentication token in hexadecimal</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the address of the account for which the signature is requested</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>blockchain</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the name of the blockchain</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">genericCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function called on completion</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line188">line 188</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
     
 </dl>
 
@@ -599,7 +798,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">wfMessageCb</span>
 
 
             
@@ -609,7 +808,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -650,7 +849,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line99">line 99</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -759,7 +958,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">wfMessageCb</span>
 
 
             
@@ -769,7 +968,7 @@
 
             
 
-            <td class="description last"><p>function called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -810,7 +1009,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line71">line 71</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -919,7 +1118,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">wfMessageCb</span>
 
 
             
@@ -929,7 +1128,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -970,7 +1169,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line45">line 45</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line74">line 74</a>
     </li></ul></dd>
     
 
@@ -1056,7 +1255,7 @@
             <td class="type">
             
                 
-<span class="param-type">wfExtendedSignature</span>
+<span class="param-type">wfExtSignature</span>
 
 
             
@@ -1079,7 +1278,7 @@
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">endpointSignatureVerifyCb</span>
 
 
             
@@ -1089,7 +1288,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -1130,7 +1329,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line277">line 277</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line267">line 267</a>
     </li></ul></dd>
     
 
@@ -1168,26 +1367,96 @@
 
         
                 
-<h4 class="name" id="~verificationData">verificationData</h4>
+
+    
+
+    
+    <h4 class="name" id="~authRequestSignatureCb"><span class="type-signature"></span>authRequestSignatureCb<span class="signature">(err, wfSignature)</span><span class="type-signature"></span></h4>
+    
+
+    
 
 
 
 
-<div class="description">
-    <p>Requests verification data of an authentication token for the specified blockchain address</p>
-</div>
 
 
 
-    <h5>Type:</h5>
-    <ul>
-        <li>
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
             
-<span class="param-type">string</span>
+                <td class="name"><code>err</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
 
 
-        </li>
-    </ul>
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>any error</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>wfSignature</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">wfSignature</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Whiteflag JWS to be signs</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
 
 
 
@@ -1222,7 +1491,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line153">line 153</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line235">line 235</a>
     </li></ul></dd>
     
 
@@ -1238,15 +1507,205 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             
                 
-<h4 class="name" id="~wfExtendedSignature">wfExtendedSignature</h4>
+
+    
+
+    
+    <h4 class="name" id="~authVerifySignatureCb"><span class="type-signature"></span>authVerifySignatureCb<span class="signature">(err, result<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>err</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Error</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>any error</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>result</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">wfSignDecoded</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>the verified and decoded signature</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line294">line 294</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="~wfExtSignature">wfExtSignature</h4>
 
 
 
 
 <div class="description">
-    <p>A Whiteflag authentication signature object</p>
+    <p>A Whiteflag extended authentication signature object</p>
 </div>
 
 
@@ -1314,7 +1773,7 @@
 
         <tr>
             
-                <td class="name"><code>originatorPubKey</code></td>
+                <td class="name"><code>pubkey</code></td>
             
 
             <td class="type">
@@ -1337,7 +1796,7 @@
 
         <tr>
             
-                <td class="name"><code>wfSignature</code></td>
+                <td class="name"><code>jws</code></td>
             
 
             <td class="type">
@@ -1353,7 +1812,7 @@
 
             
 
-            <td class="description last"><p>A Whiteflag authentication signature object</p></td>
+            <td class="description last"><p>a Whiteflag authentication JWS object</p></td>
         </tr>
 
     
@@ -1392,7 +1851,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line269">line 269</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line42">line 42</a>
     </li></ul></dd>
     
 
@@ -1410,177 +1869,7 @@
 
             
                 
-<h4 class="name" id="~wfSignature">wfSignature</h4>
-
-
-
-
-<div class="description">
-    <p>A Whiteflag authentication signature object</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>protected</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Encoded signature header to identify which algorithm is used to generate the signature</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>payload</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Encoded payload with the information as defined in the Whiteflag protocol specification</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>signature</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The digital signature validating the information contained in the payload</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line179">line 179</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-            
-                
-<h4 class="name" id="~wfSignatureDecoded">wfSignatureDecoded</h4>
+<h4 class="name" id="~wfSignDecoded">wfSignDecoded</h4>
 
 
 
@@ -1660,7 +1949,7 @@
             <td class="type">
             
                 
-<span class="param-type">wfSignaturePayload</span>
+<span class="param-type">wfSignPayload</span>
 
 
             
@@ -1732,7 +2021,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line186">line 186</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line27">line 27</a>
     </li></ul></dd>
     
 
@@ -1750,7 +2039,7 @@
 
             
                 
-<h4 class="name" id="~wfSignaturePayload">wfSignaturePayload</h4>
+<h4 class="name" id="~wfSignPayload">wfSignPayload</h4>
 
 
 
@@ -1925,7 +2214,177 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line193">line 193</a>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line34">line 34</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="~wfSignature">wfSignature</h4>
+
+
+
+
+<div class="description">
+    <p>A Whiteflag authentication signature object</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>protected</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Encoded signature header to identify which algorithm is used to generate the signature</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>payload</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Encoded payload with the information as defined in the Whiteflag protocol specification</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>signature</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The digital signature validating the information contained in the payload</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="protocol_authenticate.js.html">protocol/authenticate.js</a>, <a href="protocol_authenticate.js.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -1955,13 +2414,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:48:00 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

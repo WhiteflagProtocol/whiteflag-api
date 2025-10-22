@@ -1,5 +1,5 @@
 ---
-title: Whiteflag API v1.0.1
+title: Whiteflag API v1.1.0
 language_tabs:
   - shell: Shell
   - http: HTTP
@@ -19,7 +19,7 @@ headingLevel: 2
 
 <!-- Generator: Widdershins v4.0.1 -->
 
-<h1 id="whiteflag-api">Whiteflag API v1.0.1</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.1.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -55,7 +55,7 @@ Endpoints for operations on Whiteflag messages, such as retrieval, sending, enco
 
 `GET /messages`
 
-Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader fields as optional query parameters. This operation may be disabled in the configuration.
+Returns an array with all incoming and outgoing messages from the primary datastore. The operation accepts MetaHeader and MessageHeader fields as optional query parameters. This operation may be disabled in the configuration.
 
 <h3 id="getmessages-parameters">Parameters</h3>
 
@@ -67,6 +67,17 @@ Returns an array with all incoming and outgoing messages from the primary datast
 |originatorPubKey|query|string|false|The public key of an originator|
 |recipientAddress|query|string|false|The blockchain address of the recipient (only known for decrypted messages)|
 |transceiveDirection|query|string|false|The transceive direction indicating if a message has been sent (TX) or has been received (RX)|
+|blockchainNumber|query|string|false|The number of a block|
+|confirmed|query|boolean|false|Indicates if the message has been confirmed|
+|originatorValid|query|boolean|false|Indicates if the originator of the message has been authenticated|
+|referenceValid|query|boolean|false|Inidcates if the messages references another message correctly|
+|formatValid|query|boolean|false|Indicates if the message format is valid|
+|Version|query|string|false|Indicates which version of the standard is used to generate the message|
+|EncryptionIndicator|query|string|false|Indicates if and which encryption is used|
+|MessageCode|query|string|false|Indicates the type of message|
+|DuressIndicator|query|string|false|Indicates whether the message was sent under force or threat|
+|ReferenceIndicator|query|string|false|Indicates how this message relates to an earlier message|
+|ReferencedMessage|query|string|false|Blockchain dependend reference to a related earlier message|
 
 > Example responses
 
@@ -106,7 +117,7 @@ Returns an array with all incoming and outgoing messages from the primary datast
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query and returning an array of messages|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
@@ -474,7 +485,7 @@ Validates the format and reference of a Whiteflag message and returns the result
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query and returning an array of messages|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
@@ -499,7 +510,7 @@ Returns an array of all Whiteflag messages referencing the message with the give
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|transactionHash|query|string|true|The hash of a blockchain transaction|
+|transactionHash|query|string|false|The hash of a blockchain transaction|
 |blockchain|query|string|false|The name of a blockchain|
 
 > Example responses
@@ -540,7 +551,7 @@ Returns an array of all Whiteflag messages referencing the message with the give
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query and returning an array of messages|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
@@ -567,7 +578,7 @@ Returns an array with the Whiteflag messages in a sequence starting with the mes
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|transactionHash|query|string|true|The hash of a blockchain transaction|
+|transactionHash|query|string|false|The hash of a blockchain transaction|
 |blockchain|query|string|false|The name of a blockchain|
 
 > Example responses
@@ -608,7 +619,7 @@ Returns an array with the Whiteflag messages in a sequence starting with the mes
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query and returning an array of messages|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
@@ -734,6 +745,72 @@ To perform this operation, you must be authenticated by means of one of the foll
 HTTP Authentication
 </aside>
 
+## scanBlocks
+
+<a id="opIdscanBlocks"></a>
+
+`GET /blockchains/{blockchain}/scan`
+
+Scans a range of blocks for Whiteflag messages. This operation may be disabled in the configuration.
+
+<h3 id="scanblocks-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|from|query|undefined|true|none|
+|to|query|undefined|true|none|
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": [
+    {
+      "MetaHeader": null,
+      "MessageHeader": null,
+      "MessageBody": null
+    }
+  ]
+}
+```
+
+<h3 id="scanblocks-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="scanblocks-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
 ## getAccounts
 
 <a id="opIdgetAccounts"></a>
@@ -801,7 +878,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 
 ```json
 {
-  "privateKey": "string"
+  "secret": "string"
 }
 ```
 
@@ -810,7 +887,7 @@ Creates a new account for the specified blockchain. This operation may be disabl
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |body|body|object|false|Blockchain account data|
-|» privateKey|body|string|false|Optional private key in raw hexadecimal format to create account with|
+|» secret|body|string|false|Optional blockchain dependent secret (e.g. private key, wif or seed) to create account with|
 
 > Example responses
 
@@ -1882,7 +1959,7 @@ false
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully accepted the update request for the Whiteflag originator|Inline|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 
@@ -1933,7 +2010,7 @@ Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully retrieved and returning known Whiteflag originators|Inline|
+|202|[Accepted](https://tools.ietf.org/html/rfc7231#section-6.3.3)|Successfully accepted the delete request for the Whiteflag originator|Inline|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 

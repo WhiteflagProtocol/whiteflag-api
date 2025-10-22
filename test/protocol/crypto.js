@@ -5,30 +5,30 @@
  * @description Script for testing all Whiteflag cryptographic functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const wfCrypto = require('../../lib/protocol/crypto');
-const { ProcessingError, ProtocolError } = require('../../lib/common/errors');
+const { ProcessingError, ProtocolError } = require('../../lib/_common/errors');
 
-// Constants //
+/* Constants */
 const BINENCODING = 'hex';
 /**
  * @constant {Object} testVector
  * @description Defines the cryptographic test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/crypto.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/crypto.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag cryptography module', function() {
     testCase('AES 256 CTR Mode function for Whiteflag encryption methods 1 and 2', function() {
         assertion(' 1. should encrypt NIST SP 800-38A F.5.5 CTR-AES256.Encrypt test vectors correctly', function() {
@@ -44,7 +44,7 @@ testCase('Whiteflag cryptography module', function() {
 
             // Test the Whiteflag message encryption function for method 1
             const ciphertextBuffer1 = wfCrypto.test.encrypt(plaintextBuffer, '1', keyBuffer, ivBuffer);
-            const outcome1 = ciphertextBuffer1.slice(4).toString(BINENCODING);
+            const outcome1 = ciphertextBuffer1.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome1,
                 testVector['1'].ciphertext1
                 + testVector['1'].ciphertext2
@@ -53,7 +53,7 @@ testCase('Whiteflag cryptography module', function() {
             );
             // Test the Whiteflag message encryption function for method 2
             const ciphertextBuffer2 = wfCrypto.test.encrypt(plaintextBuffer, '2', keyBuffer, ivBuffer);
-            const outcome2 = ciphertextBuffer2.slice(4).toString(BINENCODING);
+            const outcome2 = ciphertextBuffer2.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome2,
                 testVector['1'].ciphertext1
                 + testVector['1'].ciphertext2
@@ -74,7 +74,7 @@ testCase('Whiteflag cryptography module', function() {
 
             // Test the Whiteflag message encryption function for method 1
             const ciphertextBuffer1 = wfCrypto.test.decrypt(encryptedMessageBuffer, '1', keyBuffer, ivBuffer);
-            const outcome1 = ciphertextBuffer1.slice(4).toString(BINENCODING);
+            const outcome1 = ciphertextBuffer1.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome1,
                 testVector['2'].plaintext1
                 + testVector['2'].plaintext2
@@ -83,7 +83,7 @@ testCase('Whiteflag cryptography module', function() {
             );
             // Test the Whiteflag message encryption function for method 2
             const ciphertextBuffer2 = wfCrypto.test.decrypt(encryptedMessageBuffer, '2', keyBuffer, ivBuffer);
-            const outcome2 = ciphertextBuffer2.slice(4).toString(BINENCODING);
+            const outcome2 = ciphertextBuffer2.subarray(4).toString(BINENCODING);
             assert.strictEqual(outcome2,
                 testVector['2'].plaintext1
                 + testVector['2'].plaintext2

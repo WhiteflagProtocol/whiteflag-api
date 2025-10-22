@@ -33,40 +33,44 @@
  * @description Module to process Ethereum transactions for Whiteflag
  */
 module.exports = {
-    // Ethereum transaction functions
     init: initTransactions,
     send: sendTransaction,
     get: getTransaction,
     extractMessage
 };
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const EthereumTx = require('ethereumjs-tx').Transaction;
 const ethereumUtil = require('ethereumjs-util');
 
-// Whiteflag common functions and classes //
-const log = require('../../common/logger');
-const { hash, zeroise } = require('../../common/crypto');
-const { ProcessingError } = require('../../common/errors');
+/* Common internal functions and classes */
+const log = require('../../_common/logger');
+const { zeroise } = require('../../_common/crypto');
+const { ProcessingError } = require('../../_common/errors');
+const { withHexPrefix,
+        noHexPrefix,
+        noAddressHexPrefix,
+        noPubkeyHexPrefix } = require('../../_common/format');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfState = require('../../protocol/state');
 
-// Ethereum sub-modules //
-const ethRpc = require('./rpc');
-const { formatHexEthereum, formatHexApi, formatAddressApi, formatPubkeyApi } = require('./common');
+/* Common blockchain functions */
+const { getPrivateKeyId } = require('../_common/keys');
 
-// Module constants //
+/* Ethereum sub-modules */
+const ethRpc = require('./rpc');
+
+/* Module constants */
+const MODULELOG = 'ethereum';
 const ETHHEXPREFIX = '0x';
 const WFINDENTIFIER = '5746';
-const BINENCODING = 'hex';
-const KEYIDLENGTH = 12;
 
-// Module variables //
-let _blockchainName;
+/* Module variables */
+let _ethChain = 'ethereum';
 let _ethState;
-let _web3;
-let _traceRawTransaction = false;
+let _ethApi;
+let _traceRaw = false;
 
 /**
  * Initialises Ethereum Transactions processing
@@ -74,17 +78,17 @@ let _traceRawTransaction = false;
  * @alias module:lib/blockchains/ethereum/transactions.init
  * @param {Object} ethConfig the Ethereum blockchain configuration
  * @param {Object} ethState the Ethereum blockchain state
- * @param {Object} web3 the Ethereum Web3 instance
+ * @param {Object} ethApi the Ethereum Web3 instance
  * @returns {Promise} resolve if succesfully initialised
  */
-function initTransactions(ethConfig, ethState, web3) {
-    _blockchainName = ethConfig.name;
+function initTransactions(ethConfig, ethState, ethApi) {
+    log.trace(MODULELOG, 'Initialising Ethereum transaction processing');
+    _ethChain = ethConfig.name;
     _ethState = ethState;
-    _web3 = web3;
-    log.trace(_blockchainName, 'Initialising Ethereum transaction processing...');
+    _ethApi = ethApi;
 
     // Trace all transactions if configured
-    if (ethConfig.traceRawTransaction) _traceRawTransaction = ethConfig.traceRawTransaction;
+    if (ethConfig.traceRawTransaction) _traceRaw = ethConfig.traceRawTransaction;
 
     // Succesfully completed initialisation
     return Promise.resolve();
@@ -94,39 +98,42 @@ function initTransactions(ethConfig, ethState, web3) {
  * Sends a transaction on the Ethereum blockchain
  * @function sendTransaction
  * @alias module:lib/blockchains/ethereum/transactions.send
- * @param {Object} account the account used to send the transaction
+ * @param {wfAccount} account the account used to send the transaction
  * @param {string} toAddress the address to send the transaction to
  * @param {string} value the value to be sent in ether
  * @param {string} data the data to be sent
  * @returns {Promise} resolve to transaction hash and block number
  */
 function sendTransaction(account, toAddress, value, data) {
-    log.trace(_blockchainName, `Sending transaction from account: ${account.address}`);
+    log.trace(MODULELOG, `Sending transaction from account: ${account.address}`);
     return new Promise((resolve, reject) => {
         // Create transaction
         createTransaction(account, toAddress, value, data)
         .then(rawTransactionObject => {
             // Get the private key to sign the transaction
-            const privateKeyId = hash(_blockchainName + formatAddressApi(account.address), KEYIDLENGTH);
-            wfState.getKey('blockchainKeys', privateKeyId, function ethGetKeyCb(keyErr, privateKey) {
-                if (keyErr) return reject(keyErr);
+            const privateKeyId = getPrivateKeyId(_ethChain, noAddressHexPrefix(account.address));
+            wfState.getKey('blockchainKeys', privateKeyId, function ethGetKeyCb(err, privateKey) {
+                if (err) return reject(err);
 
                 // Sign and serialise transaction
                 let rawTransaction;
                 try {
                     const ethTransactionObject = new EthereumTx(rawTransactionObject, { chain: _ethState.parameters.chainID });
-                    const privateKeyBuffer = Buffer.from(privateKey, BINENCODING);
+                    const privateKeyBuffer = hexToBuffer(privateKey);
                     ethTransactionObject.sign(privateKeyBuffer);
                     zeroise(privateKeyBuffer);
 
                     const serializedTransaction = ethTransactionObject.serialize();
-                    rawTransaction = formatHexEthereum(serializedTransaction.toString(BINENCODING));
+                    rawTransaction = withHexPrefix(bufferToHex(serializedTransaction));
                 } catch(err) {
                     return reject(new Error(`Could not create raw transaction: ${err.message}`));
                 }
                 // Send signed transaction and process mined receipt
-                _web3.eth.sendSignedTransaction(rawTransaction)
-                .then(receipt => resolve(formatHexApi(receipt.transactionHash), receipt.blockNumber))
+                _ethApi.eth.sendSignedTransaction(rawTransaction)
+                .then(receipt => {
+                    log.debug(MODULELOG, `Transaction result: ${JSON.stringify(receipt)}`);
+                    resolve(noHexPrefix(receipt.transactionHash), receipt.blockNumber);
+                })
                 .catch(err => {
                     if (err) return reject(new Error(`Could not send transaction from account ${account.address}: ${err.message}`));
                     return reject(new Error(`Could not send transaction from account: ${account.address}`));
@@ -143,7 +150,7 @@ function sendTransaction(account, toAddress, value, data) {
  * @returns {Promise} resolves to a blockchain transaction
  */
 function getTransaction(transactionHash) {
-    log.trace(_blockchainName, `Retrieving transaction: ${transactionHash}`);
+    log.trace(MODULELOG, `Retrieving transaction: ${transactionHash}`);
     return ethRpc.getRawTransaction(transactionHash)
     .then(transaction => {
         if (!transaction) {
@@ -165,7 +172,7 @@ function getTransaction(transactionHash) {
  * @returns {Promise} resolves to a Whiteflag message
  */
  function extractMessage(transaction, timestamp) {
-    if (_traceRawTransaction) log.trace(_blockchainName, `Extracting Whiteflag message from transaction: ${transaction.hash}`);
+    if (_traceRaw) log.trace(MODULELOG, `Extracting Whiteflag message from transaction: ${transaction.hash}`);
     return new Promise((resolve, reject) => {
         if (
             !transaction ||
@@ -187,18 +194,18 @@ function getTransaction(transactionHash) {
             v: transaction.v
         };
         const ethTransactionObject = new EthereumTx(rawTransactionObject, { chain: _ethState.parameters.chainID });
-        const originatorPubKey = ethereumUtil.bufferToHex(ethTransactionObject.getSenderPublicKey());
+        const orgPubkey = ethereumUtil.bufferToHex(ethTransactionObject.getSenderPublicKey());
 
         // Construct and return Whiteflag message object
         let wfMessage = {
             MetaHeader: {
-                blockchain: _blockchainName,
+                blockchain: _ethChain,
                 blockNumber: transaction.blockNumber,
-                transactionHash: formatHexApi(transaction.hash),
+                transactionHash: noHexPrefix(transaction.hash),
                 transactionTime: '',
-                originatorAddress: formatAddressApi(transaction.from),
-                originatorPubKey: formatPubkeyApi(originatorPubKey),
-                encodedMessage: formatHexApi(transaction.input)
+                originatorAddress: noAddressHexPrefix(transaction.from),
+                originatorPubKey: noPubkeyHexPrefix(orgPubkey),
+                encodedMessage: noHexPrefix(transaction.input)
             }
         };
         if (timestamp) wfMessage.MetaHeader.transactionTime = new Date(timestamp * 1000).toISOString();
@@ -206,11 +213,11 @@ function getTransaction(transactionHash) {
     });
 }
 
-// PRIVATE TRANSACTION FUNCTIONS //
+/* PRIVATE TRANSACTION FUNCTIONS */
 /**
  * Creates a new Ethereum transaction to be signed
  * @private
- * @param {Object} account the account parameters used to send the transaction
+ * @param {wfAccount} account the account parameters used to send the transaction
  * @param {string} toAddress the address to send the transaction to
  * @param {string} value the value to be sent in ether
  * @param {string} data the data to be sent
@@ -219,23 +226,23 @@ function getTransaction(transactionHash) {
 function createTransaction(account, toAddress, value, data) {
     return Promise.all([
         ethRpc.getTransactionCount(account.address),
-        _web3.eth.estimateGas({
-            to: formatHexEthereum(toAddress),
-            data: formatHexEthereum(data)
+        _ethApi.eth.estimateGas({
+            to: withHexPrefix(toAddress),
+            data: withHexPrefix(data)
         }),
-        _web3.eth.getGasPrice()
+        _ethApi.eth.getGasPrice()
     ])
     .then(result => {
         const txCount = result[0];
         const gasLimit = result[1];
         const gasPrice = result[2];
         const rawTransactionObject = {
-            nonce: _web3.utils.toHex(txCount),
-            to: formatHexEthereum(toAddress),
-            value: _web3.utils.toHex(_web3.utils.toWei(value, 'ether')),
-            gasLimit: _web3.utils.toHex(gasLimit),
-            gasPrice: _web3.utils.toHex(gasPrice),
-            data: formatHexEthereum(data)
+            nonce: _ethApi.utils.toHex(txCount),
+            to: withHexPrefix(toAddress),
+            value: _ethApi.utils.toHex(_ethApi.utils.toWei(value, 'ether')),
+            gasLimit: _ethApi.utils.toHex(gasLimit),
+            gasPrice: _ethApi.utils.toHex(gasPrice),
+            data: withHexPrefix(data)
         };
         return Promise.resolve(rawTransactionObject);
     })
@@ -253,13 +260,13 @@ function createTransaction(account, toAddress, value, data) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

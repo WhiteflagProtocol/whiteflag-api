@@ -33,7 +33,6 @@
  * @description Module to use an embedded datastore
  */
 module.exports = {
-    // Database functions
     init: initDatastore,
     close: closeDatastore,
     storeMessage,
@@ -42,33 +41,32 @@ module.exports = {
     getState
 };
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const fs = require('fs');
 const SimpleDB = require('simpl.db');
 
-// Whiteflag common functions and classes //
-// eslint-disable-next-line no-unused-vars
-const log = require('../common/logger');
-const { ignore } = require('../common/processing');
+/* Common internal functions and classes */
+const log = require('../_common/logger');
+const { ignore } = require('../_common/processing');
 
-// Module variables //
+/* Module variables */
 let _db;
 let _dbName = 'embedded-db';
 let _dbMessagesCollection;
 let _dbStateCollection;
 
-// Module constants //
+/* Module constants */
 const MESSAGECOLLECTION = 'wfMessages';
 const STATECOLLECTION = 'wfState';
 const DATAFILE = 'wfDatastore';
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Initialises the database
  * @function initDatastore
  * @alias module:lib/datastores/embeddb.init
  * @param {Object} dbConfig datastore configuration parameters
- * @param {datastoreInitCb} callback function to be called after initialising the datastore
+ * @param {datastoreInitCb} callback function called after initialising the datastore
  */
 function initDatastore(dbConfig, callback) {
     // Preserve name of the datastore
@@ -98,7 +96,7 @@ function initDatastore(dbConfig, callback) {
             };
             // Connect to datastore and preserve connector
             _db = new SimpleDB(dbOptions);
-            log.trace(_dbName, `Openend embedded SimpleDB database version ${_db.version}`);
+            log.debug(_dbName, `Openend embedded database version ${_db.version}`);
 
             // Collection for Whiteflag protocol state
             _dbStateCollection = _db.createCollection(STATECOLLECTION);
@@ -109,7 +107,7 @@ function initDatastore(dbConfig, callback) {
             _dbMessagesCollection.save();
 
             // All done
-            log.info(_dbName, 'Collections in database: ' + JSON.stringify(_db.collections));
+            log.debug(_dbName, 'Collections in database: ' + JSON.stringify(_db.collections));
             _db.save();
             return callback(null, _dbName, _db);
         }
@@ -120,7 +118,7 @@ function initDatastore(dbConfig, callback) {
  * Closes the database
  * @function closeDatastore
  * @alias module:lib/datastores/embeddb.close
- * @param {datastoreCloseCb} callback function to be called after initialising the datastore
+ * @param {datastoreCloseCb} callback function called after initialising the datastore
  */
 function closeDatastore(callback) {
     log.trace(_dbName, 'Closing database connection');
@@ -129,11 +127,11 @@ function closeDatastore(callback) {
 }
 
 /**
- * Stores a Whiteflag message in the database
+ * Stores a Whiteflag message in the database, preserving the transceive direction
  * @function storeMessage
  * @alias module:lib/datastores/embeddb.storeMessage
  * @param {wfMessage} wfMessage the whiteflag message to be stored
- * @param {datastoreStoreMessageCb} callback function to be called after storing the Whiteflag message
+ * @param {datastoreStoreMessageCb} callback function called after storing the Whiteflag message
  */
 function storeMessage(wfMessage, callback) {
     log.trace(_dbName, `Upserting message: ${wfMessage.MetaHeader.transactionHash}`);
@@ -144,7 +142,11 @@ function storeMessage(wfMessage, callback) {
     if (_dbMessagesCollection.has(item => item.MetaHeader.transactionHash === wfMessage.MetaHeader.transactionHash)) {
         result = _dbMessagesCollection.update(
             message => {
+                // Preserve transceive direction
+                const transceiveDirection = message.MetaHeader?.transceiveDirection
+                                            || wfMessage.MetaHeader?.transceiveDirection;
                 message.MetaHeader = wfMessage.MetaHeader;
+                message.MetaHeader.transceiveDirection = transceiveDirection;
                 message.MessageHeader = wfMessage.MessageHeader;
                 message.MessageBody = wfMessage.MessageBody;
             },
@@ -158,40 +160,37 @@ function storeMessage(wfMessage, callback) {
 }
 
 /**
- * Gets all Whiteflag messages from the database that match the query in an array
+ * Gets all Whiteflag messages from the database that messageMatch the query in an array
  * @function getMessages
  * @alias module:lib/datastores/embeddb.getMessages
  * @param {Object} wfQuery the properties of the messages to look up
- * @param {datastoreGetMessagesCb} callback function to be called after retrieving Whiteflag messages
+ * @param {datastoreGetMessagesCb} callback function called after retrieving Whiteflag messages
  */
 function getMessages(wfQuery, callback) {
-    let count = 0;
-    let wfMessages = [];
+    log.trace(_dbName, 'Performing message query: ' + JSON.stringify(wfQuery));
 
     // Get an array of result with all messages that match all key values in query object
-    log.trace(_dbName, 'Performing message query: ' + JSON.stringify(wfQuery));
+    const properties = Object.entries(wfQuery);
+    let wfMessages = [];
     if (JSON.stringify(wfQuery) === '{}') {
         wfMessages = _dbMessagesCollection.getAll();
-        count = wfMessages.length;
     } else {
-        wfMessages = _dbMessagesCollection.getMany(item => {
-            let match = false;
-            for (const [key, value] of Object.entries(wfQuery)) {
+        wfMessages = _dbMessagesCollection.getMany(message => {
+            let match = 0;
+            for (const [key, value] of properties) {
                 const property = key.split('.').pop();
-                if (property in item.MetaHeader) {
-                    if (item.MetaHeader[property] === value) match = true;
-                    else return false;
-                }
+                if (property in message.MetaHeader) {
+                    if (message.MetaHeader[property] === value) match += 1;
+                } else if (property in message.MessageHeader) {
+                    if (message.MessageHeader[property] === value) match += 1;
+                } else return false;
             }
-            if (match) {
-                count += 1;
-                return true;
-            }
+            if (match === properties.length) return true;
             return false;
         });
     }
-    log.trace(_dbName, `Found ${count} messages for query: ${JSON.stringify(wfQuery)}`);
-    return callback(null, wfMessages, count);
+    log.trace(_dbName, `Found ${wfMessages.length} messages for query: ${JSON.stringify(wfQuery)}`);
+    return callback(null, wfMessages, wfMessages.length);
 }
 
 /**
@@ -199,7 +198,7 @@ function getMessages(wfQuery, callback) {
  * @function storeState
  * @alias module:lib/datastores/embeddb.storeState
  * @param {Object} stateObject state data enclosed in a storage / encryption container
- * @param {datastoreStoreStateCb} callback function to be called after storing the Whiteflag state
+ * @param {datastoreStoreStateCb} callback function called after storing the Whiteflag state
  */
 function storeState(stateObject, callback) {
     log.trace(_dbName, `Storing state in collection ${STATECOLLECTION}`);
@@ -214,7 +213,7 @@ function storeState(stateObject, callback) {
  * Gets Whiteflag state from the database
  * @function getState
  * @alias module:lib/datastores/embeddb.getState
- * @param {datastoreGetStateCb} callback function to be called after getting the Whiteflag state
+ * @param {datastoreGetStateCb} callback function called after getting the Whiteflag state
  */
 function getState(callback) {
     log.trace(_dbName, `Retrieving state from collection ${STATECOLLECTION}`);
@@ -236,13 +235,13 @@ function getState(callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

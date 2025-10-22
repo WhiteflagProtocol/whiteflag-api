@@ -5,31 +5,31 @@
  * @description Script for testing Whiteflag protocol state management functions
  */
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const testCase = require('mocha').describe;
 const assertion = require('mocha').it;
 const assert = require('assert');
 const fs = require('fs');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../../lib/common/processing');
-const log = require('../../lib/common/logger');
+/* Common internal functions and classes */
+const { ignore } = require('../../lib/_common/processing');
+const log = require('../../lib/_common/logger');
 log.setLogLevel(1, ignore);
 
-// Project modules required for test //
+/* Project modules required for test */
 const wfState = require('../../lib/protocol/state');
 
-// Whiteflag common functions and classes //
-const { hash } = require('../../lib/common/crypto');
+/* Common internal functions and classes */
+const { hash } = require('../../lib/_common/crypto');
 
-// Constants //
+/* Constants */
 /**
  * @constant {Object} testVector
  * @description Defines state test data
  */
-const testVector = JSON.parse(fs.readFileSync('./test/static/protocol/state.testvector.json'));
+const testVector = JSON.parse(fs.readFileSync('./test/_static/protocol/state.testvector.json'));
 
-// TEST SCRIPT //
+/* TEST SCRIPT */
 testCase('Whiteflag protocol state management module', function() {
     // Queue
     testCase('Queuing initialisation vector data', function() {
@@ -85,7 +85,7 @@ testCase('Whiteflag protocol state management module', function() {
         });
     });
     // Originators
-    let authMessagesLength = testVector['5A'].authenticationMessages.length;
+    let authMessagesLength = testVector['5A'].authMessages.length;
     testCase('Originator state functions', function() {
         // Test 5
         assertion(' 5a. should successfully put new originator in state', function(done) {
@@ -114,8 +114,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.getOriginatorData(testVector['5B'].address, function test5GetOriginator2Cb(err, originator2) {
                 if (err) return done(err);
                 assert(originator2);
-                assert(!originator2.authenticationValid);
-                assert.strictEqual(originator2.authenticationMessages.length, (authMessagesLength + 1));
+                assert(!originator2.authValid);
+                assert.strictEqual(originator2.authMessages.length, (authMessagesLength + 1));
                 return done();
             });
         });
@@ -147,8 +147,8 @@ testCase('Whiteflag protocol state management module', function() {
             wfState.getOriginatorData(testVector['5A'].address, function test6GetOriginatorAuthTokenCb(err, originator) {
                 if (err) return done(err);
                 assert(originator);
-                assert(originator.authenticationValid);
-                assert.strictEqual(originator.authenticationMessages.length, (authMessagesLength + 2));
+                assert(originator.authValid);
+                assert.strictEqual(originator.authMessages.length, (authMessagesLength + 2));
                 return done();
             });
         });
@@ -175,9 +175,9 @@ testCase('Whiteflag protocol state management module', function() {
     testCase('Blockchain state functions', function() {
         // Test 8
         assertion(' 8. should return processing error when requesting non existing blockchain', function(done) {
-            wfState.getBlockchainData('iuqwp', function test8GetBlockchainCb(err, blockchainState) {
+            wfState.getBlockchainData('iuqwp', function test8GetBlockchainCb(err, bcState) {
                 if (err) return done(err);
-                assert.strictEqual(blockchainState, null);
+                assert.strictEqual(bcState, null);
                 return done();
             });
         });
@@ -193,11 +193,11 @@ testCase('Whiteflag protocol state management module', function() {
             if (stateError) return done(stateError);
 
             // Check data after adding new blockchain
-            wfState.getBlockchainData(blockchain, function test9GetBlockchainCb(err, blockchainState) {
+            wfState.getBlockchainData(blockchain, function test9GetBlockchainCb(err, bcState) {
                 if (err) return done(err);
-                assert(blockchainState);
-                assert.strictEqual(blockchainState.accounts.length, 1);
-                assert.strictEqual(blockchainState.accounts[0].address, testVector['9'].account.address);
+                assert(bcState);
+                assert.strictEqual(bcState.accounts.length, 1);
+                assert.strictEqual(bcState.accounts[0].address, testVector['9'].account.address);
                 return done();
             });
         });
@@ -289,10 +289,10 @@ testCase('Whiteflag protocol state management module', function() {
         // Test 16
         assertion('16. should correctly enclose and encrypt state', function(done) {
             // Some test data with old private keys
-            let blockchainState = {};
-            blockchainState.accounts = [];
-            blockchainState.accounts.push(testVector['16']);
-            wfState.updateBlockchainData(testVector['16'].blockchain, blockchainState);
+            let bcState = {};
+            bcState.accounts = [];
+            bcState.accounts.push(testVector['16']);
+            wfState.updateBlockchainData(testVector['16'].blockchain, bcState);
 
             // Check state against state schema
             let stateError = validateState();
@@ -301,7 +301,7 @@ testCase('Whiteflag protocol state management module', function() {
             // Enclose and encrypt
             stateObject = wfState.test.enclose();
             assert(stateObject);
-            assert(Object.prototype.hasOwnProperty.call(stateObject, 'state'));
+            assert(Object.hasOwn(stateObject, 'state'));
             done();
         });
         // Test 16
@@ -310,10 +310,10 @@ testCase('Whiteflag protocol state management module', function() {
             let wfStateData = wfState.test.extract(stateObject);
 
             // Check extracted state against the unenclosed state
-            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'blockchains'));
-            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'originators'));
-            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'queue'));
-            assert(Object.prototype.hasOwnProperty.call(wfStateData, 'crypto'));
+            assert(Object.hasOwn(wfStateData, 'blockchains'));
+            assert(Object.hasOwn(wfStateData, 'originators'));
+            assert(Object.hasOwn(wfStateData, 'queue'));
+            assert(Object.hasOwn(wfStateData, 'crypto'));
 
             // Check state against state schema
             let stateError = validateState(wfStateData);
@@ -330,12 +330,11 @@ testCase('Whiteflag protocol state management module', function() {
     });
 });
 
-// PRIVATE TEST FUNCTIONS //
+/* PRIVATE TEST FUNCTIONS */
 /**
- * Validates state
+ * Validates state against schema
  * @private
  */
-// Check state against state schema
 function validateState(stateData) {
     let stateErrors = wfState.test.validate(stateData);
     if (stateErrors.length > 0) return new Error('State does not validate against schema: ' + JSON.stringify(stateErrors));

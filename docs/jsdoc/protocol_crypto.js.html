@@ -35,13 +35,11 @@
  * @tutorial protocol
  */
 module.exports = {
-    // Crypographic functions
     encrypt: encryptMessage,
     decrypt: decryptMessage,
     getTokenVerificationData,
     getECDHpublicKey,
     generateECDHsecret,
-    // Crypographic functions for testing
     test: {
         genInitVector,
         generateKey,
@@ -50,30 +48,34 @@ module.exports = {
     }
 };
 
-// Node.js core and external modules //
+/* Node.js core and external modules */
 const crypto = require('crypto');
 
-// Whiteflag common functions and classes //
-const { ignore } = require('../common/processing');
-const { hkdf, hash, zeroise } = require('../common/crypto');
-const { ProcessingError, ProtocolError } = require('../common/errors');
+/* Common internal functions and classes */
+const { ignore } = require('../_common/processing');
+const { hkdf, hash, zeroise } = require('../_common/crypto');
+const { ProcessingError,
+        ProtocolError } = require('../_common/errors');
+const { hexToBuffer,
+        bufferToHex } = require('../_common/encoding');
 
-// Whiteflag modules //
-const wfApiBlockchains = require('../blockchains');
+/* Whiteflag modules */
+const wfBlockchains = require('../blockchains');
 const wfState = require('./state');
 
-// Whiteflag configuration data //
+/* Whiteflag configuration data */
 const wfConfigData = require('./config').getConfig();
 
-// Module constants //
+/* Module constants */
 const KEYIDLENGTH = 12;
-const BINENCODING = 'hex';
+const KEYENCODING = 'hex';
 const ECDHCURVE = 'brainpoolP256r1';
+
 /**
- * @constant {Object} encryptionParameters
+ * @constant {Object} cryptoParams
  * @description Defines the Whiteflag encryption parameters as per par 5.2.3 of the WF specification
  */
-const encryptionParameters = {
+const cryptoParams = {
     '1': {
         algorithm: 'aes-256-ctr',
         keylength: 32,
@@ -88,40 +90,42 @@ const encryptionParameters = {
     }
 };
 /**
- * @constant {Object} authenticationParameters
+ * @constant {Object} authParams
  * @description Defines the Whiteflag secret authentication token parameters as per par 5.2.3 of the WF specification
  */
-const authenticationParameters = {
+const authParams = {
     '2': {
         tokenlength: 32,
         salt: '420abc48f5d69328c457d61725d3fd7af2883cad8460976167e375b9f2c14081'
     }
 };
 
-// MAIN MODULE FUNCTIONS //
+/* MAIN MODULE FUNCTIONS */
 /**
  * Encrypts a binary encoded Whiteflag message
  * @function encryptMessage
  * @alias module:lib/protocol/crypto.encrypt
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {buffer} encodedMessage an unencrypted binary encoded Whiteflag message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {Buffer} encodedMessage an unencrypted binary encoded Whiteflag message
+ * @param {wfMessageCb} callback function called on completion
  */
 function encryptMessage(wfMessage, encodedMessage, callback) {
     // Cryptograhic parameters
-    let blockchain = wfMessage.MetaHeader.blockchain;
-    let originator = wfMessage.MetaHeader.originatorAddress;
-    let recipient = wfMessage.MetaHeader.recipientAddress;
-    let messageKey = wfMessage.MetaHeader.encryptionKeyInput;
+    const { MessageHeader: {
+            EncryptionIndicator: method }} =  wfMessage;
+    let { MetaHeader: {
+            blockchain: blockchain,
+            originatorAddress: originator,
+            recipientAddress: recipient,
+            encryptionKeyInput: messageKey }} =  wfMessage;
     let keyCateory;
     let secretId;
 
     // Check indicator for encryption type
-    let method = wfMessage.MessageHeader.EncryptionIndicator;
     switch (method) {
         case '0': {
-            recipient = undefined;
-            wfMessage.MetaHeader.encodedMessage = encodedMessage.toString(BINENCODING);
+            delete wfMessage.MetaHeader.recipientAddress;
+            wfMessage.MetaHeader.encodedMessage = bufferToHex(encodedMessage);
             return callback(null, wfMessage);
         }
         case '1': {
@@ -134,12 +138,9 @@ function encryptMessage(wfMessage, encodedMessage, callback) {
                 break;
             }
             // Check encryption paramters; we are the originator
-            let metaheaderErrors = [];
-            if (!blockchain) metaheaderErrors.push('Blockchain not specified in metaheader');
-            if (!originator) metaheaderErrors.push('Originator address not specified in metaheader');
-            if (!recipient) metaheaderErrors.push('Recipient address not specified in metaheader');
-            if (metaheaderErrors.length > 0) {
-                return callback(new ProcessingError('Missing required parameters for encryption', metaheaderErrors, 'WF_API_BAD_REQUEST'));
+            const metaErrors = checkMetaErrors(wfMessage);
+            if (metaErrors.length > 0) {
+                return callback(new ProcessingError('Missing required parameters for encryption', metaErrors, 'WF_API_BAD_REQUEST'));
             }
             secretId = hash(blockchain + originator + recipient, KEYIDLENGTH);
             break;
@@ -154,12 +155,9 @@ function encryptMessage(wfMessage, encodedMessage, callback) {
                 break;
             }
             // Check encryption parameters; we are the originator
-            let metaheaderErrors = [];
-            if (!blockchain) metaheaderErrors.push('Blockchain not specified in metaheader');
-            if (!originator) metaheaderErrors.push('Originator address not specified in metaheader');
-            if (!recipient) metaheaderErrors.push('Recipient address not specified in metaheader');
-            if (metaheaderErrors.length > 0) {
-                return callback(new ProcessingError('Missing required parameters for encryption', metaheaderErrors, 'WF_API_BAD_REQUEST'));
+            const metaErrors = checkMetaErrors(wfMessage);
+            if (metaErrors.length > 0) {
+                return callback(new ProcessingError('Missing required parameters for encryption', metaErrors, 'WF_API_BAD_REQUEST'));
             }
             secretId = hash(blockchain + recipient + originator, KEYIDLENGTH);
             break;
@@ -179,23 +177,18 @@ function encryptMessage(wfMessage, encodedMessage, callback) {
             return callback(new ProcessingError(`Encryption method not implemented: ${method}`, null, 'WF_API_NOT_IMPLEMENTED'));
         }
     }
-    // Get cryptograhic parameters
+    // Get cryptograhic parameters and encryption key
     const iv = genInitVector(method);
-
-    // Get decryption key
-    wfState.getKey(keyCateory, secretId, function cryptoDecryptKeyCb(err, stateKey) {
+    wfState.getKey(keyCateory, secretId, function cryptoEncryptKeyCb(err, stateKey) {
         if (err) return callback(err);
-
-        wfApiBlockchains.getBinaryAddress(originator, blockchain, function cryptoDecryptAddressCb(err, address) {
+        wfBlockchains.getBinaryAddress(originator, blockchain, function cryptoEncryptAddressCb(err, address) {
             if (err) return callback(err);
-
-            // Derrive key and encrypt
             let encryptedMessage = Buffer.alloc(encodedMessage.length);
             try {
                 // Get correct ikm
-                let ikm = determineEncryptionKey(messageKey, stateKey, method);
-                messageKey = undefined;
-                stateKey = undefined;
+                let ikm = determineKey(messageKey, stateKey, method);
+                messageKey = null;
+                stateKey = null;
 
                 // Generate key
                 let key = generateKey(ikm, address, method);
@@ -212,8 +205,8 @@ function encryptMessage(wfMessage, encodedMessage, callback) {
                 return callback(new Error(`Encryption error: ${err.message}`));
             }
             // Update message and return result
-            wfMessage.MetaHeader.encodedMessage = encryptedMessage.toString(BINENCODING);
-            wfMessage.MetaHeader.encryptionInitVector = iv.toString(BINENCODING);
+            wfMessage.MetaHeader.encodedMessage = bufferToHex(encryptedMessage);
+            wfMessage.MetaHeader.encryptionInitVector = bufferToHex(iv);
             return callback(null, wfMessage);
         });
     });
@@ -224,23 +217,26 @@ function encryptMessage(wfMessage, encodedMessage, callback) {
  * @function decryptMessage
  * @alias module:lib/protocol/crypto.decrypt
  * @param {wfMessage} wfMessage a Whiteflag message
- * @param {buffer} encodedMessage a binary encoded and encrypted Whiteflag message
- * @param {function(Error, wfMessage)} callback function to be called upon completion
+ * @param {Buffer} encodedMessage a binary encoded and encrypted Whiteflag message
+ * @param {wfMessageCb} callback function called on completion
  */
 function decryptMessage(wfMessage, encodedMessage, callback) {
     // Cryptograhic parameters
-    let blockchain = wfMessage.MetaHeader.blockchain;
-    let originator = wfMessage.MetaHeader.originatorAddress;
-    let recipient = wfMessage.MetaHeader.recipientAddress;
-    let messageKey = wfMessage.MetaHeader.encryptionKeyInput;
+    const { MessageHeader: {
+            EncryptionIndicator: method }} =  wfMessage;
+    let { MetaHeader: {
+            blockchain: blockchain,
+            originatorAddress: originator,
+            recipientAddress: recipient,
+            encryptionKeyInput: messageKey,
+            encryptionInitVector: initVector }} =  wfMessage;
     let keyCateory;
     let secretId;
 
     // Check indicator for encryption type
-    let method = wfMessage.MessageHeader.EncryptionIndicator;
     switch (method) {
         case '0': {
-            wfMessage.MetaHeader.recipientAddress = undefined;
+            delete wfMessage.MetaHeader.recipientAddress;
             return callback(null, encodedMessage);
         }
         case '1': {
@@ -249,17 +245,17 @@ function decryptMessage(wfMessage, encodedMessage, callback) {
 
             // If key provided, use that one
             if (messageKey) {
-                wfMessage.MetaHeader.recipientAddress = undefined;
+                delete wfMessage.MetaHeader.recipientAddress;
                 secretId = '0';
                 break;
             }
             // Check encryption parameters; we are the recipient
-            let metaheaderErrors = [];
+            let metaErrors = [];
             if (!recipient || recipient === 'unknown') recipient = '';
-            if (!blockchain) metaheaderErrors.push('Blockchain not specified in metaheader');
-            if (!originator) metaheaderErrors.push('Originator address not specified in metaheader');
-            if (metaheaderErrors.length > 0) {
-                return callback(new ProcessingError('Missing required parameters for encryption', metaheaderErrors, 'WF_API_BAD_REQUEST'));
+            if (!blockchain) metaErrors.push('Blockchain not specified in metaheader');
+            if (!originator) metaErrors.push('Originator address not specified in metaheader');
+            if (metaErrors.length > 0) {
+                return callback(new ProcessingError('Missing required parameters for encryption', metaErrors, 'WF_API_BAD_REQUEST'));
             }
             secretId = hash(blockchain + recipient + originator, KEYIDLENGTH);
             break;
@@ -270,17 +266,17 @@ function decryptMessage(wfMessage, encodedMessage, callback) {
 
             // If key provided, use that one
             if (messageKey) {
-                wfMessage.MetaHeader.recipientAddress = undefined;
+                delete wfMessage.MetaHeader.recipientAddress;
                 secretId = '0';
                 break;
             }
             // Check encryption parameters; we are the recipient
-            let metaheaderErrors = [];
+            let metaErrors = [];
             if (!recipient || recipient === 'unknown') recipient = '';
-            if (!blockchain) metaheaderErrors.push('Blockchain not specified in metaheader');
-            if (!originator) metaheaderErrors.push('Originator address not specified in metaheader');
-            if (metaheaderErrors.length > 0) {
-                return callback(new ProcessingError('Missing required parameters for encryption', metaheaderErrors, 'WF_API_BAD_REQUEST'));
+            if (!blockchain) metaErrors.push('Blockchain not specified in metaheader');
+            if (!originator) metaErrors.push('Originator address not specified in metaheader');
+            if (metaErrors.length > 0) {
+                return callback(new ProcessingError('Missing required parameters for encryption', metaErrors, 'WF_API_BAD_REQUEST'));
             }
             secretId = hash(blockchain + originator + recipient, KEYIDLENGTH);
             break;
@@ -301,33 +297,30 @@ function decryptMessage(wfMessage, encodedMessage, callback) {
         }
     }
     // Check initialisation vector
-    if (!wfMessage.MetaHeader.encryptionInitVector) {
+    if (!initVector) {
         return callback(new ProcessingError('Cannot decrypt message without initialisation vector', null, 'WF_API_BAD_REQUEST'));
     }
-    const iv = Buffer.from(wfMessage.MetaHeader.encryptionInitVector, BINENCODING);
-    if (iv.length !== encryptionParameters[method].ivlength) {
+    const iv = hexToBuffer(initVector);
+    if (iv.length !== cryptoParams[method].ivlength) {
         return callback(new ProcessingError(`Invalid initialisation vector length: ${(iv.length * 8)} bits`, null, 'WF_API_BAD_REQUEST'));
     }
     // Get decryption key
     wfState.getKey(keyCateory, secretId, function cryptoDecryptKeyCb(err, stateKey) {
         if (err) return callback(err);
-
-        wfApiBlockchains.getBinaryAddress(originator, blockchain, function cryptoDecryptAddressCb(err, address) {
+        wfBlockchains.getBinaryAddress(originator, blockchain, function cryptoDecryptAddressCb(err, address) {
             if (err) return callback(err);
-
-            // Derrive key and decrypt
             let decryptedMessage = Buffer.alloc(encodedMessage.length);
             try {
                 // Get correct ikm
-                let ikm = determineDecryptionKey(messageKey, stateKey, method);
-                messageKey = undefined;
-                stateKey = undefined;
+                let ikm = determineKey(messageKey, stateKey, method);
+                messageKey = null;
+                stateKey = null;
 
                 // Generate key
                 let key = generateKey(ikm, address, method);
                 zeroise(ikm);
 
-                // Encrypt message
+                // Decrypt message
                 decrypt(encodedMessage, method, key, iv).copy(decryptedMessage, 0);
                 zeroise(key);
             } catch(err) {
@@ -346,10 +339,9 @@ function decryptMessage(wfMessage, encodedMessage, callback) {
  * Generates verification data from shared secret authentication token
  * @function getTokenVerificationData
  * @alias module:lib/protocol/crypto.getTokenVerificationData
- * @param {buffer} authToken binary encoded secret authentication token as input key material
- * @param {buffer} address binary encoded blockchain address by which the token is used
- * @param {function(Error, verificationData)} callback function to be called upon completion
- * @typedef {Buffer} verificationData authentication token verification data
+ * @param {Buffer} authToken binary encoded secret authentication token as input key material
+ * @param {Buffer} address binary encoded blockchain address by which the token is used
+ * @param {genericCb} callback function called on completion
  */
 function getTokenVerificationData(authToken, address, callback) {
     // Check input buffers
@@ -361,8 +353,8 @@ function getTokenVerificationData(authToken, address, callback) {
     }
     // Get authentication method dependent parameters and generate token using HKDF
     const AUTHMETHOD = '2';
-    const tokenlength = authenticationParameters[AUTHMETHOD].tokenlength;
-    const salt = Buffer.from(authenticationParameters[AUTHMETHOD].salt, BINENCODING);
+    const salt = hexToBuffer(authParams[AUTHMETHOD].salt);
+    const tokenlength = authParams[AUTHMETHOD].tokenlength;
     const verificationData = hkdf(authToken, salt, address, tokenlength);
     zeroise(authToken);
 
@@ -376,31 +368,37 @@ function getTokenVerificationData(authToken, address, callback) {
  * @alias module:lib/protocol/crypto.getECDHpubKey
  * @param {string} id ECDH key pair identifier
  * @param {boolean} newKeyPair replace existing ECDH key pair if true
- * @param {function(Error, publicKey, newKey)} callback function to be called upon completion
- * @typedef {string} publicKey hexadecimal representation of the ECDH public key
- * @typedef {boolean} newKey indicates whether a new ECDH key pair has been generated
+ * @param {cryptoCDHpublicKeyCb} callback function called on completion
  */
 function getECDHpublicKey(id, newKeyPair, callback) {
+    // Cryptographic parameters
     const ecdh = crypto.createECDH(ECDHCURVE);
     let publicKey;
 
+    // Check for private key and determine public key
     wfState.getKey('ecdhPrivateKeys', id, function cryptoGetKeyCb(err, privateKey) {
         if (err) return callback(err);
         let newKey;
         try {
             if (!privateKey || newKeyPair) {
                 newKey = true;
-                publicKey = ecdh.generateKeys(BINENCODING, 'compressed');
-                wfState.upsertKey('ecdhPrivateKeys', id, ecdh.getPrivateKey(BINENCODING));
+                publicKey = ecdh.generateKeys(KEYENCODING, 'compressed');
+                wfState.upsertKey('ecdhPrivateKeys', id, ecdh.getPrivateKey(KEYENCODING));
             } else {
                 newKey = false;
-                ecdh.setPrivateKey(privateKey, BINENCODING);
-                publicKey = ecdh.getPublicKey(BINENCODING, 'compressed');
-                privateKey = undefined;
+                ecdh.setPrivateKey(privateKey, KEYENCODING);
+                publicKey = ecdh.getPublicKey(KEYENCODING, 'compressed');
+                privateKey = null;
             }
         } catch(err) {
             return callback(err);
         }
+        /**
+         * @callback cryptoCDHpublicKeyCb
+         * @param {Error} err any error
+         * @param {string} publicKey the hexadecimal encoded ECDH public key
+         * @param {boolean} newKey true if new keypair generated, else false
+         */
         return callback(null, publicKey, newKey);
     });
 }
@@ -411,19 +409,20 @@ function getECDHpublicKey(id, newKeyPair, callback) {
  * @alias module:lib/protocol/crypto.generateECDHsecret
  * @param {string} id ECDH key pair identifier
  * @param {string} otherPublicKey hexadecimal representation of a received public ECDH key
- * @param {function(Error, secret)} callback function to be called upon completion
- * @typedef {string} secret hexadecimal representation of computed shared secret
+ * @param {genericCb} callback function called on completion
  */
 function generateECDHsecret(id, otherPublicKey, callback) {
+    // Cryptographic parameters
     const ecdh = crypto.createECDH(ECDHCURVE);
     let secret;
 
+    // Get private key and calculate secret
     wfState.getKey('ecdhPrivateKeys', id, function cryptoGetKeyCb(err, privateKey) {
         if (err) return callback(err);
         if (!privateKey) return callback(new ProcessingError(`No private ECDH key with id ${id} available`));
         try {
-            ecdh.setPrivateKey(privateKey, BINENCODING);
-            secret = ecdh.computeSecret(otherPublicKey, BINENCODING, BINENCODING);
+            ecdh.setPrivateKey(privateKey, KEYENCODING);
+            secret = ecdh.computeSecret(otherPublicKey, KEYENCODING, KEYENCODING);
         } catch(err) {
             return callback(err);
         }
@@ -431,25 +430,25 @@ function generateECDHsecret(id, otherPublicKey, callback) {
     });
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Encrypts compressed binary encoded Whiteflag message
  * @private
- * @param {buffer} unencryptedMessage binary encoded Whiteflag message to be encrypted
+ * @param {Buffer} unencryptedMessage binary encoded Whiteflag message to be encrypted
  * @param {string} method the Whiteflag encrytpion method
- * @param {buffer} key binary encoded encryption key
- * @param {buffer} iv binary encoded initialisation vector
- * @returns {buffer} binary encoded encrypted Whiteflag message
+ * @param {Buffer} key binary encoded encryption key
+ * @param {Buffer} iv binary encoded initialisation vector
+ * @returns {Buffer} binary encoded encrypted Whiteflag message
  */
 function encrypt(unencryptedMessage, method, key, iv) {
     // Cryptographic parameters
-    const cipher = encryptionParameters[method].algorithm;
+    const cipher = cryptoParams[method].algorithm;
     const encrypter = crypto.createCipheriv(cipher, key, iv);
 
     // Perform encryption and return result
     return Buffer.concat([
-        unencryptedMessage.slice(0, 4),
-        encrypter.update(unencryptedMessage.slice(4)),
+        unencryptedMessage.subarray(0, 4),
+        encrypter.update(unencryptedMessage.subarray(4)),
         encrypter.final()
     ], unencryptedMessage.length);
 }
@@ -457,52 +456,66 @@ function encrypt(unencryptedMessage, method, key, iv) {
 /**
  * Decrypts binary encoded encypted Whiteflag message
  * @private
- * @param {buffer} encryptedMessage binary encoded encrypted Whiteflag message
+ * @param {Buffer} encryptedMessage binary encoded encrypted Whiteflag message
  * @param {string} method the Whiteflag encrytpion method
- * @param {buffer} key binary encoded encryption key
- * @param {buffer} iv binary encoded initialisation vector
- * @param {buffer} tag binary encoded message authentication tag
- * @returns {buffer} binary encoded decrypted Whiteflag message
+ * @param {Buffer} key binary encoded encryption key
+ * @param {Buffer} iv binary encoded initialisation vector
+ * @param {Buffer} tag binary encoded message authentication tag
+ * @returns {Buffer} binary encoded decrypted Whiteflag message
  */
 function decrypt(encryptedMessage, method, key, iv, tag) {
     // Cryptographic parameters
-    const cipher = encryptionParameters[method].algorithm;
+    const cipher = cryptoParams[method].algorithm;
     const decrypter = crypto.createDecipheriv(cipher, key, iv);
     ignore(tag);
 
     // Perform decryption and return result
     return Buffer.concat([
-        encryptedMessage.slice(0, 4),
-        decrypter.update(encryptedMessage.slice(4)),
+        encryptedMessage.subarray(0, 4),
+        decrypter.update(encryptedMessage.subarray(4)),
         decrypter.final()
     ], encryptedMessage.length);
+}
+
+/**
+ * Check message metaheader for errors
+ * @private
+ * @param {wfMessage} wfMessage
+ * @returns {Array} message metaheader errors
+ */
+function checkMetaErrors(wfMessage) {
+    let metaErrors = [];
+    if (!wfMessage?.MetaHeader?.blockchain) metaErrors.push('Blockchain not specified in metaheader');
+    if (!wfMessage?.MetaHeader?.originatorAddress) metaErrors.push('Originator address not specified in metaheader');
+    if (!wfMessage?.MetaHeader?.recipientAddress) metaErrors.push('Recipient address not specified in metaheader');
+    return metaErrors;
 }
 
 /**
  * Generates a random initialisation vector
  * @private
  * @param {number} length initialisation vector length in octets
- * @returns {buffer} a random initialisation vector
+ * @returns {Buffer} a random initialisation vector
  */
 function genInitVector(method) {
-    return crypto.randomBytes(encryptionParameters[method].ivlength);
+    return crypto.randomBytes(cryptoParams[method].ivlength);
 }
 
 /**
  * Generates encryption/decryption key from input key material
  * @private
- * @param {buffer} ikm binary encoded encryption secret as input key material
- * @param {buffer} address binary encoded blockchain address by which the message is encrypted
+ * @param {Buffer} ikm binary encoded encryption secret as input key material
+ * @param {Buffer} address binary encoded blockchain address by which the message is encrypted
  * @param {string} method single character indicating the Whiteflag encryption method
- * @returns {buffer} encryption key
+ * @returns {Buffer} encryption key
  */
 function generateKey(ikm, address, method) {
     if (ikm.length === 0) {
         throw new ProcessingError('Zero-length key input buffer for encryption key generation', null, 'WF_API_BAD_REQUEST');
     }
     // Get algorithm dependent parameters
-    const keylength = encryptionParameters[method].keylength;
-    const salt = Buffer.from(encryptionParameters[method].salt, BINENCODING);
+    const salt = hexToBuffer(cryptoParams[method].salt);
+    const keylength = cryptoParams[method].keylength;
 
     // Use HKDF to generate and return key
     return hkdf(ikm, salt, address, keylength);
@@ -514,17 +527,17 @@ function generateKey(ikm, address, method) {
  * @param {string} metaheader hexadecimal representation of the secret in the metaheader
  * @param {string} keystore hexadecimal representation of the secret from the key store
  * @param {string} method single character indicating the Whiteflag encryption method
- * @returns {buffer} input key material
+ * @returns {Buffer} input key material
  */
-function determineEncryptionKey(messageKey, stateKey, method) {
+function determineKey(messageKey, stateKey, method) {
     if (messageKey &amp;&amp; method === '2') {
-        return Buffer.from(messageKey, BINENCODING);
+        return hexToBuffer(messageKey);
     }
     if (stateKey) {
-        return Buffer.from(stateKey, BINENCODING);
+        return hexToBuffer(stateKey);
     }
     if (method === '2' &amp;&amp; wfConfigData.encryption.psk) {
-        return Buffer.from(wfConfigData.encryption.psk, BINENCODING);
+        return hexToBuffer(wfConfigData.encryption.psk);
     }
     switch (method) {
         case '1': {
@@ -538,34 +551,6 @@ function determineEncryptionKey(messageKey, stateKey, method) {
         }
     }
 }
-
-/**
- * Determines which decryption key to use
- * @private
- * @param {string} metaheader hexadecimal representation of the secret in the metaheader
- * @param {string} keystore hexadecimal representation of the secret from the key store
- * @param {string} method single character indicating the Whiteflag encryption method
- * @returns {buffer} input key material
- */
-function determineDecryptionKey(messageKey, stateKey, method) {
-    if (messageKey &amp;&amp; method === '2') {
-        return Buffer.from(messageKey, BINENCODING);
-    }
-    if (stateKey) {
-        return Buffer.from(stateKey, BINENCODING);
-    }
-    switch (method) {
-        case '1': {
-            throw new ProtocolError('No ECDH decryption key available', null, 'WF_ENCRYPTION_ERROR');
-        }
-        case '2': {
-            throw new ProtocolError('No pre-shared decryption key available', null, 'WF_ENCRYPTION_ERROR');
-        }
-        default: {
-            throw new ProtocolError('No decryption key available', null, 'WF_ENCRYPTION_ERROR');
-        }
-    }
-}
 </code></pre>
         </article>
     </section>
@@ -576,13 +561,13 @@ function determineDecryptionKey(messageKey, stateKey, method) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

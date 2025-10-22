@@ -105,6 +105,13 @@
     
 
     
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>The Bitcoin module has not been maintained and needs evaluation</li>
+        </ul>
+    </dd>
+    
 </dl>
 
 
@@ -153,7 +160,7 @@
     
 
     
-    <h4 class="name" id="~createAccount"><span class="type-signature">(inner) </span>createAccount<span class="signature">(privateKey<span class="signature-attributes">opt</span>, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~createAccount"><span class="type-signature">(inner) </span>createAccount<span class="signature">(wif<span class="signature-attributes">opt</span>, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -199,7 +206,7 @@
 
         <tr>
             
-                <td class="name"><code>privateKey</code></td>
+                <td class="name"><code>wif</code></td>
             
 
             <td class="type">
@@ -225,7 +232,7 @@
 
             
 
-            <td class="description last"><p>hexadecimal encoded private key</p></td>
+            <td class="description last"><p>the private key in Wallet Input Format</p></td>
         </tr>
 
     
@@ -238,7 +245,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainCreateAccountCb</span>
+<span class="param-type">bcAccountCb</span>
 
 
             
@@ -256,7 +263,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -297,7 +304,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line259">line 259</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line275">line 275</a>
     </li></ul></dd>
     
 
@@ -333,7 +340,7 @@
     
 
     
-    <h4 class="name" id="~deleteAccount"><span class="type-signature">(inner) </span>deleteAccount<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~deleteAccount"><span class="type-signature">(inner) </span>deleteAccount<span class="signature">(btcAddress, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -377,7 +384,7 @@
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>btcAddress</code></td>
             
 
             <td class="type">
@@ -406,7 +413,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainDeleteAccountCb</span>
+<span class="param-type">bcAccountCb</span>
 
 
             
@@ -416,7 +423,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -457,7 +464,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line291">line 291</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line307">line 307</a>
     </li></ul></dd>
     
 
@@ -493,7 +500,7 @@
     
 
     
-    <h4 class="name" id="~getBinaryAddress"><span class="type-signature">(inner) </span>getBinaryAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~getBinaryAddress"><span class="type-signature">(inner) </span>getBinaryAddress<span class="signature">(btcAddress, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -537,7 +544,7 @@
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>btcAddress</code></td>
             
 
             <td class="type">
@@ -566,7 +573,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainBinaryAddressCb</span>
+<span class="param-type">bcBinaryAddressCb</span>
 
 
             
@@ -576,7 +583,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -617,7 +624,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line225">line 225</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line233">line 233</a>
     </li></ul></dd>
     
 
@@ -726,7 +733,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainLookupMessageCb</span>
+<span class="param-type">bcGetMessageCb</span>
 
 
             
@@ -736,7 +743,7 @@
 
             
 
-            <td class="description last"><p>function to be called after Whiteflag message lookup</p></td>
+            <td class="description last"><p>function called after Whiteflag message lookup</p></td>
         </tr>
 
     
@@ -777,7 +784,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line120">line 120</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line144">line 144</a>
     </li></ul></dd>
     
 
@@ -813,7 +820,7 @@
     
 
     
-    <h4 class="name" id="~initBitcoin"><span class="type-signature">(inner) </span>initBitcoin<span class="signature">(bcConfig, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~initBitcoin"><span class="type-signature">(inner) </span>initBitcoin<span class="signature">(btcConfig, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -857,7 +864,7 @@
 
         <tr>
             
-                <td class="name"><code>bcConfig</code></td>
+                <td class="name"><code>btcConfig</code></td>
             
 
             <td class="type">
@@ -886,7 +893,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainInitCb</span>
+<span class="param-type">bcInitCb</span>
 
 
             
@@ -896,7 +903,7 @@
 
             
 
-            <td class="description last"><p>function to be called after intitialising Bitcoin</p></td>
+            <td class="description last"><p>function called after intitialising Bitcoin</p></td>
         </tr>
 
     
@@ -937,7 +944,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line54">line 54</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line60">line 60</a>
     </li></ul></dd>
     
 
@@ -973,7 +980,7 @@
     
 
     
-    <h4 class="name" id="~requestKeys"><span class="type-signature">(inner) </span>requestKeys<span class="signature">(publicKey, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~requestSignature"><span class="type-signature">(inner) </span>requestSignature<span class="signature">(wfSignPayload, callback)</span><span class="type-signature"></span></h4>
     
 
     
@@ -981,7 +988,7 @@
 
 
 <div class="description">
-    <p>Requests the Bitcoin address and correctly encoded pubic key of an originator</p>
+    <p>Requests a Whiteflag signature for the specified Bitcoin address</p>
 </div>
 
 
@@ -1017,173 +1024,13 @@
 
         <tr>
             
-                <td class="name"><code>publicKey</code></td>
+                <td class="name"><code>wfSignPayload</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>the raw hex public key of the originator</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">blockchainRequestKeysCb</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>function to be called upon completion</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line182">line 182</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="~requestSignature"><span class="type-signature">(inner) </span>requestSignature<span class="signature">(payload, callback)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Requests a Whiteflag signature for a specific Bitcoin address</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>payload</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">wfSignaturePayload</span>
+<span class="param-type">wfSignPayload</span>
 
 
             
@@ -1206,7 +1053,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainRequestSignatureCb</span>
+<span class="param-type">authRequestSignatureCb</span>
 
 
             
@@ -1216,7 +1063,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -1257,7 +1104,197 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line149">line 149</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line169">line 169</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>Refactor to use with new JWS functions and native blockchain signature</li>
+        </ul>
+    </dd>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~scanBlocks"><span class="type-signature">(inner) </span>scanBlocks<span class="signature">(firstBlock, lastBlock, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Scans a number of blocks for Whiteflag messages</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>firstBlock</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the starting block</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>lastBlock</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the ending block</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">bcScanBlocksCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function called on completion</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -1366,7 +1403,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainSendTransactionCb</span>
+<span class="param-type">bcSendTransactionCb</span>
 
 
             
@@ -1376,7 +1413,7 @@
 
             
 
-            <td class="description last"><p>function to be called after sending Whiteflag message</p></td>
+            <td class="description last"><p>function called after sending Whiteflag message</p></td>
         </tr>
 
     
@@ -1417,7 +1454,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line98">line 98</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -1425,13 +1462,6 @@
 
     
 
-    
-    <dt class="tag-todo">To Do:</dt>
-    <dd class="tag-todo">
-        <ul>
-            <li>Return blocknumber</li>
-        </ul>
-    </dd>
     
 </dl>
 
@@ -1510,7 +1540,7 @@
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type">wfTransfer</span>
 
 
             
@@ -1533,7 +1563,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainSendTransactionCb</span>
+<span class="param-type">bcSendTransactionCb</span>
 
 
             
@@ -1543,7 +1573,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -1584,7 +1614,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line236">line 236</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line251">line 251</a>
     </li></ul></dd>
     
 
@@ -1592,13 +1622,6 @@
 
     
 
-    
-    <dt class="tag-todo">To Do:</dt>
-    <dd class="tag-todo">
-        <ul>
-            <li>Return blocknumber</li>
-        </ul>
-    </dd>
     
 </dl>
 
@@ -1677,7 +1700,7 @@
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type">wfAccount</span>
 
 
             
@@ -1700,7 +1723,7 @@
             <td class="type">
             
                 
-<span class="param-type">blockchainUpdateAccountCb</span>
+<span class="param-type">bcAccountCb</span>
 
 
             
@@ -1710,7 +1733,7 @@
 
             
 
-            <td class="description last"><p>function to be called upon completion</p></td>
+            <td class="description last"><p>function called on completion</p></td>
         </tr>
 
     
@@ -1751,7 +1774,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line275">line 275</a>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -1759,6 +1782,219 @@
 
     
 
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~verifySignature"><span class="type-signature">(inner) </span>verifySignature<span class="signature">(wfSignature, btcAddress, btcPublicKey, callback)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Verifies a Whiteflag signature for the specified Bitcoin public key</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>wfSignature</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">wfSignature</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Whiteflag authentication signature</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>btcAddress</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the address of the Whiteflag signature</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>btcPublicKey</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the Bitcoin public key to verify against</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">authVerifySignatureCb</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>function called on completion</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="blockchains_bitcoin.js.html">blockchains/bitcoin.js</a>, <a href="blockchains_bitcoin.js.html#line204">line 204</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>Refactor to use with new JWS functions and native blockchain signature</li>
+        </ul>
+    </dd>
     
 </dl>
 
@@ -1797,13 +2033,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

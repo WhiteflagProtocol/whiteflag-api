@@ -35,27 +35,24 @@
  * @tutorial protocol
  */
 module.exports = {
-    // Management messages functions
     init: initManagement
 };
 
-// Whiteflag common functions and classes //
-const log = require('../common/logger');
-const { hash } = require('../common/crypto');
-const { type } = require('../common/protocol');
-const { ProcessingError, ProtocolError } = require('../common/errors');
+/* Common internal functions and classes */
+const log = require('../_common/logger');
+const { hash } = require('../_common/crypto');
+const { type } = require('./_common/messages');
+const { ProcessingError, ProtocolError } = require('../_common/errors');
 
-// Whiteflag modules //
+/* Whiteflag modules */
 const wfState = require('./state');
 const wfCrypto = require('./crypto');
 const wfRetrieve = require('./retrieve');
 const wfAuthenticate = require('./authenticate');
-
-// Whiteflag event emitters //
 const wfRxEvent = require('./events').rxEvent;
 const wfTxEvent = require('./events').txEvent;
 
-// Module constants //
+/* Module constants */
 const MODULELOG = 'protocol';
 const KEYIDLENGTH = 12;
 const AUTHMESSAGECODE = 'A';
@@ -63,12 +60,13 @@ const CRYPTOMESSAGECODE = 'K';
 const IV1DATATYPE = '11';
 const IV2DATATYPE = '21';
 const ECDHPUBKEYDATATYPE = '0A';
+const AUTOMESGDELAY = 12000;
 
 /**
  * Initialises processing of management messages
  * @function init
  * @alias module:lib/protocol/management.init
- * @param {function(Error)} callback function to be called upon completion
+ * @param {errorCb} callback function called on completion
  */
 function initManagement(callback) {
     /**
@@ -88,21 +86,24 @@ function initManagement(callback) {
     return callback(null);
 }
 
-// PRIVATE MODULE FUNCTIONS //
+/* PRIVATE MODULE FUNCTIONS */
 /**
  * Passes received management messages to correct handlers
  * @private
  * @param {wfMessage} wfMessage a Whiteflag message
  */
 function receivedMessage(wfMessage) {
-    // Check required actions for specific received message types
-    switch (wfMessage.MessageHeader.MessageCode) {
+    const { MessageHeader: header,
+            MessageBody: body } = wfMessage;
+
+    // Check required actions for received message types
+    switch (header.MessageCode) {
         case AUTHMESSAGECODE: {
             receiveAuthenticationData(wfMessage);
             return;
         }
         case CRYPTOMESSAGECODE: {
-            switch (wfMessage.MessageBody.CryptoDataType) {
+            switch (body.CryptoDataType) {
                 case IV1DATATYPE:
                 case IV2DATATYPE: {
                     // Initialisation Vector for Encryption Types 1 and 2
@@ -128,43 +129,46 @@ function receivedMessage(wfMessage) {
  * @param {wfMessage} wfMessage a Whiteflag message
  */
 function sentMessage(wfMessage) {
-    // All message types require K message for init vector if encrypted
-    sendInitVector(wfMessage);
-
-    // Check required post transmission actions for specific message types
     switch (wfMessage.MessageHeader.MessageCode) {
         case AUTHMESSAGECODE: {
-            // ECDH public key is automatically sent after an authentication message
-            sendECDHpublicKey(wfMessage);
-            return;
+            // Send ECDH public key after an authentication message
+            setTimeout(sendECDHpublicKey, AUTOMESGDELAY, wfMessage);
         }
-        default: return;
+        default: {
+            // All messages require init vector if encrypted
+            setTimeout(sendInitVector, AUTOMESGDELAY, wfMessage);
+        }
     }
 }
 
-// MANAGEMENT MESSAGE HANDLER FUNCTIONS //
+/* MANAGEMENT MESSAGE HANDLER FUNCTIONS */
 /**
  * Processes received authentication message for verification method 1
  * @private
- * @param {Object} wfAuthMessage Whiteflag authentication message
+ * @param {wfMessage} wfAuthMessage Whiteflag authentication message
  * @emits module:lib/protocol/events.rxEvent:messageUpdated
  */
 function receiveAuthenticationData(wfAuthMessage) {
-    switch (wfAuthMessage.MessageHeader.ReferenceIndicator) {
+    const { MetaHeader: meta,
+            MessageHeader: header } = wfAuthMessage;
+
+    // Determine reference indicator of authentication message
+    const msgStr = `${type(wfAuthMessage)} message ${meta.transactionHash}`
+    switch (header.ReferenceIndicator) {
         case '0':
         case '2': {
             // Original and update message
-            log.trace(MODULELOG, `Received ${type(wfAuthMessage)} message: Verifying originator authentication data`);
+            log.trace(MODULELOG, `Received ${msgStr}: Verifying originator authentication data`);
             wfAuthenticate.verify(wfAuthMessage, function mgmtVerifyAuthCb(err, wfAuthMessage) {
                 if (err) {
                     if (err instanceof ProtocolError) {
                         if (err.causes) {
-                            log.debug(MODULELOG, `Could not verify received ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
+                            log.debug(MODULELOG, `Could not verify received ${msgStr}: ${err.message}: ` + JSON.stringify(err.causes));
                         } else {
-                            log.debug(MODULELOG, `Could not verify received ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}`);
+                            log.debug(MODULELOG, `Could not verify received ${msgStr}: ${err.message}`);
                         }
                     } else {
-                        log.warn(MODULELOG, `Could not verify received ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}`);
+                        log.warn(MODULELOG, `Could not verify received ${msgStr}: ${err.message}`);
                     }
                 }
                 wfRxEvent.emit('messageUpdated', wfAuthMessage);
@@ -179,12 +183,12 @@ function receiveAuthenticationData(wfAuthMessage) {
                 if (err) {
                     if (err instanceof ProtocolError) {
                         if (err.causes) {
-                            log.debug(MODULELOG, `Could not verify received ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}: ` + JSON.stringify(err.causes));
+                            log.debug(MODULELOG, `Could not verify received ${msgStr}: ${err.message}: ` + JSON.stringify(err.causes));
                         } else {
-                            log.debug(MODULELOG, `Could not verify received ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}`);
+                            log.debug(MODULELOG, `Could not verify received ${msgStr}: ${err.message}`);
                         }
                     } else {
-                        log.warn(MODULELOG, `Could not update originator state after receiving ${type(wfAuthMessage)} message ${wfAuthMessage.MetaHeader.transactionHash}: ${err.message}`);
+                        log.warn(MODULELOG, `Could not update originator state after receiving ${msgStr}: ${err.message}`);
                     }
                 }
                 wfRxEvent.emit('messageUpdated', wfAuthMessage);
@@ -193,24 +197,33 @@ function receiveAuthenticationData(wfAuthMessage) {
         }
         case '3': {
             // Additional information is currently not implemented
-            return;
+            return log.debug(MODULELOG, `Received ${msgStr}: Ignoring additional information for authentication messages`);;
         }
-        default: return;
+        default:{
+            return log.debug(MODULELOG, `Received ${msgStr} has invalid reference code`);
+        }
     }
 }
 
 /**
  * Processes received initialisation vector
  * @private
- * @param {Object} wfCryptoMessage Whiteflag crypto message with initialisation vector
+ * @param {wfMessage} wfCryptoMessage Whiteflag crypto message with initialisation vector
  */
 function receiveInitVector(wfCryptoMessage) {
-    const blockchain = wfCryptoMessage.MetaHeader.blockchain;
-    const transactionHash = wfCryptoMessage.MetaHeader.transactionHash;
-    const referencedMessage = wfCryptoMessage.MessageHeader.ReferencedMessage;
-    const initVector = wfCryptoMessage.MessageBody.CryptoData;
+    const { 
+        MetaHeader: {
+            blockchain: blockchain,
+            transactionHash: cryptoMessageHash },
+        MessageHeader: {
+            ReferenceIndicator: refIndicator,
+            ReferencedMessage: refMessageHash },
+        MessageBody: {
+            CryptoData: initVector }} =  wfCryptoMessage;
 
-    switch (wfCryptoMessage.MessageHeader.ReferenceIndicator) {
+    // Determine reference indicator of crypto message
+    const msgStr = `${type(wfCryptoMessage)} message ${cryptoMessageHash}`
+    switch (refIndicator) {
         case '0': {
             // Original: stand-alone iv does nothing
             break;
@@ -218,14 +231,14 @@ function receiveInitVector(wfCryptoMessage) {
         case '1':
         case '4': {
             // Recall or Discontinue: remove iv from queue
-            log.trace(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash}: Removing initialisation vector from queue`);
-            wfState.removeQueueData('initVectors', 'transactionHash', referencedMessage);
+            log.trace(MODULELOG, `Received ${msgStr}: Removing initialisation vector from queue`);
+            wfState.removeQueueData('initVectors', 'transactionHash', refMessageHash);
             break;
         }
         case '2': {
             // Update iv if on queue
-            log.trace(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash}: Updating initialisation vector on queue`);
-            wfState.getQueueData('initVectors', 'transactionHash', referencedMessage, function mgmtUpdateInitVectorCb(err, ivObject) {
+            log.trace(MODULELOG, `Received ${msgStr}: Updating initialisation vector on queue`);
+            wfState.getQueueData('initVectors', 'transactionHash', refMessageHash, function mgmtUpdateInitVectorCb(err, ivObject) {
                 if (err) log.warn(MODULELOG, `Error getting initialisation vector from queue: ${err.message}`);
                 if (ivObject) {
                     ivObject.initVector = initVector;
@@ -236,43 +249,45 @@ function receiveInitVector(wfCryptoMessage) {
         }
         case '3': {
             // Add: iv is part of the encrypted message it references
-            log.trace(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash} with initialisation vector`);
-            wfRetrieve.getMessage(referencedMessage, blockchain, function mgmtGetMessageInitVectorCb(err, wfMessages) {
+            log.trace(MODULELOG, `Received ${msgStr} with initialisation vector`);
+            wfRetrieve.getMessage(refMessageHash, blockchain, function mgmtGetMessageInitVectorCb(err, wfMessages) {
                 if (err &amp;&amp; !(err instanceof ProcessingError)) {
                     log.warn(MODULELOG, `${err.message}`);
                 }
-
                 // No message found; put iv on queue
                 if (!wfMessages || !Array.isArray(wfMessages) || wfMessages.length === 0) {
                     const ivObject = {
-                        transactionHash,
-                        referencedMessage,
+                        cryptoMessageHash,
+                        refMessageHash,
                         initVector
                     };
-                    wfState.upsertQueueData('initVectors', 'referencedMessage', ivObject);
-                    log.trace(MODULELOG, `Initialisation vector for message ${referencedMessage} put on queue: ` + JSON.stringify(ivObject));
+                    wfState.upsertQueueData('initVectors', 'refMessage', ivObject);
+                    log.trace(MODULELOG, `Initialisation vector for message ${refMessageHash} put on queue: ` + JSON.stringify(ivObject));
                     return;
                 }
                 // Found message in database or on blockchain
                 if (wfMessages.length > 0) {
                     const wfMessage = wfMessages[0];
+                    let { MetaHeader: meta } = wfMessage;
 
                     // No need to decrypt if messages is sent and already has an init vector
                     if (
-                        wfMessage.MetaHeader.transceiveDirection === 'TX'
-                        &amp;&amp; wfMessage.MetaHeader.encryptionInitVector
+                        meta.transceiveDirection === 'TX'
+                        &amp;&amp; meta.encryptionInitVector
                     ) {
                         return;
                     }
                     // Add initialistion vector to message and trigger further processing
-                    log.trace(MODULELOG, `Found encrypted message matching incoming initialisation vector: ${wfMessage.MetaHeader.transactionHash}`);
-                    wfMessage.MetaHeader.encryptionInitVector = initVector;
+                    log.trace(MODULELOG, `Found encrypted message matching incoming initialisation vector: ${meta.transactionHash}`);
+                    meta.encryptionInitVector = initVector;
                     return wfRxEvent.emit('messageReceived', wfMessage);
                 }
             });
             break;
         }
-        default: return;
+        default: {
+            return log.debug(MODULELOG, `Received ${msgStr} has invalid reference code`);
+        }
     }
 }
 
@@ -283,9 +298,12 @@ function receiveInitVector(wfCryptoMessage) {
  * @emits _txEvent:messageCommitted
  */
 function sendInitVector(wfMessage) {
+    const { MetaHeader: meta,
+            MessageHeader: header } = wfMessage;
+
     // Check encryption indicator
     let cryptoDataType;
-    switch (wfMessage.MessageHeader.EncryptionIndicator) {
+    switch (header.EncryptionIndicator) {
         case '1': {
             cryptoDataType = IV1DATATYPE;
             break;
@@ -297,29 +315,29 @@ function sendInitVector(wfMessage) {
         default: return;
     }
     // Check initialisation vector and build K message
-    if (wfMessage.MetaHeader.encryptionInitVector) {
+    if (meta.encryptionInitVector) {
         const wfCryptoMessage = {
             'MetaHeader': {
                 'autoGenerated': true,
-                'blockchain': wfMessage.MetaHeader.blockchain,
-                'originatorAddress': wfMessage.MetaHeader.originatorAddress
+                'blockchain': meta.blockchain,
+                'originatorAddress': meta.originatorAddress
             },
             'MessageHeader': {
                 'Prefix': 'WF',
-                'Version': wfMessage.MessageHeader.Version,
+                'Version': header.Version,
                 'EncryptionIndicator': '0',
                 'DuressIndicator': '0',
                 'MessageCode': CRYPTOMESSAGECODE,
                 'ReferenceIndicator': '3',
-                'ReferencedMessage': wfMessage.MetaHeader.transactionHash
+                'ReferencedMessage': meta.transactionHash
             },
             'MessageBody': {
                 'CryptoDataType': cryptoDataType,
-                'CryptoData': wfMessage.MetaHeader.encryptionInitVector
+                'CryptoData': meta.encryptionInitVector
             }
         };
         // Commit the crypto message to the tx event chain
-        log.debug(MODULELOG, `Sending ${type(wfCryptoMessage)} message with initialisation vector for ${type(wfMessage)} message: ${wfMessage.MetaHeader.transactionHash}`);
+        log.debug(MODULELOG, `Sending ${type(wfCryptoMessage)} message with initialisation vector for ${type(wfMessage)} message: ${meta.transactionHash}`);
         return wfTxEvent.emit('messageCommitted', wfCryptoMessage);
     }
 }
@@ -327,39 +345,46 @@ function sendInitVector(wfMessage) {
 /**
  * Processes received ECDH public key
  * @private
- * @param {Object} wfCryptoMessage Whiteflag crypto message with ECDH public key
+ * @param {wfMessage} wfCryptoMessage Whiteflag crypto message with ECDH public key
  */
 function receiveECDHpublicKey(wfCryptoMessage) {
-    // Paramaters
-    const blockchain = wfCryptoMessage.MetaHeader.blockchain;
-    const originatorAddress = wfCryptoMessage.MetaHeader.originatorAddress;
-    const originatorECDHpubKey = wfCryptoMessage.MessageBody.CryptoData;
+    const { 
+        MetaHeader: {
+            blockchain: blockchain,
+            transactionHash: cryptoMessageHash,
+            originatorAddress: orgAddress },
+        MessageHeader: {
+            ReferenceIndicator: refIndicator },
+        MessageBody: {
+            CryptoData: orgECDHpubKey }} =  wfCryptoMessage;
 
-    wfState.getOriginatorData(originatorAddress, function mgmtGetOriginatorCb(err, originator) {
-        if (err) return log.error(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash} but could not get originator state to compute shared secret: ${err.message}`);
+    // Check if origintaor is known
+    const msgStr = `${type(wfCryptoMessage)} message ${cryptoMessageHash}`
+    wfState.getOriginatorData(orgAddress, function mgmtGetOriginatorCb(err, originator) {
+        if (err) return log.error(MODULELOG, `Received ${msgStr} but could not get originator state to compute shared secret: ${err.message}`);
 
         // Check reference indicator
-        switch (wfCryptoMessage.MessageHeader.ReferenceIndicator) {
+        switch (refIndicator) {
             case '0':
             case '2': {
                 // Store the ECDH public key
-                log.trace(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash} with ECDH public key from address ${originatorAddress}`);
+                log.trace(MODULELOG, `Received ${msgStr} with ECDH public key from originator ${orgAddress}`);
                 if (originator) {
                     // Known origintaor
-                    originator.ecdhPublicKey = originatorECDHpubKey;
+                    originator.ecdhPublicKey = orgECDHpubKey;
                     wfState.upsertOriginatorData(originator);
                 } else {
                     // Unknown originator
                     const newOriginator = {
                         name: '',
                         blockchain: blockchain,
-                        address: originatorAddress,
-                        originatorPubKey: null,
-                        ecdhPublicKey: originatorECDHpubKey,
+                        address: orgAddress,
+                        publicKey: null,
+                        ecdhPublicKey: orgECDHpubKey,
                         url: null,
                         authTokenId: '',
-                        authenticationValid: false,
-                        authenticationMessages: []
+                        authValid: false,
+                        authMessages: []
                     };
                     wfState.upsertOriginatorData(newOriginator);
                 }
@@ -368,22 +393,28 @@ function receiveECDHpublicKey(wfCryptoMessage) {
             case '1':
             case '4': {
                 // Remove the ECDH public key if originator is known
-                log.trace(MODULELOG, `Received ${type(wfCryptoMessage)} message ${wfCryptoMessage.MetaHeader.transactionHash} to remove ECDH public key from address ${originatorAddress}`);
+                log.trace(MODULELOG, `Received ${msgStr} to remove ECDH public key from originator ${orgAddress}`);
                 if (originator) {
                     originator.ecdhPublicKey = null;
                     wfState.upsertOriginatorData(originator);
                 }
                 return;
             }
-            default: return;
+            default: {
+                return log.debug(MODULELOG, `Received ${msgStr} has invalid reference code`);
+            }
+        }
+        // Do not comuter secret if originator is unauthenticated
+        if (!originator.authValid) {
+            return log.info(MODULELOG, `Not computing shared secrets: Received ${msgStr} is from unauthenticated originator ${orgAddress}`)
         }
         // Get accounts for this blockchain and generate a shared secret for each
-        wfState.getBlockchainData(blockchain, function mgmtGetBlockchainDataCb(err, blockchainState) {
-            if (!err &amp;&amp; !blockchainState) err = new Error(`Blockchain ${blockchain} does not exist in state`);
+        wfState.getBlockchainData(blockchain, function mgmtGetBlockchainDataCb(err, bcState) {
+            if (!err &amp;&amp; !bcState) err = new Error(`Blockchain ${blockchain} does not exist in state`);
             if (err) return log.error(MODULELOG, `Could not retrieve ${blockchain} state to compute shared secrets: ${err.message}`);
 
-            blockchainState.accounts.forEach(account => {
-                generateECDHsecret(blockchain, account.address, originatorAddress, originatorECDHpubKey);
+            bcState.accounts.forEach(account => {
+                generateECDHsecret(blockchain, account.address, orgAddress, orgECDHpubKey);
             });
         });
     });
@@ -400,10 +431,10 @@ function sendECDHpublicKey(wfAuthMessage) {
 
     // Do not send ECDH public key after encyrpted or duress A message
     if (wfAuthMessage.MessageHeader.EncryptionIndicator !== '0') {
-        return log.debug(MODULELOG, `Not sending ECDH public key after encrypted ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`);
+        return log.info(MODULELOG, `Not sending ECDH public key after encrypted ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`);
     }
     if (wfAuthMessage.MessageHeader.DuressIndicator !== '0') {
-        return log.debug(MODULELOG, `Not sending ECDH public key after ${type(wfAuthMessage)} message under duress: ${wfAuthMessage.MetaHeader.transactionHash}`);
+        return log.info(MODULELOG, `Not sending ECDH public key after ${type(wfAuthMessage)} message under duress: ${wfAuthMessage.MetaHeader.transactionHash}`);
     }
     // Check reference indicator
     switch (wfAuthMessage.MessageHeader.ReferenceIndicator) {
@@ -423,7 +454,7 @@ function sendECDHpublicKey(wfAuthMessage) {
     const blockchain = wfAuthMessage.MetaHeader.blockchain;
     const address = wfAuthMessage.MetaHeader.originatorAddress;
     const ecdhId = hash(blockchain + address, KEYIDLENGTH);
-    wfCrypto.getECDHpublicKey(ecdhId, newKeyPair, function mgmtGetMessageInitVectorCb(err, ecdhPublicKey, newKey) {
+    wfCrypto.getECDHpublicKey(ecdhId, newKeyPair, function mgmtGetMessageInitVectorCb(err, ecdhPublicKey, newKey = false) {
         if (err) return log.error(MODULELOG, `Could not get and send ECDH public key for account ${address}: ${err.message}`);
 
         // Build K message
@@ -447,10 +478,8 @@ function sendECDHpublicKey(wfAuthMessage) {
                 'CryptoData': ecdhPublicKey
             }
         };
-        // Logging
-        log.debug(MODULELOG, `Sending ${type(wfCryptoMessage)} message with ECDH public key after ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`);
-
         // Commit the crypto message to the tx event chain
+        log.debug(MODULELOG, `Sending ${type(wfCryptoMessage)} message with ECDH public key after ${type(wfAuthMessage)} message: ${wfAuthMessage.MetaHeader.transactionHash}`);
         wfTxEvent.emit('messageCommitted', wfCryptoMessage, function mgmtSendECDHpubKeyCb(err) {
             // Only compute new secrets when newly generated key pair
             if (!newKey &amp;&amp; !err) return;
@@ -458,11 +487,9 @@ function sendECDHpublicKey(wfAuthMessage) {
                 if (newKey) return log.error(MODULELOG, `Not computing new shared secrets: ${type(wfCryptoMessage)} message not sent after renewed ECDH key pair: ${err.message}`);
                 return log.warn(MODULELOG, `Could not send ${type(wfCryptoMessage)} message: ${err.message}`);
             }
-            // Check ECDH public keys from known originators and calculate shared secret
+            // Check ECDH public keys from known originators and calculate shared secrets
             wfState.getOriginators(function mgmtGetECDHoriginatorsCb(err, originators) {
                 if (err) return log.error(MODULELOG, `Could not get originator state to compute shared secrets: ${err.message}`);
-
-                // Check ECDH public key for each originator
                 originators.forEach(originator => {
                     if (originator.ecdhPublicKey &amp;&amp; originator.blockchain === blockchain) {
                         generateECDHsecret(blockchain, address, originator.address, originator.ecdhPublicKey);
@@ -478,21 +505,21 @@ function sendECDHpublicKey(wfAuthMessage) {
  * @private
  * @param {string} blockchain the blockchain name
  * @param {string} address the blockchain account to generate the secret for
- * @param {string} originatorAddress the address of the other originator
- * @param {string} originatorECHDpubKey the ECDH public key of the other originator
+ * @param {string} orgAddress the address of the other originator
+ * @param {string} orgECDHpubKey the ECDH public key of the other originator
  */
-function generateECDHsecret(blockchain, address, originatorAddress, originatorECHDpubKey) {
+function generateECDHsecret(blockchain, address, orgAddress, orgECDHpubKey) {
     const ecdhId = hash(blockchain + address, KEYIDLENGTH);
-    wfCrypto.generateECDHsecret(ecdhId, originatorECHDpubKey, function mgmtGenECDHsecretCb(err, secret) {
+    wfCrypto.generateECDHsecret(ecdhId, orgECDHpubKey, function mgmtGenECDHsecretCb(err, secret) {
         if (err) {
             if (err instanceof ProcessingError) {
-                return log.debug(MODULELOG, `Could not compute ECDH negotiated secret for account ${address} with originator address ${originatorAddress}: ${err.message}`);
+                return log.debug(MODULELOG, `Could not compute ECDH negotiated secret for account ${address} with originator address ${orgAddress}: ${err.message}`);
             }
-            return log.error(MODULELOG, `Could not compute ECDH negotiated secret for account ${address} with originator address ${originatorAddress}: ${err.message}`);
+            return log.error(MODULELOG, `Could not compute ECDH negotiated secret for account ${address} with originator address ${orgAddress}: ${err.message}`);
         }
-        const secretId = hash(blockchain + address + originatorAddress, KEYIDLENGTH);
+        const secretId = hash(blockchain + address + orgAddress, KEYIDLENGTH);
         wfState.upsertKey('negotiatedKeys', secretId, secret);
-        log.debug(MODULELOG, `Computed ECDH negotiated secret for account ${address} with originator address ${originatorAddress}`);
+        log.info(MODULELOG, `Computed ECDH negotiated secret for account ${address} with originator address ${orgAddress}`);
     });
 }
 </code></pre>
@@ -505,13 +532,13 @@ function generateECDHsecret(blockchain, address, originatorAddress, originatorEC
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_common.html">lib/blockchains/common</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_common_arrays.html">lib/common/arrays</a></li><li><a href="module-lib_common_crypto.html">lib/common/crypto</a></li><li><a href="module-lib_common_errors.html">lib/common/errors</a></li><li><a href="module-lib_common_httpres.html">lib/common/httpres</a></li><li><a href="module-lib_common_logger.html">lib/common/logger</a></li><li><a href="module-lib_common_objects.html">lib/common/objects</a></li><li><a href="module-lib_common_processing.html">lib/common/processing</a></li><li><a href="module-lib_common_protocol.html">lib/common/protocol</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_datastores_rest.html">lib/datastores/rest</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Classes</h3><ul><li><a href="module-lib_common_errors-DomainError.html">DomainError</a></li><li><a href="module-lib_common_errors-ProcessingError.html">ProcessingError</a></li><li><a href="module-lib_common_errors-ProtocolError.html">ProtocolError</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat Jun 15 2024 13:41:50 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:47:59 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
