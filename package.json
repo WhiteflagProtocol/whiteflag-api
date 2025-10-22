@@ -1,6 +1,6 @@
 {
     "name": "whiteflag-api",
-    "version": "1.1.0-dev",
+    "version": "1.1.0",
     "description": "Implementation of the Whiteflag protocol API layer that provides an interface with the Whiteflag messaging network on one or more underlying blockchains",
     "keywords": [
         "whiteflag",

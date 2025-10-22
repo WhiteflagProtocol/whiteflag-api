@@ -9,7 +9,7 @@
  * @tutorial modules
  */
 
-/* Change working directory to process directory
+/* Change working directory to process directory */
 process.chdir(__dirname);
 
 /* Common internal functions and classes */

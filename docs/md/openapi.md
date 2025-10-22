@@ -1,5 +1,5 @@
 ---
-title: Whiteflag API v1.1.0-dev
+title: Whiteflag API v1.1.0
 language_tabs:
   - shell: Shell
   - http: HTTP
@@ -19,7 +19,7 @@ headingLevel: 2
 
 <!-- Generator: Widdershins v4.0.1 -->
 
-<h1 id="whiteflag-api">Whiteflag API v1.1.0-dev</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.1.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 

@@ -35,7 +35,7 @@ testCase('Whiteflag API static data tests', function() {
         // Test
         assertion(' 1. should correspond with the software version', function(done) {
             // Software package version
-            if (!packageObj.version) return done(new Error('Could not determine software package version'));
+            if (!packageObj.version) return done(new Error('Could not determine package version'));
             const packageVersion = semver.clean(packageObj.version);
 
             // OpenAPI definition version
@@ -44,7 +44,7 @@ testCase('Whiteflag API static data tests', function() {
 
             // Compare versions
             if (semver.eq(packageVersion, openapiVersion)) return done();
-            done(new Error(`The OpenAPI definition version ${openapiVersion} does not correspond with the software package version ${packageVersion}`));
+            done(new Error(`The OpenAPI definition version ${openapiVersion} does not correspond with the package version ${packageVersion}`));
         });
     });
     // JSON Schemas
