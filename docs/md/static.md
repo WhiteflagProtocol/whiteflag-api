@@ -6,10 +6,10 @@ Whiteflag messages and a Whiteflag signs and signals icon set. The server
 provides the static content on the `/` root endpoint, e.g. `http://localhost:5746/`.
 
 In addition, protocol specific static content, such as json schemas, are in
-`lib/protocol/static`. The server provides the static protocol data on the
+`static/protocol/`. The server provides the static protocol data on the
 `/protocol` endpoint, e.g. `http://localhost:5746/protocol/`.
 
-Other static data in `static` subdirectories may also exists, but this data is
+Other static data in `static/` subdirectories may also exists, but this data is
 not provided by the server to clients. For example, there is also a
 `test/static/` directory, which contains static data for testing, such as the
 JSON core schema meta-schema to validate the Whiteflag JSON schemas, which is

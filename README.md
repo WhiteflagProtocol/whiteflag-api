@@ -62,7 +62,7 @@ not part of this distribution and may be licenced differently.
 To deploy the Whiteflag API, make sure the following prerequisite software
 is installed:
 
-* [Node.js](https://nodejs.org/en/about/) [version 16 or higher](https://nodejs.org/en/about/releases/), including [NPM](https://www.npmjs.com/get-npm)
+* [Node.js](https://nodejs.org/en/about/) [version 20 or higher](https://nodejs.org/en/about/releases/), including [NPM](https://www.npmjs.com/get-npm)
 
 Since version 1.0.1, the Whiteflag API has a lightweight embedded datastore,
 making MongoDB an optional dependency:
