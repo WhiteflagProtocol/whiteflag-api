@@ -15,8 +15,13 @@ the [Substrate/Polkadot SDK](https://polkadot.com/platform/sdk/).
 | Address prefix:                | 42 (substrate) |
 | Secret for account creation:   | 32 byte seed   |
 
-The signature algorithm `sr25519` is not specified to be used with JWS for
-Whiteflag authentication method 1.
+NOTE: The signature algorithm `sr25519` is officially not specified to be used
+with JWS in [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518) for Whiteflag
+authentication method 1. However, Whiteflag is using JSON Web Tokens just as
+a structure. For Whiteflag authentication method 1 to work, it is essential
+that the key pair and curve of the blockchain is used for the signature to
+prove possession of the associated secret key.
+See also [Issue 33](https://github.com/WhiteflagProtocol/whiteflag-api/issues/33).
 
 ## Fennel configuration
 

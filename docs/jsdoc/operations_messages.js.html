@@ -120,18 +120,11 @@ function validate(req, res, operationId, callback) {
     wfCodec.verifyFormat(wfMessage, function opsVerifyFormatCb(err, wfMessage) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
-
-        // Return response if format is not valid
         if (err) return sendIndicative(res, err, resBody, wfMessage, callback);
-
-        // Add message info to meta data
-        resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
 
         // Verify message reference
         wfReference.verify(wfMessage, function opsVerifyReferenceCb(err, wfMessage) {
-            if (!err &amp;&amp; wfMessage.MetaHeader.referenceValid) {
-                resBody.meta.info = arr.addItem(resBody.meta.info, 'Message reference is valid');
-            }
+            if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
             return sendIndicative(res, err, resBody, wfMessage, callback);
         });
     });
@@ -151,8 +144,6 @@ function encode(req, res, operationId, callback) {
     wfCodec.encode(wfMessage, function opsEncodeCb(err, wfMessage) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
-
-        // Add message info to meta data
         if (!err) resBody.meta = addMessageMetaInfo(wfMessage, resBody.meta);
 
         // Send response using common endpoint response function
@@ -170,7 +161,13 @@ function encode(req, res, operationId, callback) {
  * @param {logEndpointEventCb} callback
  */
 function decode(req, res, operationId, callback) {
-    const wfMessage = req.body;
+    let wfMessage = {};
+    // Do not complain if plain metaheader provided
+    if (Object.hasOwn(req.body, 'MetaHeader')) {
+        wfMessage = req.body;
+    } else {
+        wfMessage.MetaHeader = req.body;
+    }
     wfCodec.decode(wfMessage, function opsDecodeCb(err, wfMessage, ivMissing) {
         // Create response body and preserve information before responding
         let resBody = createBody(req, operationId);
@@ -225,7 +222,17 @@ function getMessages(req, res, operationId, callback) {
                     wfQuery[`MetaHeader.${parameter}`] = (req.query[parameter] === 'true');
                     break;
                 }
-                // Strings
+                // Message Header fiels
+                case 'Version':
+                case 'EncryptionIndicator':
+                case 'MessageCode':
+                case 'DuressIndicator':
+                case 'ReferenceIndicator':
+                case 'ReferencedMessage': {
+                    wfQuery[`MessageHeader.${parameter}`] = req.query[parameter];
+                    break;
+                }
+                // Metaheader strings
                 default: {
                     wfQuery[`MetaHeader.${parameter}`] = req.query[parameter];
                 }
@@ -255,6 +262,7 @@ function getReferences(req, res, operationId, callback) {
     if (query.transactionHash &amp;&amp; query.blockchain) {
         return wfRetrieve.getReferences(query.transactionHash, query.blockchain,
             function opsGetReferencesBcCb(err, wfMessages) {
+                if (!err) resBody.meta.info = arr.addItem(resBody.meta.info, `Known Whiteflag messages on ${query.blockchain} referencing message ${query.transactionHash}`);
                 processMessages(err, res, resBody, wfMessages, callback);
             }
         );
@@ -262,6 +270,7 @@ function getReferences(req, res, operationId, callback) {
     if (query.transactionHash) {
         return wfRetrieve.getReferences(query.transactionHash, null,
             function opsGetReferencesCb(err, wfMessages) {
+                if (!err) resBody.meta.info = arr.addItem(resBody.meta.info, `Known Whiteflag messages referencing message ${query.transactionHash}`);
                 processMessages(err, res, resBody, wfMessages, callback);
             }
         );
@@ -289,6 +298,7 @@ function getSequence(req, res, operationId, callback) {
     if (query.transactionHash &amp;&amp; query.blockchain) {
         return wfRetrieve.getSequence(query.transactionHash, query.blockchain,
             function opsGetSequenceBcCb(err, wfMessages) {
+                if (!err) resBody.meta.info = arr.addItem(resBody.meta.info, `Known Whiteflag message sequence on ${query.blockchain} starting with message ${query.transactionHash}`);
                 processMessages(err, res, resBody, wfMessages, callback);
             }
         );
@@ -296,6 +306,7 @@ function getSequence(req, res, operationId, callback) {
     if (query.transactionHash) {
         return wfRetrieve.getSequence(query.transactionHash, null,
             function opsGetSequenceCb(err, wfMessages) {
+                if (!err) resBody.meta.info = arr.addItem(resBody.meta.info, `Known Whiteflag message sequence starting with message ${query.transactionHash}`);
                 processMessages(err, res, resBody, wfMessages, callback);
             }
         );
@@ -364,7 +375,7 @@ function addMessageMetaInfo(wfMessage, meta) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Oct 21 2025 00:02:04 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 12:25:53 GMT+0200 (Central European Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

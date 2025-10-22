@@ -65,7 +65,7 @@ The API supports:
 The following functionality is in scope, but currently not implemented:
 
 * message and area concatenation with reference code 3 - issue #2
-* evaluation of message sequences
+* evaluation of message sequences - issue #36
 
 ## Outside scope
 

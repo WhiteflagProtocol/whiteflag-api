@@ -17,8 +17,12 @@ blockchain.
 
 Note that curve `secp256k1` for the ECDSA signature algorthm is officially not
 specified to be used with JWS for Whiteflag authentication method 1. Instead,
-the JWS specification requires curve `secp256r1` a.k.a. `prime256v1`. See
-https://github.com/WhiteflagProtocol/whiteflag-api/issues/28.
+the JWS specification in [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518)
+requires curve `secp256r1` a.k.a. `prime256v1`. However, Whiteflag is using
+JSON Web Tokens just as a structure. For Whiteflag authentication method 1 to
+work, it is essential that the key pair and curve of the blockchain is used for
+the signature to prove possession of the associated secret key.
+See also [Issue 28](https://github.com/WhiteflagProtocol/whiteflag-api/issues/28).
 
 ## Ethereum configuration
 

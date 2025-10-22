@@ -178,7 +178,7 @@ following NPM command in the project root:
 npm test
 ```
 
-Any REST client, such as [Postman](https://www.getpostman.com/) or [cURL](https://everything.curl.dev/cmdline/options.html)
+Any REST client, such as [Postman](https://www.getpostman.com/) or [cURL](https://everything.curl.dev/)
 can be used for manual testing. This is a simple example using cURL from the
 command line, sending an `A1` message from a file:
 
