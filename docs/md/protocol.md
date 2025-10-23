@@ -18,7 +18,7 @@ that can be found under `lib/protocol`. These modules are:
 
 Protocol specific configuration parameters are in `whiteflag.toml` which can be
 found in the `config/` directory. Static protocol data, such as json schemas
-can be found under `lib/protocol/static`.
+can be found under `static/protocol/`.
 
 ## Message Format
 

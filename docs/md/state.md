@@ -4,7 +4,7 @@ The API has to keep its state of the Whiteflag protocol. This inludes keeping
 track of its blockchain status and accounts, known originators, encryption keys
 etc. The state is implemented as an in-memory object which is managed by
 `lib/protocol/state.js`. The structure of the state is defined in
-`lib/protocol/static/state.schema.json`.
+`static/protocol/state.schema.json`.
 
 ## State configuration
 

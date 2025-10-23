@@ -8,11 +8,11 @@ are structured in the following directory tree:
 | Directory       | Purpose               |
 |-----------------|-----------------------|
 |`lib`            | Main modules          |
+|`lib/_common`    | Common modules        |
 |`lib/operations` | Operations modules    |
 |`lib/protocol`   | Protocol modules      |
 |`lib/blockchains`| Blockchain modules    |
 |`lib/datastores` | Datastore modules     |
-|`lib/common`     | Common modules        |
 
 See also `README.md` for a general overview of the project, and
 `CONTRIBUTING.md` for a description of the repository structure and
@@ -27,6 +27,13 @@ other main modules in `lib/`:
 * `server.js`: the module that opens the network connections and connects the routes and methods to the correct handlers in the endpoints modules
 * `blockchains.js`: the module that implements the blockchain abstraction layer, and handles all requests to the configured blockchains
 * `datastores.js`: the module that implements the datastores abstraction layer, and handles all requests to the configured databases
+
+## Common modules
+
+Common modules in `lib/_common` are used for function and class definitions
+shared by multiple modules across the project. Common modules may not require
+other project modules outside `lib/_common` to function. Submodules may also
+have a `_common/` subdirectory, and a `_static/` subdirectory for static data.
 
 ## Endpoints modules
 
@@ -81,9 +88,3 @@ names in de main `datastores.js` module.
 The configuration of the datastores and the datastore modules can be found in
 `config/datastores.toml`. This configuration file has a section `[[databases]]`
 for each datastore.
-
-## Common modules
-
-Common modules in `lib/common` are used for function and class definitions
-shared by multiple modules across the project. Common modules may not require
-other project modules to function.
