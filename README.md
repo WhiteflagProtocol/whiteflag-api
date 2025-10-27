@@ -142,7 +142,7 @@ Some of the endpoint functionalities
 
 * `/messages`: endpoint to GET an array of all messages contained in the API database
 * `/messages/send`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
-* `/messages/send`: endpoint to POST a new Whiteflag as if received the blockchain
+* `/messages/receive`: endpoint to POST a new Whiteflag as if received the blockchain
 * `/messages/encode`: endpoint to POST a Whiteflag message to be encoded
 * `/messages/decode`: endpoint to POST a Whiteflag message to be decoded
 * `/messages/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
