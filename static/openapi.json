@@ -37,6 +37,14 @@
         {
             "name": "State",
             "description": "Endpoints for operations on the Whiteflag state of a running API instance."
+        },
+        {
+            "name": "Protocol",
+            "description": "Endpoints for protocol and data specifications."
+        },
+        {
+            "name": "Icons",
+            "description": "Endpoints for retrieving icons corresponding with various Whiteflag signs and signals."
         }
     ],
     "servers": [
@@ -60,42 +68,42 @@
     "paths": {
         "/protocol/whiteflag.standard.html": {
             "get": {
-                "tags": [ "Protocol", "Static" ],
+                "tags": [ "Protocol" ],
                 "operationId": "getWFStandard",
                 "description": "Returns the human readible Whiteflag protocol specification in HTML format."
             }
         },
         "/protocol/message.schema.json": {
             "get": {
-                "tags": [ "Protocol", "Static" ],
+                "tags": [ "Protocol" ],
                 "operationId": "getWFMessageSchema",
                 "description": "Returns the Whiteflag message JSON schema."
             }
         },
         "/protocol/metaheader.schema.json": {
             "get": {
-                "tags": [ "Protocol", "Static" ],
+                "tags": [ "Protocol" ],
                 "operationId": "getWFMetaheaderSchema",
                 "description": "Returns the Whiteflag message metaheader JSON schema."
             }
         },
         "/protocol/signature.schema.json": {
             "get": {
-                "tags": [ "Protocol", "Static" ],
+                "tags": [ "Protocol" ],
                 "operationId": "getWFSignatureSchema",
                 "description": "Returns Whiteflag authentication signature JSON schema."
             }
         },
         "/protocol/state.schema.json": {
             "get": {
-                "tags": [ "Protocol", "Static" ],
+                "tags": [ "Protocol" ],
                 "operationId": "getWFStateSchema",
                 "description": "Returns the Whiteflag API state JSON schema."
             }
         },
         "/icons/{icon}": {
             "get": {
-                "tags": [ "Icons", "Static" ],
+                "tags": [ "Icons" ],
                 "operationId": "getIcon",
                 "description": "Returns the requested icon corresponding with a message type."
             }
@@ -141,9 +149,7 @@
                         "$ref": "#/components/responses/error500"
                     }
                 }
-            }
-        },
-        "/messages/send": {
+            },
             "post": {
                 "tags": [ "Messages" ],
                 "description": "Transmits a Whiteflag message on a blockchain and returns the result. This operation may be disabled in the configuration.",
@@ -176,8 +182,30 @@
                 }
             }
         },
-        "/messages/receive": {
-            "post": {
+        "/messages/{transactionHash}": {
+            "get": {
+                "tags": [ "Messages" ],
+                "description": "Returns the specified message. This operation may be disabled in the configuration. This operation may be disabled in the configuration.",
+                "operationId": "getMessage",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessage"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/error404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            },
+            "put": {
                 "tags": [ "Messages" ],
                 "description": "Accepts a Whiteflag message as if received from a blockchain. This may be done for simulation of incoming messages or if a direct connection with a blockchain node is not possible. Typically only used for testing. This operation may be disabled in the configuration.",
                 "operationId": "receiveMessage",
@@ -202,93 +230,9 @@
                     },
                     "501": {
                         "$ref": "#/components/responses/error501"
-                    }
-                }
-            }
-        },
-        "/messages/encode": {
-            "post": {
-                "tags": [ "Messages" ],
-                "description": "Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages. This operation may be disabled in the configuration.",
-                "operationId": "encodeMessage",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/wfMessage"
-                },
-                "responses": {
-                    "200": {
-                        "$ref": "#/components/responses/wfMessage"
                     },
-                    "400": {
-                        "$ref": "#/components/responses/error400"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/error401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/error403"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/error500"
-                    },
-                    "501": {
-                        "$ref": "#/components/responses/error501"
-                    }
-                }
-            }
-        },
-        "/messages/decode": {
-            "post": {
-                "tags": [ "Messages" ],
-                "description": "Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.",
-                "operationId": "decodeMessage",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/wfMessageEncoded"
-                },
-                "responses": {
-                    "200": {
-                        "$ref": "#/components/responses/wfMessage"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/error400"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/error401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/error403"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/error500"
-                    },
-                    "501": {
-                        "$ref": "#/components/responses/error501"
-                    }
-                }
-            }
-        },
-        "/messages/validate": {
-            "post": {
-                "tags": [ "Messages" ],
-                "description": "Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages. This operation may be disabled in the configuration.",
-                "operationId": "validateMessage",
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/wfMessage"
-                },
-                "responses": {
-                    "200": {
-                        "$ref": "#/components/responses/wfMessages"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/error400"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/error401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/error403"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/error500"
+                    "503": {
+                        "$ref": "#/components/responses/error503"
                     }
                 }
             }
@@ -361,9 +305,96 @@
                 }
             }
         },
+        "/message/encode": {
+            "post": {
+                "tags": [ "Messages" ],
+                "description": "Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages. This operation may be disabled in the configuration.",
+                "operationId": "encodeMessage",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfMessage"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessage"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/error503"
+                    }
+                }
+            }
+        },
+        "/message/decode": {
+            "post": {
+                "tags": [ "Messages" ],
+                "description": "Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.",
+                "operationId": "decodeMessage",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfMessageEncoded"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessage"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/error503"
+                    }
+                }
+            }
+        },
+        "/message/validate": {
+            "post": {
+                "tags": [ "Messages" ],
+                "description": "Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages. This operation may be disabled in the configuration.",
+                "operationId": "validateMessage",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/wfMessage"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/wfMessage"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/error400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/error401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/error403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/error500"
+                    }
+                }
+            }
+        },
         "/blockchains": {
             "get": {
-                "tags": [ "Blockchains", "State" ],
+                "tags": [ "Blockchains" ],
                 "description": "Returns an array with the names of all blockchains, regardless of their current status. This operation may be disabled in the configuration.",
                 "operationId": "getAllBlockchains",
                 "responses": {
@@ -384,7 +415,7 @@
         },
         "/blockchains/{blockchain}": {
             "get": {
-                "tags": [ "Blockchains", "State" ],
+                "tags": [ "Blockchains" ],
                 "description": "Returns the configuration and status of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getBlockchainState",
                 "responses": {
@@ -408,7 +439,7 @@
         },
         "/blockchains/{blockchain}/scan": {
             "get": {
-                "tags": [ "Blockchains", "Messages" ],
+                "tags": [ "Blockchains" ],
                 "description": "Scans a range of blocks for Whiteflag messages. This operation may be disabled in the configuration.",
                 "operationId": "scanBlocks",
                 "parameters": [
@@ -430,13 +461,16 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/error500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/error503"
                     }
                 }
             }
         },
         "/blockchains/{blockchain}/accounts": {
             "get": {
-                "tags": [ "Blockchains", "Accounts", "State" ],
+                "tags": [ "Accounts" ],
                 "description": "Returns an array with all account addresses of the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "getAccounts",
                 "responses": {
@@ -458,7 +492,7 @@
                 }
             },
             "post": {
-                "tags": [ "Blockchains", "Accounts" ],
+                "tags": [ "Accounts" ],
                 "description": "Creates a new account for the specified blockchain. This operation may be disabled in the configuration.",
                 "operationId": "createAccount",
                 "requestBody": {
@@ -494,7 +528,7 @@
         },
         "/blockchains/{blockchain}/accounts/{account}": {
             "get": {
-                "tags": [ "Blockchains", "Accounts", "State" ],
+                "tags": [ "Accounts" ],
                 "description": "Returns the details of the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "getAccount",
                 "responses": {
@@ -516,7 +550,7 @@
                 }
             },
             "patch": {
-                "tags": [ "Blockchains", "Accounts" ],
+                "tags": [ "Accounts" ],
                 "description": "Updates or adds custom properties of the specified blockchain account. Please BE CAREFUL as all attributes can be changed, which may result in an unusable account. This operation may be disabled in the configuration.",
                 "operationId": "updateAccount",
                 "requestBody": {
@@ -547,7 +581,7 @@
                 }
             },
             "delete": {
-                "tags": [ "Blockchains", "Accounts" ],
+                "tags": [ "Accounts" ],
                 "description": "Deletes the specified blockchain account. Please BE CAREFUL as all blockchain data will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deleteAccount",
                 "responses": {
@@ -577,7 +611,7 @@
         },
         "/blockchains/{blockchain}/accounts/{account}/sign": {
             "post": {
-                "tags": [ "Blockchains", "Accounts", "Authentication" ],
+                "tags": [ "Accounts", "Authentication" ],
                 "description": "Signs a Whiteflag authentication payload for the blockchain address specified in the payload and returns the resulting signature to be used with authentication method 1. This signature should be made available on an internet resource to which an `A1` authentication message refers. This operation may be disabled in the configuration.",
                 "operationId": "createSignature",
                 "requestBody": {
@@ -613,7 +647,7 @@
         },
         "/blockchains/{blockchain}/accounts/{account}/transfer": {
             "post": {
-                "tags": [ "Blockchains", "Accounts" ],
+                "tags": [ "Accounts" ],
                 "description": "Transfers value to another blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "transferFunds",
                 "requestBody": {
@@ -709,7 +743,7 @@
         },
         "/originators": {
             "get": {
-                "tags": [ "Originators", "State" ],
+                "tags": [ "Originators" ],
                 "description": "Returns the details of all known Whiteflag originators.",
                 "operationId": "getAllOriginators",
                 "responses": {
@@ -730,7 +764,7 @@
         },
         "/originators/{address}": {
             "get": {
-                "tags": [ "Originators", "State" ],
+                "tags": [ "Originators" ],
                 "description": "Returns the details of the specified Whiteflag originator.",
                 "operationId": "getOriginator",
                 "responses": {
@@ -752,7 +786,7 @@
                 }
             },
             "patch": {
-                "tags": [ "Originators", "State" ],
+                "tags": [ "Originators" ],
                 "description": "Updates the details of the specified Whiteflag originator. Only the provided properties will be updated. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
                 "operationId": "updateOriginator",
                 "requestBody": {
@@ -771,7 +805,7 @@
                 }
             },
             "delete": {
-                "tags": [ "Originators", "State" ],
+                "tags": [ "Originators" ],
                 "description": "Deletes the specified Whiteflag originator. Please BE CAREFUL as this may result in loss of critical data such as cryptographic keys. This operation may be disabled in the configuration.",
                 "operationId": "deleteOriginator",
                 "responses": {
@@ -789,7 +823,7 @@
         },
         "/originators/{address}/psk/{account}": {
             "get": {
-                "tags": [ "Encryption", "Originators", "State" ],
+                "tags": [ "Encryption", "Originators" ],
                 "description": "Checks for existence of a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "getPreSharedKey",
                 "responses": {
@@ -811,7 +845,7 @@
                 }
             },
             "put": {
-                "tags": [ "Encryption", "Originators", "State" ],
+                "tags": [ "Encryption", "Originators" ],
                 "description": "Stores or updates a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. This operation may be disabled in the configuration.",
                 "operationId": "storePreSharedKey",
                 "requestBody": {
@@ -836,7 +870,7 @@
                 }
             },
             "delete": {
-                "tags": [ "Encryption", "Originators", "State" ],
+                "tags": [ "Encryption", "Originators" ],
                 "description": "Deletes a pre-shared secret encryption key for the specified Whiteflag originator to be used with the specified blockchain account. Please BE CAREFUL as the encryption key will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deletePreSharedKey",
                 "responses": {
@@ -858,9 +892,9 @@
                 }
             }
         },
-        "/originators/tokens": {
+        "/tokens": {
             "post": {
-                "tags": [ "Authentication", "Originators", "State" ],
+                "tags": [ "Authentication", "Originators" ],
                 "description": "Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, used for authentication method 2. This operation may be disabled in the configuration.",
                 "operationId": "storeAuthToken",
                 "requestBody": {
@@ -888,9 +922,9 @@
                 }
             }
         },
-        "/originators/tokens/{authTokenId}": {
+        "/tokens/{authTokenId}": {
             "get": {
-                "tags": [ "Authentication", "Originators", "State" ],
+                "tags": [ "Authentication", "Originators" ],
                 "description": "Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. This operation may be disabled in the configuration.",
                 "operationId": "getAuthToken",
                 "responses": {
@@ -912,7 +946,7 @@
                 }
             },
             "delete": {
-                "tags": [ "Authentication", "Originators", "State" ],
+                "tags": [ "Authentication", "Originators" ],
                 "description": "Deletes the pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. Please BE CAREFUL as the authentication token will be unrecoverably deleted. This operation may be disabled in the configuration.",
                 "operationId": "deleteAuthToken",
                 "responses": {
@@ -934,11 +968,11 @@
                 }
             }
         },
-        "/token/create": {
+        "/token/verify": {
             "post": {
                 "tags": [ "Authentication" ],
-                "description": "Creates the non-secret Whiteflag verification token for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.",
-                "operationId": "createToken",
+                "description": "Returns the non-secret Whiteflag verification data for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.",
+                "operationId": "verifyToken",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/wfAuthToken"
                 },

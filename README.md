@@ -135,35 +135,64 @@ found in `static/openapi.json`. The API definition is provided in human
 readible format at the root endpoint by the running API; just go to
 `http://localhost:5746/` with a browser.
 
-Some of the endpoint functionalities
-(see the API defintion for all details):
+The API has two sorts of operations: on collections and on singletons.
+An operation on a collection shows or changes the current state. For example,
+a GET request to `/orginators` provides the currenlty known origintaors,
+and a POST request to `/tokens` stores a token that will be used for
+authentication.
 
-### Messages
+An operation on a singleton returns a result for the provided input data, but
+does not change anything in the current state. For example, providing an
+encoded message to `/message/decode` returns a decoded message, but does
+not store or alter anything in the state.
 
-* `/messages`: endpoint to GET an array of all messages contained in the API database
-* `/messages/send`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
-* `/messages/receive`: endpoint to POST a new Whiteflag as if received the blockchain
-* `/messages/encode`: endpoint to POST a Whiteflag message to be encoded
-* `/messages/decode`: endpoint to POST a Whiteflag message to be decoded
-* `/messages/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
-* `/messages?transactionHash=<transaction hash>`: endpoint to GET a specific message by its transaction hash
+An global overview of the endpoints (see the API defintion for all details):
 
-### Blockchains
+### Collections
+
+#### Message resource operations
+
+* `/messages`: endpoint to GET all messages contained in the API database, or perform a query
+* `/messages`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
+* `/messages/{transactionHash}`: endpoint to GET or PUT a specific Whiteflag message in the API database
+
+#### Blockchain resource operations
 
 * `/blockchains`: endpoint to GET the current configuration and state of all blockchains
 * `/blockchains/{blockchain}`: endpoint to GET the configuration and state of the specified blockchain
+* `/blockchains/{blockchain}/scan?from={block}&to={block}`: endpoint to GET messages from a range of blocks
+
+#### Account resource operations
+
 * `/blockchains/{blockchain}/accounts`: endpoint to GET account details or POST a new blockchain account
 * `/blockchains/{blockchain}/accounts/{address}` endpoint to PATCH or DELETE to update or remove the specified blockchain account
 * `/blockchains/{blockchain}/accounts/{address}/sign`: endpoint to POST a payload to be signed as a Whiteflag authentication signature
 * `/blockchains/{blockchain}/accounts/{address}/transfer`: endpoint to POST a transaction to transfer value to another account
-* `/blockchains/{blockchain}/scan?from={block}&to={block}`: endpoint to GET messages from a range of blocks
 
-### Originators
+#### Originator resource operations
 
-* `/originators`: endpoint to GET the currently known originators
+* `/originators`: endpoint to GET all currently known originators
 * `/originators/{address}`: endpoint to GET details of the specified originator
 
-### Signature operations
+#### Token resource operations
+
+* `/tokens`: endpoint to GET all pre-shared authentication tokens
+* `/tokens`: endpoint to POST a pre-shared authentication token
+* `/tokens/{tokenId}`: endoint to GET or DELETE a pre-shared authentication token
+
+### Singletons
+
+#### Message operations
+
+* `/message/encode`: endpoint to POST a Whiteflag message to be encoded
+* `/message/decode`: endpoint to POST a Whiteflag message to be decoded
+* `/message/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
+
+#### Tokens operations
+
+* `/token/verify`: endpoint to POST a pre-shared authentication token to generate verification data
+
+#### Signature operations
 
 * `/signature/decode`: endpoint to POST a Whiteflag authentication signature to be decoded
 * `/signature/validate`: endpoint to POST a Whiteflag authentication signature to be validated
