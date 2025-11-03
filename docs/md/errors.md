@@ -36,7 +36,7 @@ with the folloing arguments:
 * `WF_API_NOT_ALLOWED`: the request is not allowed
 * `WF_API_NO_DATA`: the request did not return any (valid) data
 * `WF_API_NO_RESOURCE`: could not processess because resource does not exist
-* `WF_API_RESOURCE_CONFLICT`: could not process because resource alreasy exists
+* `WF_API_RESOURCE_CONFLICT`: could not process because the resource is in a conflicting state
 * `WF_API_NOT_IMPLEMENTED`: the function is not supported
 * `WF_API_NOT_AVAILABLE`: the function is currently not available
 

@@ -237,11 +237,11 @@
                 }
             }
         },
-        "/messages/references": {
+        "/references": {
             "get": {
                 "tags": [ "Messages" ],
                 "description": "Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.",
-                "operationId": "getMessageReferences",
+                "operationId": "getMsgReferences",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHashQuery" },
                     { "$ref": "#/components/parameters/blockchainQuery" }
@@ -271,11 +271,11 @@
                 }
             }
         },
-        "/messages/sequence": {
+        "/sequence": {
             "get": {
                 "tags": [ "Messages" ],
                 "description": "Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.",
-                "operationId": "getMessageSequence",
+                "operationId": "getMsgSequence",
                 "parameters": [
                     { "$ref": "#/components/parameters/transactionHashQuery" },
                     { "$ref": "#/components/parameters/blockchainQuery" }
