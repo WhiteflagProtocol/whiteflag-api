@@ -1,4 +1,6 @@
-# Whiteflag API Installation and Running
+# Installation and Running
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
 
 ## Prerequisites
 
@@ -41,7 +43,7 @@ the software before running.
 Using the `npm start` command in the deployment directory will start the
 Whiteflag API service.
 
-Creating a global link to the package will allow to start the Whiteflag API
+Creating a global link to the package will allow starting the Whiteflag API
 from the command line with a single command `wfapi`. Create the link with:
 
 ```shell
@@ -49,7 +51,7 @@ npm link
 ```
 
 Alternatively, a service may be created that starts the service at boot.
-An example `whiteflag-api.service` for linux systems using `systemctl` can be
+An example `whiteflag-api.service` for Linux systems using `systemctl` can be
 found in `etc/`. Enable and start the service with:
 
 ```shell

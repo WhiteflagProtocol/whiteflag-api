@@ -29,7 +29,7 @@ two methods are used:
 The current version is based on **v1-draft.6** of the Whiteflag protocol. The
 supported Whiteflag protocol features are described in `SCOPE.md`.
 
-Note that the Whiteflag API is a so called Minimum Viable Product (MVP).
+Note that the Whiteflag API is a so-called Minimum Viable Product (MVP).
 This means that it only supports the core features of the Whiteflag protocol
 and nothing more. As such, it serves as the reference implementation of the
 Whiteflag protocol, but it is not designed and tested for secure usage
@@ -37,7 +37,7 @@ and performance in a production environment.
 
 ## Documentation
 
-More detailed documentation of the API is available at [Github Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
+More detailed documentation of the API is available at [GitHub Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
 
 This documentation is also found in the markdown files in the `docs/`
 directory. When the API is running, the server will also provide the OpenAPI
@@ -53,7 +53,7 @@ under the [Creative Commons CC0-1.0 Universal Public Domain Dedication](http://c
 statement. See `LICENSE.md` for details.
 
 The Whiteflag API software requires third party software packages, which are
-not part of this distribution and may be licenced differently.
+not part of this distribution and may be licensed differently.
 
 ## Installation
 
@@ -67,7 +67,7 @@ is installed:
 Since version 1.0.1, the Whiteflag API has a lightweight embedded datastore,
 making MongoDB an optional dependency:
 
-* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only fullt tested with legacy [verson 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
+* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only fully tested with legacy [version 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
 
 ### Deployment and Testing
 
@@ -120,8 +120,8 @@ wfapi
 Using the `npm start` command in the deployment directory will also work.
 
 Alternatively, a service may be created. An example `whiteflag-api.service`
-for linux systems using `systemctl` cound be found in `etc/`. Enable the
-and start the service with:
+for Linux systems using `systemctl` can be found in `etc/`. Enable and start
+the service with:
 
 ```shell
 sudo systemctl enable ./etc/whiteflag-api.service
@@ -131,13 +131,13 @@ sudo service whiteflag-api start
 ## API Functionality
 
 The detailed [OpenAPI](https://swagger.io/specification/) definition can be
-found in `static/openapi.json`. The API definition is provided in human
-readible format at the root endpoint by the running API; just go to
+found in `static/openapi.json`. The API definition is provided in
+human-readable format at the root endpoint by the running API; just go to
 `http://localhost:5746/` with a browser.
 
 The API has two sorts of operations: on collections and on singletons.
 An operation on a collection shows or changes the current state. For example,
-a GET request to `/orginators` provides the currenlty known origintaors,
+a GET request to `/orginators` provides the currently known originators,
 and a POST request to `/tokens` stores a token that will be used for
 authentication.
 
@@ -146,7 +146,7 @@ does not change anything in the current state. For example, providing an
 encoded message to `/message/decode` returns a decoded message, but does
 not store or alter anything in the state.
 
-An global overview of the endpoints (see the API defintion for all details):
+A general overview of the endpoints (see the API definition for all details):
 
 ### Collections
 
@@ -178,7 +178,7 @@ An global overview of the endpoints (see the API defintion for all details):
 
 * `/tokens`: endpoint to GET all pre-shared authentication tokens
 * `/tokens`: endpoint to POST a pre-shared authentication token
-* `/tokens/{tokenId}`: endoint to GET or DELETE a pre-shared authentication token
+* `/tokens/{tokenId}`: endpoint to GET or DELETE a pre-shared authentication token
 
 ### Singletons
 

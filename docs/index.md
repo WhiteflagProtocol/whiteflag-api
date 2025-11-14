@@ -43,6 +43,6 @@ The Whiteflag Protocol and API specifications are also available at
 
 * [JavaScript Modules](md/modules.md)
 * [Logging](md/logging.md)
-* [Events](md/events.md)
+* [Events Handling](md/events.md)
 * [Error Handling](md/errors.md)
 * [Static Components](md/static.md)

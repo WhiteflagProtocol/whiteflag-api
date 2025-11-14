@@ -1,7 +1,11 @@
-# Whiteflag API JavaScript Modules
+# Modules
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Overview
 
 The Whiteflag API is written in JavaScript to run on [Node.js](https://nodejs.org/en/about/).
-The source code of the Whiteflag API is organised in modules. Each module
+The source code of the Whiteflag API is organized in modules. Each module
 corresponds with a `.js` source code file. The source code files / modules
 are structured in the following directory tree:
 
@@ -20,10 +24,10 @@ development guidelines for the source code.
 
 ## Main modules
 
-The main Whiteflag API module is `whiteflag.js`, which initialises all
+The main Whiteflag API module is `whiteflag.js`, which initializes all
 other main modules in `lib/`:
 
-* `config.js`: the module that reads the api configuration from `config/api.toml`
+* `config.js`: the module that reads the API configuration from `config/api.toml`
 * `server.js`: the module that opens the network connections and connects the routes and methods to the correct handlers in the endpoints modules
 * `blockchains.js`: the module that implements the blockchain abstraction layer, and handles all requests to the configured blockchains
 * `datastores.js`: the module that implements the datastores abstraction layer, and handles all requests to the configured databases
@@ -31,7 +35,7 @@ other main modules in `lib/`:
 ## Common modules
 
 Common modules in `lib/_common` are used for function and class definitions
-shared by multiple modules across the project. Common modules may not require
+shared by multiple modules across the project. These modules may not require
 other project modules outside `lib/_common` to function. Submodules may also
 have a `_common/` subdirectory, and a `_static/` subdirectory for static data.
 
@@ -46,7 +50,7 @@ methods.
 ## Protocol modules
 
 All Whiteflag protocol features and logic is implemented in the protocol
-modules in `lib/protocol`. The protocol implementation is described seperately
+modules in `lib/protocol`. The protocol implementation is described separately
 in [`protocol.md`](protocol.md).
 
 ## Blockchain modules
@@ -63,16 +67,16 @@ blockchain through the callback function is correct.
 A template for creating a new blockchain module to connect to a specific
 database is available with `lib/blockchains/static/blockchain.template.js`.
 Note that the function names in a blockchain module should reflect the function
-names in de main `blockchains.js` module.
+names in the main `blockchains.js` module.
 
-The configuration of the blcockchains and the blockchain modules can be found in
+The configuration of the blockchains and the blockchain modules can be found in
 `config/blockchains.toml`. This configuration file has a section `[[blockchains]]`
 for each blockchain.
 
 ## Datastore modules
 
 The datastore modules in lib/datastores implement the connections with the
-unbderlying blockchains. There is one module per supported datastore.
+underlying blockchains. There is one module per supported datastore.
 Functions in a specific datastore module are called by the main module
 `datastores.js`, which forms the datastore abstraction layer.
 
@@ -83,7 +87,7 @@ datastore through the callback function is correct.
 A template for creating a new datastore module to connect to a specific
 database is available with `lib/datastores/static/datastore.template.js`.
 Note that the function names in a datastore module should reflect the function
-names in de main `datastores.js` module.
+names in the main `datastores.js` module.
 
 The configuration of the datastores and the datastore modules can be found in
 `config/datastores.toml`. This configuration file has a section `[[databases]]`

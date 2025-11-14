@@ -1,4 +1,8 @@
-# Whiteflag API Protocol Implementation
+# Whiteflag Protocol Implementation
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Overview
 
 The Whiteflag protocol is implemented with a series of interdependent modules
 that can be found under `lib/protocol`. These modules are:
@@ -17,7 +21,7 @@ that can be found under `lib/protocol`. These modules are:
 |`management.js`      | Whiteflag protocol management message handler functions         |
 
 Protocol specific configuration parameters are in `whiteflag.toml` which can be
-found in the `config/` directory. Static protocol data, such as json schemas
+found in the `config/` directory. Static protocol data, such as JSON schemas
 can be found under `static/protocol/`.
 
 ## Message Format
@@ -40,7 +44,7 @@ messages.
 The references of Whiteflag messages are verified against the protocol
 specification by the `validation.js` module. To do this, the module first tries
 to retrieve the referenced message using the `retrieval.js` module, and then
-checks the refrenence against the Whiteflag message schema provided with the
+checks the reference against the Whiteflag message schema provided with the
 protocol. If the message reference is valid, the parameter `referenceValid` in
 the metaheader is set to true, and otherwise to `false`.
 
@@ -73,7 +77,7 @@ should not be done for operational use.
 The originator of certain message types cannot be verified, and originator
 verification of those message is therefore always skipped:
 
-* `A1` and `A2` messages, which are self-authenticing
+* `A1` and `A2` messages, which are self-authenticating
 
 ## Handling of Management Messages
 
@@ -85,13 +89,13 @@ The handling of management messages is done by `management.js`. This includes:
 * automatic generation and transmission of messages as required by the
   protocol specification.
 
-Specifically, this inludes:
+Specifically, this includes:
 
 * authentication of originators upon reception of authentication messages
 * automatically sending ECDH public keys after an own authentication message
 * processing received ECDH public keys to compute shared secret
-* automatically sending initialisation vectors with encrypted messages
-* processing received initialisation vectors
+* automatically sending initialization vectors with encrypted messages
+* processing received initialization vectors
 
 ## Authentication
 
@@ -110,11 +114,11 @@ the `state.js` module.
 
 The `codec.js` module always passes outgoing and incoming message to the
 `crypto.js` module for encryption and decryption. If no encryption or
-decrytpion is required, i.e. when the `EncryptionIndicator` in the message
+decryption is required, i.e. when the `EncryptionIndicator` in the message
 header is set to `0`, the `crypto.js` just passes the message to the
 callback.
 
-If the encyrption indicator is set to a valid value, the crypto module encrypts
+If the encryption indicator is set to a valid value, the crypto module encrypts
 or decrypts the message. The `recipientAddress` in the `MetaHeader` is used to
 determine which encryption secret is to be used as input key material:
 
@@ -127,9 +131,9 @@ authentication message is encrypted or sent under duress. The module also
 handles incoming ECDH public keys.
 
 The API has an endpoint to provide a pre-shared secret key for each originator.
-Instead of specifing the recipient in the metaheader, the pre-shared key for
+Instead of specifying the recipient in the metaheader, the pre-shared key for
 method 2 may also be provided with the `encryptionKeyInput` in the metaheader,
 or otherwise the default key in `config/whiteflag.toml` is used.
 
-The `management.js` module automatically sends initialisation vectors with
-encrypted messages and also manages incoming initialisation vectors.
+The `management.js` module automatically sends initialization vectors with
+encrypted messages and also manages incoming initialization vectors.

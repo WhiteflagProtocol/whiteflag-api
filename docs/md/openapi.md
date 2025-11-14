@@ -1,5 +1,5 @@
 ---
-title: Whiteflag API v1.1.0
+title: Whiteflag API v1.2.0-dev
 language_tabs:
   - shell: Shell
   - http: HTTP
@@ -19,7 +19,7 @@ headingLevel: 2
 
 <!-- Generator: Widdershins v4.0.1 -->
 
-<h1 id="whiteflag-api">Whiteflag API v1.1.0</h1>
+<h1 id="whiteflag-api">Whiteflag API v1.2.0-dev</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -134,7 +134,7 @@ HTTP Authentication
 
 <a id="opIdsendMessage"></a>
 
-`POST /messages/send`
+`POST /messages`
 
 Transmits a Whiteflag message on a blockchain and returns the result. This operation may be disabled in the configuration.
 
@@ -205,11 +205,68 @@ To perform this operation, you must be authenticated by means of one of the foll
 HTTP Authentication
 </aside>
 
+## getMessage
+
+<a id="opIdgetMessage"></a>
+
+`GET /messages/{transactionHash}`
+
+Returns the specified message. This operation may be disabled in the configuration. This operation may be disabled in the configuration.
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": {
+    "MetaHeader": null,
+    "MessageHeader": null,
+    "MessageBody": null
+  }
+}
+```
+
+<h3 id="getmessage-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed the Whiteflag message and returning the message with updated MetaHeader|Inline|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="getmessage-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
 ## receiveMessage
 
 <a id="opIdreceiveMessage"></a>
 
-`POST /messages/receive`
+`PUT /messages/{transactionHash}`
 
 Accepts a Whiteflag message as if received from a blockchain. This may be done for simulation of incoming messages or if a direct connection with a blockchain node is not possible. Typically only used for testing. This operation may be disabled in the configuration.
 
@@ -269,8 +326,145 @@ Accepts a Whiteflag message as if received from a blockchain. This may be done f
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 |501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="receivemessage-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
+## getMsgReferences
+
+<a id="opIdgetMsgReferences"></a>
+
+`GET /references`
+
+Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.
+
+<h3 id="getmsgreferences-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|transactionHash|query|string|false|The hash of a blockchain transaction|
+|blockchain|query|string|false|The name of a blockchain|
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": [
+    {
+      "MetaHeader": null,
+      "MessageHeader": null,
+      "MessageBody": null
+    }
+  ]
+}
+```
+
+<h3 id="getmsgreferences-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="getmsgreferences-responseschema">Response Schema</h3>
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+HTTP Authentication
+</aside>
+
+## getMsgSequence
+
+<a id="opIdgetMsgSequence"></a>
+
+`GET /sequence`
+
+Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.
+
+<h3 id="getmsgsequence-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|transactionHash|query|string|false|The hash of a blockchain transaction|
+|blockchain|query|string|false|The name of a blockchain|
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "meta": {
+    "additionalProperties": null,
+    "operationId": "string",
+    "request": {
+      "client": "string",
+      "method": "string",
+      "endpoint": "string"
+    },
+    "info": [
+      "string"
+    ],
+    "warnings": [
+      "string"
+    ],
+    "errors": [
+      "string"
+    ]
+  },
+  "data": [
+    {
+      "MetaHeader": null,
+      "MessageHeader": null,
+      "MessageBody": null
+    }
+  ]
+}
+```
+
+<h3 id="getmsgsequence-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
+
+<h3 id="getmsgsequence-responseschema">Response Schema</h3>
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -281,7 +475,7 @@ HTTP Authentication
 
 <a id="opIdencodeMessage"></a>
 
-`POST /messages/encode`
+`POST /message/encode`
 
 Encodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for outgoing messages. This operation may be disabled in the configuration.
 
@@ -342,7 +536,7 @@ Encodes a Whiteflag message and returns the result. Typically used for validatio
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
-|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="encodemessage-responseschema">Response Schema</h3>
 
@@ -355,7 +549,7 @@ HTTP Authentication
 
 <a id="opIddecodeMessage"></a>
 
-`POST /messages/decode`
+`POST /message/decode`
 
 Decodes a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming messages. This operation may be disabled in the configuration.
 
@@ -414,7 +608,7 @@ Decodes a Whiteflag message and returns the result. Typically used for validatio
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
-|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="decodemessage-responseschema">Response Schema</h3>
 
@@ -427,7 +621,7 @@ HTTP Authentication
 
 <a id="opIdvalidateMessage"></a>
 
-`POST /messages/validate`
+`POST /message/validate`
 
 Validates the format and reference of a Whiteflag message and returns the result. Typically used for validation and testing, because this is automatically done for incoming and outgoing messages. This operation may be disabled in the configuration.
 
@@ -471,13 +665,11 @@ Validates the format and reference of a Whiteflag message and returns the result
       "string"
     ]
   },
-  "data": [
-    {
-      "MetaHeader": null,
-      "MessageHeader": null,
-      "MessageBody": null
-    }
-  ]
+  "data": {
+    "MetaHeader": null,
+    "MessageHeader": null,
+    "MessageBody": null
+  }
 }
 ```
 
@@ -485,149 +677,13 @@ Validates the format and reference of a Whiteflag message and returns the result
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed the Whiteflag message and returning the message with updated MetaHeader|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="validatemessage-responseschema">Response Schema</h3>
-
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-HTTP Authentication
-</aside>
-
-## getMessageReferences
-
-<a id="opIdgetMessageReferences"></a>
-
-`GET /messages/references`
-
-Returns an array of all Whiteflag messages referencing the message with the given transaction hash. This operation may be disabled in the configuration.
-
-<h3 id="getmessagereferences-parameters">Parameters</h3>
-
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|transactionHash|query|string|false|The hash of a blockchain transaction|
-|blockchain|query|string|false|The name of a blockchain|
-
-> Example responses
-
-> 200 Response
-
-```json
-{
-  "meta": {
-    "additionalProperties": null,
-    "operationId": "string",
-    "request": {
-      "client": "string",
-      "method": "string",
-      "endpoint": "string"
-    },
-    "info": [
-      "string"
-    ],
-    "warnings": [
-      "string"
-    ],
-    "errors": [
-      "string"
-    ]
-  },
-  "data": [
-    {
-      "MetaHeader": null,
-      "MessageHeader": null,
-      "MessageBody": null
-    }
-  ]
-}
-```
-
-<h3 id="getmessagereferences-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
-|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
-
-<h3 id="getmessagereferences-responseschema">Response Schema</h3>
-
-<aside class="warning">
-To perform this operation, you must be authenticated by means of one of the following methods:
-HTTP Authentication
-</aside>
-
-## getMessageSequence
-
-<a id="opIdgetMessageSequence"></a>
-
-`GET /messages/sequence`
-
-Returns an array with the Whiteflag messages in a sequence starting with the message with the given transaction hash. This operation may be disabled in the configuration.
-
-<h3 id="getmessagesequence-parameters">Parameters</h3>
-
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|transactionHash|query|string|false|The hash of a blockchain transaction|
-|blockchain|query|string|false|The name of a blockchain|
-
-> Example responses
-
-> 200 Response
-
-```json
-{
-  "meta": {
-    "additionalProperties": null,
-    "operationId": "string",
-    "request": {
-      "client": "string",
-      "method": "string",
-      "endpoint": "string"
-    },
-    "info": [
-      "string"
-    ],
-    "warnings": [
-      "string"
-    ],
-    "errors": [
-      "string"
-    ]
-  },
-  "data": [
-    {
-      "MetaHeader": null,
-      "MessageHeader": null,
-      "MessageBody": null
-    }
-  ]
-}
-```
-
-<h3 id="getmessagesequence-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully processed Whiteflag message query or blockchain scan and returning an array of messages|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request, typically because of a malformed syntax or protocol error|[responseBodyErrors](#schemaresponsebodyerrors)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Authentication is required and was either not provided or has failed|[responseBodyErrors](#schemaresponsebodyerrors)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
-|501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
-
-<h3 id="getmessagesequence-responseschema">Response Schema</h3>
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -803,6 +859,7 @@ Scans a range of blocks for Whiteflag messages. This operation may be disabled i
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Request is not allowed, typically because the operation is disabled in the configuration|[responseBodyErrors](#schemaresponsebodyerrors)|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Requested resource not found or no data available|[responseBodyErrors](#schemaresponsebodyerrors)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal error preventing the running API instance to process the request|[responseBodyErrors](#schemaresponsebodyerrors)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
 <h3 id="scanblocks-responseschema">Response Schema</h3>
 
@@ -810,6 +867,10 @@ Scans a range of blocks for Whiteflag messages. This operation may be disabled i
 To perform this operation, you must be authenticated by means of one of the following methods:
 HTTP Authentication
 </aside>
+
+<h1 id="whiteflag-api-accounts">Accounts</h1>
+
+Endpoints for operations related to a specific blockchain accounts, such as creating, updating and deleting accounts.
 
 ## getAccounts
 
@@ -1373,7 +1434,7 @@ HTTP Authentication
 
 <a id="opIdstoreAuthToken"></a>
 
-`POST /originators/tokens`
+`POST /tokens`
 
 Stores a unique pre-shared secret authentication token together with the provided Whiteflag originator data, used for authentication method 2. This operation may be disabled in the configuration.
 
@@ -1448,7 +1509,7 @@ HTTP Authentication
 
 <a id="opIdgetAuthToken"></a>
 
-`GET /originators/tokens/{authTokenId}`
+`GET /tokens/{authTokenId}`
 
 Checks for the existence of a pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. This operation may be disabled in the configuration.
 
@@ -1501,7 +1562,7 @@ HTTP Authentication
 
 <a id="opIddeleteAuthToken"></a>
 
-`DELETE /originators/tokens/{authTokenId}`
+`DELETE /tokens/{authTokenId}`
 
 Deletes the pre-shared secret authentication token and originator data with the specified token id. This data is used for authentication method 2. Please BE CAREFUL as the authentication token will be unrecoverably deleted. This operation may be disabled in the configuration.
 
@@ -1550,13 +1611,13 @@ To perform this operation, you must be authenticated by means of one of the foll
 HTTP Authentication
 </aside>
 
-## createToken
+## verifyToken
 
-<a id="opIdcreateToken"></a>
+<a id="opIdverifyToken"></a>
 
-`POST /token/create`
+`POST /token/verify`
 
-Creates the non-secret Whiteflag verification token for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.
+Returns the non-secret Whiteflag verification data for the provided pre-shared secret authentication token used for authentication method 2. The verification token is to be used in, or to validate, the `VerificationData` field of an `A2` authentication message. This operation may be disabled in the configuration.
 
 > Body parameter
 
@@ -1568,7 +1629,7 @@ Creates the non-secret Whiteflag verification token for the provided pre-shared 
 }
 ```
 
-<h3 id="createtoken-parameters">Parameters</h3>
+<h3 id="verifytoken-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -1607,7 +1668,7 @@ Creates the non-secret Whiteflag verification token for the provided pre-shared 
 }
 ```
 
-<h3 id="createtoken-responses">Responses</h3>
+<h3 id="verifytoken-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -1619,7 +1680,7 @@ Creates the non-secret Whiteflag verification token for the provided pre-shared 
 |501|[Not Implemented](https://tools.ietf.org/html/rfc7231#section-6.6.2)|Function not implemented, such as a missing protocol feature or not implemented blockchain|[responseBodyErrors](#schemaresponsebodyerrors)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|Function currently not available, such as unavailable blockchain connection|[responseBodyErrors](#schemaresponsebodyerrors)|
 
-<h3 id="createtoken-responseschema">Response Schema</h3>
+<h3 id="verifytoken-responseschema">Response Schema</h3>
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2082,6 +2143,8 @@ HTTP Authentication
 
 <h1 id="whiteflag-api-protocol">Protocol</h1>
 
+Endpoints for protocol and data specifications.
+
 ## getWFStandard
 
 <a id="opIdgetWFStandard"></a>
@@ -2173,6 +2236,8 @@ HTTP Authentication
 </aside>
 
 <h1 id="whiteflag-api-icons">Icons</h1>
+
+Endpoints for retrieving icons corresponding with various Whiteflag signs and signals.
 
 ## getIcon
 

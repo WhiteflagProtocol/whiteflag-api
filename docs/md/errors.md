@@ -1,4 +1,8 @@
-# Whiteflag API Error Handling
+# Error Handling
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Description
 
 In addition to the standard Node.js JavaScript `Error` class, two additional
 classes are exposed by `lib/common/errors.js` to handle processing and protocol
@@ -23,10 +27,10 @@ err = new ProcessingError(message, causes, code);
 err = new ProtocolError(message, causes, code);
 ```
 
-with the folloing arguments:
+with the following arguments:
 
-* `message` is similar to the property of the generic Error class, i.e. a string with a human readable description of the error
-* `causes` is an additional property in the form of an array that may contain a human readable stack of underlying causes
+* `message` is similar to the property of the generic Error class, i.e. a string with a human-readable description of the error
+* `causes` is an additional property in the form of an array that may contain a human-readable stack of underlying causes
 * `code` is a property of type string, identifying the type of error as described below for both classes
 
 ### `ProcessingError` class error codes
@@ -35,7 +39,7 @@ with the folloing arguments:
 * `WF_API_BAD_REQUEST`: the request was incomplete or incorrect syntax
 * `WF_API_NOT_ALLOWED`: the request is not allowed
 * `WF_API_NO_DATA`: the request did not return any (valid) data
-* `WF_API_NO_RESOURCE`: could not processess because resource does not exist
+* `WF_API_NO_RESOURCE`: could not process because resource does not exist
 * `WF_API_RESOURCE_CONFLICT`: could not process because the resource is in a conflicting state
 * `WF_API_NOT_IMPLEMENTED`: the function is not supported
 * `WF_API_NOT_AVAILABLE`: the function is currently not available

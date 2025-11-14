@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: operations/singletons.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: operations/singletons.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module lib/operations/singletons
+ * @summary Whiteflag API messages endpoints handler module
+ * @description Module with api messages endpoint handlers
+ * @tutorial modules
+ * @tutorial openapi
+ */
+module.exports = {
+    validateMessage,
+    encodeMessage,
+    decodeMessage,
+    decodeSignature,
+    verifySignature,
+    verifyToken
+};
+
+/* Common internal functions and classes */
+const arr = require('../_common/arrays');
+const jws = require('../_common/jws');
+const { ProcessingError } = require('../_common/errors');
+const { createBody,
+        addRelatedResource,
+        addMessageData,
+        sendImperative,
+        sendIndicative } = require('./_common/response');
+
+/* Whiteflag modules */
+const wfAuthenticate = require('../protocol/authenticate');
+const wfBlockchains = require('../blockchains');
+const wfReference = require('../protocol/references');
+const wfCodec = require('../protocol/codec');
+
+/* Module constants */
+const R_MESSAGE = 'message';
+const R_SIGNATURE = 'signature';
+const R_TOKEN = 'token';
+
+/* MAIN MODULE FUNCTIONS */
+/**
+ * Encodes a Whiteflag message
+ * @function encodeMessage
+ * @alias module:lib/operations/singletons.encodeMessage
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function encodeMessage(req, res, operationId, callback) {
+    const wfMessage = req.body;
+    wfCodec.encode(wfMessage, function opsEncodeCb(err, wfMessage) {
+        // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_MESSAGE);
+        if (!err) resBody.meta = addMessageData(wfMessage, resBody.meta);
+
+        // Send response using common endpoint response function
+        return sendImperative(res, err, resBody, wfMessage, callback);
+    });
+}
+
+/**
+ * Decodes a Whiteflag message
+ * @function decodeMessage
+ * @alias module:lib/operations/singletons.decodeMessage
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function decodeMessage(req, res, operationId, callback) {
+    // Do not complain if plain metaheader provided
+    let wfMessage = {};
+    if (Object.hasOwn(req.body, 'MetaHeader')) {
+        wfMessage = req.body;
+    } else {
+        wfMessage.MetaHeader = req.body;
+    }
+    wfCodec.decode(wfMessage, function opsDecodeCb(err, wfMessage, ivMissing) {
+        // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_MESSAGE);
+
+        // Check for missing decryption key
+        if (err?.code === 'WF_ENCRYPTION_ERROR' &amp;&amp; !wfMessage.MetaHeader.encryptionKeyInput) {
+            err = new ProcessingError('Could not decrypt message', [ 'Encryption key input is missing', err.message ], 'WF_API_BAD_REQUEST');
+        }
+        // Check for missing intitialisation vector
+        if (!err &amp;&amp; ivMissing) {
+            err = new ProcessingError('Could not decrypt message', [ 'Initialisation vector is missing' ], 'WF_API_BAD_REQUEST');
+        }
+        // Add message info to meta data
+        if (!err) resBody.meta = addMessageData(wfMessage, resBody.meta);
+
+        // Send response using common endpoint response function
+        return sendImperative(res, err, resBody, wfMessage, callback);
+    });
+}
+
+/**
+ * Checks whether a Whiteflag message is valid
+ * @function validateMessage
+ * @alias module:lib/operations/singletons.validateMessage
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function validateMessage(req, res, operationId, callback) {
+    const wfMessage = req.body;
+    wfCodec.verifyFormat(wfMessage, function opsVerifyFormatCb(err, wfMessage) {
+        // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_MESSAGE);
+        if (err) return sendIndicative(res, err, resBody, wfMessage, callback);
+
+        // Verify message reference
+        wfReference.verify(wfMessage, function opsVerifyReferenceCb(err, wfMessage) {
+            if (!err) resBody.meta = addMessageData(wfMessage, resBody.meta);
+            return sendIndicative(res, err, resBody, wfMessage, callback);
+        });
+    });
+}
+
+/**
+ * Decodes a Whiteflag authentication signature
+ * @function decodeSignature
+ * @alias module:lib/operations/singletons.decode
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function decodeSignature(req, res, operationId, callback) {
+    let wfSignature = {};
+    // If extended signature, extract signature without complaining
+    if (Object.hasOwn(req.body, 'jws')) {
+        wfSignature = req.body.jws;
+    } else {
+        wfSignature = req.body;
+    }
+    /**
+     * @callback endpointSignatureDecodeCb
+     * @param {Error} err any error
+     * @param {wfSignDecoded} wfSignDecoded the decoded signature
+     */
+    wfAuthenticate.decodeSignature(wfSignature, function opsSignatureDecodeCb(err, wfSignDecoded) {
+        // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_SIGNATURE);
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !wfSignDecoded) err = new Error('Decoded signature is empty');
+        if (!err) {
+            resBody.meta = addRelatedResource(null, null, wfSignDecoded.payload.addr, resBody.meta);
+            resBody.meta.info = arr.addItem(resBody.meta.info, `Decoded Whiteflag authentication signature`);
+        }
+        return sendIndicative(res, err, resBody, wfSignDecoded, callback);
+    });
+}
+
+/**
+ * Verifies a Whiteflag authentication signature
+ * @function verifySignature
+ * @alias module:lib/operations/singletons.verify
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function verifySignature(req, res, operationId, callback) {
+    const wfExtSignature = req.body;
+    /**
+     * @callback endpointSignatureVerifyCb
+     * @param {Error} err any error
+     * @param {wfSignDecoded} wfSignDecoded the verified signature
+     */
+    wfAuthenticate.verifySignature(wfExtSignature, function opsSignatureVerifyCb(err, wfSignDecoded) {
+        // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_SIGNATURE);
+
+        // Send response using common endpoint response function
+        if (!err &amp;&amp; !wfSignDecoded) err = new Error('Verified signature is empty');
+        if (!err) {
+            resBody.meta = addRelatedResource(wfExtSignature.blockchain, null, wfSignDecoded.payload.addr, resBody.meta);
+            resBody.meta.info = arr.addItem(resBody.meta.info, `Verified Whiteflag authentication signature`);
+        }
+        return sendIndicative(res, err, resBody, wfSignDecoded, callback);
+    });
+}
+
+/**
+ * Returns verification data for a Whiteflag authentication token
+ * @function verifyToken
+ * @alias module:lib/operations/singletons.verifyToken
+ * @param {Object} req the http request
+ * @param {Object} res the http response
+ * @param {string} operationId the operation id as defined in the openapi definition
+ * @param {logEndpointEventCb} callback
+ */
+function verifyToken(req, res, operationId, callback) {
+    let resBody = createBody(req, operationId, R_TOKEN);
+    let resData = {};
+
+    let errors = [];
+    if (!req.body.blockchain) errors.push('No blockchain provided');
+    if (!req.body.address) errors.push('No blockchain account address provided');
+    if (!req.body.secret) errors.push('No authentication token provided');
+    if (errors.length > 0) {
+        let err = new ProcessingError('Invalid authentication token data', errors, 'WF_API_BAD_REQUEST');
+        return sendImperative(res, err, resBody, resData, callback);
+    }
+    wfBlockchains.getBinaryAddress(req.body.address, req.body.blockchain, function opsGetNinaryAddressCb(err, addressBuffer) {
+        if (!err &amp;&amp; !addressBuffer) {
+            err = new Error('Could not obtain binary representation of address');
+            return sendImperative(res, err, resBody, resData, callback);
+        }
+        if (addressBuffer) resData.binaryAddress = addressBuffer.toString('hex').toLowerCase();
+
+        wfAuthenticate.generateToken(req.body.secret, req.body.address, req.body.blockchain, function opsBlockchainsTokenCb(err, token) {
+            // Send response using common endpoint response function
+            if (!err &amp;&amp; !token) err = new Error('Could not obtain valid token for address');
+            if (!err) {
+                resBody.meta = addRelatedResource(req.body.blockchain, null, req.body.address, resBody.meta);
+                resData.VerificationData = token;
+                if (!err &amp;&amp; token) resBody.meta.info = arr.addItem(resBody.meta.info, `Verificaton data for a Whiteflag authentication token`);
+            }
+            return sendImperative(res, err, resBody, resData, callback);
+        });
+    });
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 23 2025 23:01:54 GMT+0100 (Central European Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

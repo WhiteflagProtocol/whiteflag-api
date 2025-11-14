@@ -1,28 +1,30 @@
-# Whiteflag API Connector for Bitcoin
+# Connector for Bitcoin
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Blockchain specifications
+
+**NOTE** - *The Bitcoin module needs updating.*
 
 The Whiteflag API natively supports the [Bitcoin](https://bitcoin.org/)
 blockchain.
 
-**NOTE** - *The Bitcoin module needs updating.*
-
-## Blockchain specifications
-
-|                               |             |
-|-------------------------------|-------------|
-| Whiteflag message embedding:  | `OP_RETURN` |
-| Script for address derivation | `P2PKH`     |
-| Maximum message length:       | 80 bytes    |
-| Signature algorithm:          | ECDSA secp256k1 |
+|                               |                            |
+|-------------------------------|----------------------------|
+| Whiteflag message embedding:  | `OP_RETURN`                |
+| Script for address derivation | `P2PKH`                    |
+| Maximum message length:       | 80 bytes                   |
+| Signature algorithm:          | ECDSA secp256k1            |
 | Transaction hash:             | 256 bits (64 hexadecimals) |
 | Secret for account creation:  | Wallet Import Format (WIF) |
 
-Note that curve `secp256k1` for the ECDSA signature algorthm is officially not
-specified to be used with JWS for Whiteflag authentication method 1. Instead,
-the JWS specification in [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518)
+Note that curve `secp256k1` for the ECDSA signature algorithm is officially
+not specified to be used with JWS for Whiteflag authentication method 1.
+Instead, the JWS specification in [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518)
 requires curve `secp256r1` a.k.a. `prime256v1`. However, Whiteflag is using
 JSON Web Tokens just as a structure. For Whiteflag authentication method 1 to
-work, it is essential that the key pair and curve of the blockchain is used for
-the signature to prove possession of the associated secret key.
+work, it is essential that the key pair and curve of the blockchain is used
+for the signature to prove possession of the associated secret key.
 See also [Issue 28](https://github.com/WhiteflagProtocol/whiteflag-api/issues/28).
 
 ## Accounts
@@ -36,7 +38,7 @@ is referred to as a "wallet".
 
 For the purposes of (testing) Whiteflag, the same account, i.e. Bitcoin
 address, is reused. This is not a good practice for several reasons, such as
-anonimity. However, for Whiteflag it is necessary that different transactions
+anonymity. However, for Whiteflag it is necessary that different transactions
 can be linked to the same originator. Therefore, it is strongly recommended
 NOT to use the Whiteflag account for anything else, such as payments or
 transfers.
@@ -48,7 +50,7 @@ the Bitcoin specific parameters in one of its `[[blockchains]]` sections.
 
 * `name`: the name according to the naming convention: `{name}-{network}`, e.g. `bitcoin-main` or `bitcoin-testnet`
 * `module`: the Bitcoin module in `lib/blockchains`, which should be "bitcoin"
-* `testnet`: whether the Bitcoin testnet is used insted of the main network
+* `testnet`: whether the Bitcoin testnet is used instead of the main network
 * `active`: whether the blockchain is active or should be ignored
 
 These parameters manage Bitcoin blockchain accounts (i.e. wallets):
@@ -58,14 +60,14 @@ These parameters manage Bitcoin blockchain accounts (i.e. wallets):
 For retrieving transactions containing Whiteflag messages from the blockchain,
 these parameters may be provided, otherwise default values are used:
 
-* `blockRetrievalInterval`: the time in milliseconds before the Bitcoin listener tries to retireve the next block; the default is `60000` ms
+* `blockRetrievalInterval`: the time in milliseconds before the Bitcoin listener tries to retrieve the next block; the default is `60000` ms
 * `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API resumes a number of blocks before the highest block as configured below
 * `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the highest block on the node
 * `blockRetrievalRestart`: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period
 * `blockMaxRetries`: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is `0`, which means unlimited retries
 * `transactionBatchSize`: how many transactions from a single block the API may process in parallel; default is `128`
-* `transactionFee`: the (minimum) value of a transaction fee when sending a Whiteflag message, used if the fee cannot be estimated or if the estimated fee is lower; default is 1000 satoshis
-* `transactionPriority`: the priority used to estimate the transaction fee and defined by the number of blocks by which confirmation is desired: `1` is highest priority, but also a higher transaction fee, if `0` the fixed transaction fee is used
+* `transactionFee`: the (minimum) value of a transaction fee when sending a Whiteflag message, used if the fee cannot be estimated or if the estimated fee is lower; default is 1000 Satoshi
+* `transactionPriority`: the priority used to estimate the transaction fee and defined by the number of blocks by which confirmation is desired: `1` is the highest priority, but also a higher transaction fee; if `0` the fixed transaction fee is used
 * `traceRawTransaction`: whether to show each individual transaction when the loglevel is set to `6` (trace); default is `false` because this results in massive logging
 
 To send and receive Whiteflag messages, the API must be connected to a Bitcoin
