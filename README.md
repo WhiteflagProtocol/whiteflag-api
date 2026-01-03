@@ -29,15 +29,21 @@ two methods are used:
 The current version is based on **v1-draft.6** of the Whiteflag protocol. The
 supported Whiteflag protocol features are described in `SCOPE.md`.
 
-Note that the Whiteflag API is a so called Minimum Viable Product (MVP).
-This means that it only supports the core features of the Whiteflag protocol
-and nothing more. As such, it serves as the reference implementation of the
-Whiteflag protocol, but it is not designed and tested for secure usage
+Note that the Whiteflag API is a so-called Minimum Viable Product (MVP).
+This means that it only supports the development and testing of the
+Whiteflag protocol. It currently still serves as the reference implementation
+of the protocol, but it is not designed and tested for secure usage
 and performance in a production environment.
+
+Starting from version 1.3.0, the API will be gradually refactored. All
+protocol functionality will be transferred to the [Whiteflag JavaScript Library (WFJSL)](https://js.whiteflagprotocol.org/),
+which will become the new reference implementation. The WFJSL is available as
+an [NPM package](https://www.npmjs.com/package/@whiteflagprotocol/main)
+and will be added to this project as a dependency.
 
 ## Documentation
 
-More detailed documentation of the API is available at [Github Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
+More detailed documentation of the API is available at [GitHub Pages](https://whiteflagprotocol.github.io/whiteflag-api/)
 
 This documentation is also found in the markdown files in the `docs/`
 directory. When the API is running, the server will also provide the OpenAPI
@@ -53,7 +59,7 @@ under the [Creative Commons CC0-1.0 Universal Public Domain Dedication](http://c
 statement. See `LICENSE.md` for details.
 
 The Whiteflag API software requires third party software packages, which are
-not part of this distribution and may be licenced differently.
+not part of this distribution and may be licensed differently.
 
 ## Installation
 
@@ -67,7 +73,7 @@ is installed:
 Since version 1.0.1, the Whiteflag API has a lightweight embedded datastore,
 making MongoDB an optional dependency:
 
-* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only fullt tested with legacy [verson 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
+* [MongoDB](https://www.mongodb.com/what-is-mongodb), currently only fully tested with legacy [version 3.6](https://www.mongodb.com/evolved#mdbthreesix), but higher versions seem to work as well
 
 ### Deployment and Testing
 
@@ -120,8 +126,8 @@ wfapi
 Using the `npm start` command in the deployment directory will also work.
 
 Alternatively, a service may be created. An example `whiteflag-api.service`
-for linux systems using `systemctl` cound be found in `etc/`. Enable the
-and start the service with:
+for Linux systems using `systemctl` can be found in `etc/`. Enable and start
+the service with:
 
 ```shell
 sudo systemctl enable ./etc/whiteflag-api.service
@@ -131,39 +137,69 @@ sudo service whiteflag-api start
 ## API Functionality
 
 The detailed [OpenAPI](https://swagger.io/specification/) definition can be
-found in `static/openapi.json`. The API definition is provided in human
-readible format at the root endpoint by the running API; just go to
+found in `static/openapi.json`. The API definition is provided in
+human-readable format at the root endpoint by the running API; just go to
 `http://localhost:5746/` with a browser.
 
-Some of the endpoint functionalities
-(see the API defintion for all details):
+The API has two sorts of operations: on collections and on singletons.
+An operation on a collection shows or changes the current state. For example,
+a GET request to `/orginators` provides the currently known originators,
+and a POST request to `/tokens` stores a token that will be used for
+authentication.
 
-### Messages
+An operation on a singleton returns a result for the provided input data, but
+does not change anything in the current state. For example, providing an
+encoded message to `/message/decode` returns a decoded message, but does
+not store or alter anything in the state.
 
-* `/messages`: endpoint to GET an array of all messages contained in the API database
-* `/messages/send`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
-* `/messages/receive`: endpoint to POST a new Whiteflag as if received the blockchain
-* `/messages/encode`: endpoint to POST a Whiteflag message to be encoded
-* `/messages/decode`: endpoint to POST a Whiteflag message to be decoded
-* `/messages/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
-* `/messages?transactionHash=<transaction hash>`: endpoint to GET a specific message by its transaction hash
+A general overview of the endpoints since version 1.2.0
+(see the API definition for all details):
 
-### Blockchains
+### Collections
+
+#### Message resource operations
+
+* `/messages`: endpoint to GET all messages contained in the API database, or perform a query
+* `/messages`: endpoint to POST a new Whiteflag message to be transmitted on the blockchain
+* `/messages/{transactionHash}`: endpoint to GET or PUT a specific Whiteflag message in the API database
+
+#### Blockchain resource operations
 
 * `/blockchains`: endpoint to GET the current configuration and state of all blockchains
 * `/blockchains/{blockchain}`: endpoint to GET the configuration and state of the specified blockchain
+* `/blockchains/{blockchain}/scan?from={block}&to={block}`: endpoint to GET messages from a range of blocks
+
+#### Account resource operations
+
 * `/blockchains/{blockchain}/accounts`: endpoint to GET account details or POST a new blockchain account
 * `/blockchains/{blockchain}/accounts/{address}` endpoint to PATCH or DELETE to update or remove the specified blockchain account
 * `/blockchains/{blockchain}/accounts/{address}/sign`: endpoint to POST a payload to be signed as a Whiteflag authentication signature
 * `/blockchains/{blockchain}/accounts/{address}/transfer`: endpoint to POST a transaction to transfer value to another account
-* `/blockchains/{blockchain}/scan?from={block}&to={block}`: endpoint to GET messages from a range of blocks
 
-### Originators
+#### Originator resource operations
 
-* `/originators`: endpoint to GET the currently known originators
+* `/originators`: endpoint to GET all currently known originators
 * `/originators/{address}`: endpoint to GET details of the specified originator
 
-### Signature operations
+#### Token resource operations
+
+* `/tokens`: endpoint to GET all pre-shared authentication tokens
+* `/tokens`: endpoint to POST a pre-shared authentication token
+* `/tokens/{tokenId}`: endpoint to GET or DELETE a pre-shared authentication token
+
+### Singletons
+
+#### Message operations
+
+* `/message/encode`: endpoint to POST a Whiteflag message to be encoded
+* `/message/decode`: endpoint to POST a Whiteflag message to be decoded
+* `/message/validate`: endpoint to POST a Whiteflag message to be checked for valid format and reference
+
+#### Tokens operations
+
+* `/token/verify`: endpoint to POST a pre-shared authentication token to generate verification data
+
+#### Signature operations
 
 * `/signature/decode`: endpoint to POST a Whiteflag authentication signature to be decoded
 * `/signature/validate`: endpoint to POST a Whiteflag authentication signature to be validated
@@ -183,7 +219,7 @@ can be used for manual testing. This is a simple example using cURL from the
 command line, sending an `A1` message from a file:
 
 ```shell
-curl http://localhost:5746/messages/send -X POST -H "Content-Type:application/json" -d @A1.message.json
+curl http://localhost:5746/messages -X POST -H "Content-Type:application/json" -d @A1.message.json
 ```
 
 The API also exposes a webpage with an embedded client side socket listener

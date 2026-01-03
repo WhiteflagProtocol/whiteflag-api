@@ -28,7 +28,8 @@
 </header>
 
 <article>
-    <h1>Whiteflag API Configuration</h1>
+    <h1>Configuration</h1>
+<p>| <a href="../index.md">WF API Documentation Home</a> | <a href="jsdoc/index.html">WF API JSDoc Reference</a> | <a href="openapi.md">WF API Interface</a> | <a href="https://standard.whiteflagprotocol.org">Whiteflag Specification</a> |</p>
 <h2>Environment variables</h2>
 <p>The following optional environment variables may be used, e.g. when using
 different configurations in development environments or when running the API
@@ -70,20 +71,20 @@ An alternative directory for the configuration files may be set with the
 </table>
 <p>The configuration files are formatted in <a href="https://github.com/toml-lang/toml">TOML</a>.</p>
 <h3>General API configuration</h3>
-<p>This configuration file provides global configuration parameters for the api.</p>
+<p>This configuration file provides global configuration parameters for the API.</p>
 <p>The <code>[logger]</code> section parameters are:</p>
 <ul>
-<li><code>loglevel</code>: the log level of the api:
+<li><code>loglevel</code>: the log level of the API:
 1=fatal, 2=error, 3=warning, 4=info, 5=debug, 6=trace</li>
 </ul>
 <p>The following <code>[server]</code> section parameters may be defined:</p>
 <ul>
 <li><code>protocol</code>: either <code>http</code> or <code>https</code>, default is <code>http</code></li>
-<li><code>hostname</code>: the hostname used by the api, default is no hostname</li>
-<li><code>port</code>: the port on which the api is listening, default is <code>5746</code>; may be overriden by the <code>WFPORT</code> environment variable</li>
+<li><code>hostname</code>: the hostname used by the API, default is no hostname</li>
+<li><code>port</code>: the port on which the API is listening, default is <code>5746</code>; may be overridden by the <code>WFPORT</code> environment variable</li>
 </ul>
 <p>In the <code>[authorization]</code> section, basic http authorization can be enabled
-by setting a <code>username</code> and <code>password</code>. Levae empty to disable basic auth.
+by setting a <code>username</code> and <code>password</code>. Leave empty to disable basic auth.
 Please do note that the API is not designed to be directly exposed externally.</p>
 <p>The following <code>[ssl]</code> parameters are required if the API server protocol
 is <code>https</code>:</p>
@@ -101,17 +102,17 @@ messages are emitted:</p>
 <ul>
 <li><code>enable</code>: if true, the web socket will be available, otherwise not</li>
 </ul>
-<p>The operationId parameters in the <code>[endpoints]</code> section are booleans that
-allow to enable or disable specific API operations. See the API documentation
-for a description of all operations. Note that the <code>receiveMessage</code> operationId
-only controls the injection of messages through the REST API, and has nothing
-to do with receiving messages directly from a blockchain.</p>
+<p>The parameters in the <code>[endpoints]</code> section are booleans that allow enabling
+or disabling specific API operations. See the API documentation for a
+description of all operations. Note that the <code>receiveMessage</code> operation only
+controls the injection of messages through the REST API, and has nothing to
+do with receiving messages directly from a blockchain.</p>
 <h3>Whiteflag protocol configuration</h3>
 <p>This configuration file contains Whiteflag protocol related configuration
 parameters.</p>
 <p>The <code>[state]</code> section parameters control the storage of the Whiteflag state:</p>
 <ul>
-<li><code>masterKey</code>: hex representation of the 256 bit key used for encrytpion of keys and state data</li>
+<li><code>masterKey</code>: hex representation of the 256-bit key used for encryption of keys and state data</li>
 <li><code>encryption</code>: boolean indicating if the state needs to be encrypted</li>
 </ul>
 <p>The <code>[tx]</code> section contains message transmit behaviour parameters:</p>
@@ -127,17 +128,17 @@ parameters.</p>
 <p>The <code>[authentication]</code> section controls the behaviour for all authentication methods</p>
 <ul>
 <li><code>strict</code>: if <code>true</code>, then unauthenticated messages are rejected;
-if <code>false</code>, then unauthenticated messages are flagged in MetaHeader (default)</li>
+if <code>false</code>, then unauthenticated messages are flagged in the metaheader (default)</li>
 </ul>
 <p>The behaviour parameters for authentication method 1 are in
 the <code>[authentication.1]</code> section:</p>
 <ul>
 <li><code>validDomains</code>: array of domain names that are considered to hold valid authentication signatures; if empty, all domain names are accepted</li>
 </ul>
-<p>Encryption paramaters for encryption method X are in
+<p>Encryption parameters for encryption method X are in
 the <code>[encryption.X]</code> section:</p>
 <ul>
-<li><code>psk</code>: a pre-shared key, i.e. a secret from which the message encyption key is derived if no other input key material is available; should only be used for testing</li>
+<li><code>psk</code>: a pre-shared key, i.e. a secret from which the message encryption key is derived if no other input key material is available; should only be used for testing</li>
 </ul>
 <h3>Blockchain configuration</h3>
 <p>The blockchains configuration file contains both general and specific
@@ -147,7 +148,7 @@ contains a validation schema for the blockchain configuration.</p>
 all blockchains:</p>
 <ul>
 <li><code>enabled</code>: boolean whether to track block depth of message for confirmation</li>
-<li><code>interval</code>: interval in ms to check blockdepth of message</li>
+<li><code>interval</code>: interval in ms to check block depth of message</li>
 <li><code>maxBlockDepth</code>: maximum block depth after which a message is confirmed</li>
 <li><code>updateEachBlock</code>: if true, the block depth of messages on the confirmation queue is updated upon each new block, otherwise only when confirmed</li>
 <li><code>doubleCheck</code>: if true, a message duplicate is retrieved from the blockchain for double check upon confirmation</li>
@@ -156,8 +157,8 @@ all blockchains:</p>
 and the specific parameters for each supported blockchain. Multiple blockchains
 with their configurations may be defined with multiple
 <code>[[blockchains]]</code> sections.</p>
-<p>At a minumum, the following parameters must be defined for each blockchain in
-the repsective <code>[[blockchains]]</code> section:</p>
+<p>At a minimum, the following parameters must be defined for each blockchain in
+the respective <code>[[blockchains]]</code> section:</p>
 <ul>
 <li><code>name</code>: the name by which the blockchain is identified in the software and in loggings; naming convention: <code>{name}-{network}</code>, e.g. <code>bitcoin-testnet</code> or <code>ethereum-rinkeby</code></li>
 <li><code>module</code>: module that implements the specific logic of the blockchain; modules are located in <code>./lib/blockchains</code> and to minimally implement the module methods as described in <code>./lib/blockchains/static/blockchains-template.js</code>.</li>
@@ -167,10 +168,10 @@ the repsective <code>[[blockchains]]</code> section:</p>
 <p>Additional blockchain specific parameters may be required by the specific
 blockchain module, such as connection details to a full node.</p>
 <h3>Datastores configuration</h3>
-<p>This datastores configuration file allows to define which datastores should be
+<p>This datastores configuration file allows defining which datastores should be
 used to store data. The embedded datastore is the default.</p>
 <p>Multiple stores may be defined with multiple
-<code>[[databases]]</code> sections. At a minumum, the following parameters must be defined
+<code>[[databases]]</code> sections. At a minimum, the following parameters must be defined
 for each datastore as detailed in <code>./lib/datastores/static/datastores.config.schema.json</code>.</p>
 <ul>
 <li><code>name</code>: the name by which the datastore is identified in the software and in loggings</li>
@@ -180,7 +181,7 @@ for each datastore as detailed in <code>./lib/datastores/static/datastores.confi
 <li><code>rxStoreEvent</code>: array of rx events on which a message should be stored in datastore, normally <code>[&quot;messageProcessed&quot;]</code></li>
 <li><code>txStoreEvent</code>: array of tx events on which a message should be stored in datastore, normally <code>[&quot;messageProcessed&quot;]</code></li>
 </ul>
-<p>Additional parameters may be rquired depending on the database, as shown in the
+<p>Additional parameters may be required depending on the database, as shown in the
 default configuration file.</p>
 </article>
 
@@ -189,13 +190,13 @@ default configuration file.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 21:45:24 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:29 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

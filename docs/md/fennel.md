@@ -1,19 +1,21 @@
-# Whiteflag API Connector for the Fennel parachain
+# Connector for the Fennel parachain
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Blockchain specifications
 
 The Whiteflag API natively supports the Fennel blockchain, which is based on
 the [Substrate/Polkadot SDK](https://polkadot.com/platform/sdk/).
 
-## Blockchain specifications
-
-|                                |               |
-|--------------------------------|---------------|
-| Whiteflag message embedding:   | `signal` pallet |
-| Maximum message length:        | (t.b.d.)  |
-| Signature algorithm:           | sr25519   |
-| Transaction hash:              | 256 bits (64 hexadecimals) |
-| Address encoding:              | SS58 address format |
-| Address prefix:                | 42 (substrate) |
-| Secret for account creation:   | 32 byte seed   |
+|                              |                            |
+|------------------------------|----------------------------|
+| Whiteflag message embedding: | `signal` pallet            |
+| Maximum message length:      | (t.b.d.)                   |
+| Signature algorithm:         | sr25519                    |
+| Transaction hash:            | 256 bits (64 hexadecimals) |
+| Address encoding:            | SS58 address format        |
+| Address prefix:              | 42 (substrate)             |
+| Secret for account creation: | 32 byte seed               |
 
 NOTE: The signature algorithm `sr25519` is officially not specified to be used
 with JWS in [RFC 7518](https://www.rfc-editor.org/rfc/rfc7518) for Whiteflag
@@ -39,16 +41,16 @@ These parameters manage Fennel parachain accounts:
 For retrieving transactions containing Whiteflag messages from the blockchain,
 these parameters may be provided, otherwise default values are used:
 
-* `blockRetrievalInterval`: the time in milliseconds before the Fennel listener tries to retireve the next block; the default is `6000` ms
+* `blockRetrievalInterval`: the time in milliseconds before the Fennel listener tries to retrieve the next block; the default is `6000` ms
 * `blockRetrievalStart`: the starting block from where to retrieve transactions; if `0` (default) the API resumes a number of blocks before the highest block as configured below
 * `blockRetrievalEnd`: the last block from where to retrieve transactions; if `0` (default) the API catches up with the highest block on the node
 * `blockRetrievalRestart`: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period
 * `blockMaxRetries`: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is `0`, which means unlimited retries
-* `blockBatchSize`: how many blocks the API may process in parellel to balance balance speed and node RPC overload
+* `blockBatchSize`: how many blocks the API may process in parallel to balance speed and node RPC overload
 * `traceRawTransaction`: whether to show each individual transaction when the loglevel is set to `6` (trace); default is `false` because this results in massive logging
 
 To send and receive Whiteflag messages, the API must be connected to a Fennel
-parachain node exposing the [Substrate/Polkadot RPC interface](https://docs.polkadot.com/develop/toolkit/parachains/rpc-calls/)
+parachain node exposing the [Substrate/Polkadot RPC](https://docs.polkadot.com/develop/toolkit/parachains/rpc-calls/)
 interface. These parameters are used to configure the connection:
 
 * `rpcTimeout`: the timeout for an RPC request in milliseconds; the default is `10000`

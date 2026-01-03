@@ -1,4 +1,6 @@
-# Whiteflag API Configuration
+# Configuration
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
 
 ## Environment variables
 
@@ -27,21 +29,21 @@ The configuration files are formatted in [TOML](https://github.com/toml-lang/tom
 
 ### General API configuration
 
-This configuration file provides global configuration parameters for the api.
+This configuration file provides global configuration parameters for the API.
 
 The `[logger]` section parameters are:
 
-* `loglevel`: the log level of the api:
+* `loglevel`: the log level of the API:
               1=fatal, 2=error, 3=warning, 4=info, 5=debug, 6=trace
 
 The following `[server]` section parameters may be defined:
 
 * `protocol`: either `http` or `https`, default is `http`
-* `hostname`: the hostname used by the api, default is no hostname
-* `port`: the port on which the api is listening, default is `5746`; may be overriden by the `WFPORT` environment variable
+* `hostname`: the hostname used by the API, default is no hostname
+* `port`: the port on which the API is listening, default is `5746`; may be overridden by the `WFPORT` environment variable
 
 In the `[authorization]` section, basic http authorization can be enabled
-by setting a `username` and `password`. Levae empty to disable basic auth.
+by setting a `username` and `password`. Leave empty to disable basic auth.
 Please do note that the API is not designed to be directly exposed externally.
 
 The following `[ssl]` parameters are required if the API server protocol
@@ -60,11 +62,11 @@ messages are emitted:
 
 * `enable`: if true, the web socket will be available, otherwise not
 
-The operationId parameters in the `[endpoints]` section are booleans that
-allow to enable or disable specific API operations. See the API documentation
-for a description of all operations. Note that the `receiveMessage` operationId
-only controls the injection of messages through the REST API, and has nothing
-to do with receiving messages directly from a blockchain.
+The parameters in the `[endpoints]` section are booleans that allow enabling
+or disabling specific API operations. See the API documentation for a
+description of all operations. Note that the `receiveMessage` operation only
+controls the injection of messages through the REST API, and has nothing to
+do with receiving messages directly from a blockchain.
 
 ### Whiteflag protocol configuration
 
@@ -73,7 +75,7 @@ parameters.
 
 The `[state]` section parameters control the storage of the Whiteflag state:
 
-* `masterKey`: hex representation of the 256 bit key used for encrytpion of keys and state data
+* `masterKey`: hex representation of the 256-bit key used for encryption of keys and state data
 * `encryption`: boolean indicating if the state needs to be encrypted
 
 The `[tx]` section contains message transmit behaviour parameters:
@@ -89,17 +91,17 @@ The `[rx]` message contains message receiving behaviour parameters:
 The `[authentication]` section controls the behaviour for all authentication methods
 
 * `strict`: if `true`, then unauthenticated messages are rejected;
-            if `false`, then unauthenticated messages are flagged in MetaHeader (default)
+            if `false`, then unauthenticated messages are flagged in the metaheader (default)
 
 The behaviour parameters for authentication method 1 are in
 the `[authentication.1]` section:
 
 * `validDomains`: array of domain names that are considered to hold valid authentication signatures; if empty, all domain names are accepted
 
-Encryption paramaters for encryption method X are in
+Encryption parameters for encryption method X are in
 the `[encryption.X]` section:
 
-* `psk`: a pre-shared key, i.e. a secret from which the message encyption key is derived if no other input key material is available; should only be used for testing
+* `psk`: a pre-shared key, i.e. a secret from which the message encryption key is derived if no other input key material is available; should only be used for testing
 
 ### Blockchain configuration
 
@@ -111,7 +113,7 @@ The `[confirmation]` section contains the following parameters that affect
 all blockchains:
 
 * `enabled`: boolean whether to track block depth of message for confirmation
-* `interval`: interval in ms to check blockdepth of message
+* `interval`: interval in ms to check block depth of message
 * `maxBlockDepth`: maximum block depth after which a message is confirmed
 * `updateEachBlock`: if true, the block depth of messages on the confirmation queue is updated upon each new block, otherwise only when confirmed
 * `doubleCheck`: if true, a message duplicate is retrieved from the blockchain for double check upon confirmation
@@ -121,8 +123,8 @@ and the specific parameters for each supported blockchain. Multiple blockchains
 with their configurations may be defined with multiple
 `[[blockchains]]` sections.
 
-At a minumum, the following parameters must be defined for each blockchain in
-the repsective `[[blockchains]]` section:
+At a minimum, the following parameters must be defined for each blockchain in
+the respective `[[blockchains]]` section:
 
 * `name`: the name by which the blockchain is identified in the software and in loggings; naming convention: `{name}-{network}`, e.g. `bitcoin-testnet` or `ethereum-rinkeby`
 * `module`: module that implements the specific logic of the blockchain; modules are located in `./lib/blockchains` and to minimally implement the module methods as described in `./lib/blockchains/static/blockchains-template.js`.
@@ -134,11 +136,11 @@ blockchain module, such as connection details to a full node.
 
 ### Datastores configuration
 
-This datastores configuration file allows to define which datastores should be
+This datastores configuration file allows defining which datastores should be
 used to store data. The embedded datastore is the default.
 
 Multiple stores may be defined with multiple
-`[[databases]]` sections. At a minumum, the following parameters must be defined
+`[[databases]]` sections. At a minimum, the following parameters must be defined
 for each datastore as detailed in `./lib/datastores/static/datastores.config.schema.json`.
 
 * `name`: the name by which the datastore is identified in the software and in loggings
@@ -148,5 +150,5 @@ for each datastore as detailed in `./lib/datastores/static/datastores.config.sch
 * `rxStoreEvent`: array of rx events on which a message should be stored in datastore, normally `["messageProcessed"]`
 * `txStoreEvent`: array of tx events on which a message should be stored in datastore, normally `["messageProcessed"]`
 
-Additional parameters may be rquired depending on the database, as shown in the
+Additional parameters may be required depending on the database, as shown in the
 default configuration file.

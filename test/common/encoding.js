@@ -1,8 +1,8 @@
 'use strict';
 /**
  * @module test/common/encoding
- * @summary Common JSON web signature test script
- * @description Script for testing all common JWS functions
+ * @summary Common encoding test script
+ * @description Script for testing encoding functions
  */
 
 /* Node.js core and external modules */

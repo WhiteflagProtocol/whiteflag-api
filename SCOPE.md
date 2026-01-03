@@ -4,10 +4,16 @@ This Whiteflag Application Programming Interface (API) is a [Node.js](https://no
 software implementation of the API layer that provides an interface with the
 Whiteflag messaging network on one or more underlying blockchains.
 
-This Whiteflag API is a so called Minumum Viable Product (MVP). This means
+This Whiteflag API is a so-called Minimum Viable Product (MVP), meaning
 that it only supports the core features of the Whiteflag protocol and
 nothing more. The features that are considered in scope for this MVP API
 are described below.
+
+Starting from version 1.3.0, the API will be gradually refactored. All
+protocol functionality will be transferred to the [Whiteflag JavaScript Library (WFJSL)](https://js.whiteflagprotocol.org/),
+which will become the new reference implementation. The WFJSL is available as
+an [NPM package](https://www.npmjs.com/package/@whiteflagprotocol/main)
+and will be added to this project as a dependency.
 
 ## In scope
 
@@ -24,12 +30,12 @@ The API should provide all message handling i.a.w. the standard:
 
 ### Blockchains
 
-The API should demonstrate blockchain agnosticy of the protocol by
-interfacing with the following blockchains:
+The API should demonstrate that the protocol is blockchain agnostic by
+using multiple different blockchains:
 
-* ethereum (v0.8)
-* bitcoin (v1.0)
-* fennel/polkadot (v1.1)
+* Ethereum (v0.8)
+* Bitcoin (v1.0)
+* Fennel/Polkadot (v1.1)
 
 The API is able to read Whiteflag history from the blockchain into database.
 
@@ -51,7 +57,7 @@ Advanced protocol features:
 * Whiteflag authentication method 2 (token-based) (v1.0) - issue #3
 * manage encryption keys for different originators:
   * pre-shared encryption keys (v0.9)
-  * ECDH negotated encryption keys (v0.9)
+  * ECDH negotiated encryption keys (v0.9)
 
 ### API functions
 
@@ -79,5 +85,5 @@ The following Whiteflag protocol features are not implemented:
 
 The API is not capable of:
 
-* usage of the api by multiple users/originators
+* usage of the API by multiple users/originators
 * advanced queries & filtering

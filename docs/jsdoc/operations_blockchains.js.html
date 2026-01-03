@@ -35,7 +35,7 @@
  * @tutorial openapi
  */
 module.exports = {
-    getBlockchains,
+    getAllBlockchains,
     getBlockchain,
     scanBlocks,
     transferFunds,
@@ -51,6 +51,7 @@ module.exports = {
 const  arr = require('../_common/arrays');
 const { ProcessingError } = require('../_common/errors');
 const { createBody,
+        addRelatedResource,
         sendImperative,
         sendIndicative } = require('./_common/response');
 
@@ -59,20 +60,26 @@ const wfBlockchains = require('../blockchains');
 const wfAuthenticate = require('../protocol/authenticate');
 const wfState = require('../protocol/state');
 
+/* Module constants */
+const R_BLOCKCHAIN = 'blockchain';
+const R_MESSAGE = 'message';
+const R_ACCOUNT = 'account';
+const R_SIGNATURE = 'signature';
+
 /* MAIN MODULE FUNCTIONS */
 /**
  * Provides current state of all blockchains from state module
- * @function getBlockchains
- * @alias module:lib/operations/blockchains.getBlockchains
+ * @function getAllBlockchains
+ * @alias module:lib/operations/blockchains.getAllBlockchains
  * @param {Object} req the http request
  * @param {Object} res the http response
  * @param {string} operationId the operation id as defined in the openapi definition
  * @param {logEndpointEventCb} callback
  */
-function getBlockchains(req, res, operationId, callback) {
+function getAllBlockchains(req, res, operationId, callback) {
     wfState.getBlockchains(function opsGetBlockchainsCb(err, blockchainsState = null) {
         // Create response body and preserve information before responding
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_BLOCKCHAIN);
         let resData = [];
 
         // Send response using common endpoint response function
@@ -98,12 +105,13 @@ function getBlockchain(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     wfState.getBlockchainData(blockchain, function opsGetBlockchainCb(err, bcState = null) {
         // Create response body and preserve information before responding
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_BLOCKCHAIN);
 
         // Send response using common endpoint response function
         if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
         if (!err) {
-            resBody.meta.blockchain = blockchain;
+            resBody.meta.resource.id = blockchain;
+            resBody.meta.resource.location = `${resBody.meta.request.url}`;
             resBody.meta.info = arr.addItem(resBody.meta.info, `Current ${blockchain} state`);
         }
         return sendIndicative(res, err, resBody, bcState, callback);
@@ -121,7 +129,7 @@ function getBlockchain(req, res, operationId, callback) {
  */
 function scanBlocks(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
-    let resBody = createBody(req, operationId);
+    let resBody = createBody(req, operationId, R_MESSAGE, req.query);
 
     // Check query
     let queryErrors = []
@@ -136,9 +144,8 @@ function scanBlocks(req, res, operationId, callback) {
         // Prepare response
         let resData = [];
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.query = req.query;
-            resBody.meta.info = arr.addItem(resBody.meta.info, `Found ${wfMessages.length} Whiteflag messages on the blockchain between blocks ${req.query.from} and ${req.query.to}`);
+            resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
+            resBody.meta.info = arr.addItem(resBody.meta.info, `Found ${wfMessages.length} Whiteflag messages on ${blockchain} between blocks ${req.query.from} and ${req.query.to}`);
             resData = wfMessages;
         }
         // Send response using common endpoint response function
@@ -160,16 +167,16 @@ function getAccounts(req, res, operationId, callback) {
     const blockchain = req.params.blockchain;
     wfState.getBlockchainData(blockchain, function opsGetAccountsCb(err, bcState = null) {
         // Create response body and preserve information before responding
+        let resBody = createBody(req, operationId, R_ACCOUNT);
         let resData = [];
-        let resBody = createBody(req, operationId);
 
         // Extract account data from blockchain state
         if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
-        if (!err) resBody.meta.blockchain = blockchain;
         if (!err &amp;&amp; !bcState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
         if (!err) {
-            resData = arr.pluck(bcState.accounts, 'address') || [];
+            resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
             resBody.meta.info = arr.addItem(resBody.meta.info, `Blockchain accounts on ${blockchain}`);
+            resData = arr.pluck(bcState.accounts, 'address') || [];
         }
         // Send response using common endpoint response function
         return sendIndicative(res, err, resBody, resData, callback);
@@ -191,11 +198,10 @@ function getAccount(req, res, operationId, callback) {
     wfState.getBlockchainData(blockchain, function opsGetAccountCb(err, bcState = null) {
         // Create response body and preserve information before responding
         let resData = {};
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_ACCOUNT);
 
         // Get the requested account object
         if (!err &amp;&amp; !bcState) err = new ProcessingError(`Blockchain ${blockchain} does not exist`, null, 'WF_API_NO_RESOURCE');
-        if (!err) resBody.meta.blockchain = blockchain;
         if (!err &amp;&amp; !bcState.accounts) err = new Error(`Could not retrieve accounts for ${blockchain}`);
         if (!err) {
             const index = bcState.accounts.findIndex(
@@ -204,8 +210,10 @@ function getAccount(req, res, operationId, callback) {
             if (index &lt; 0) {
                 err = new ProcessingError(`Blockchain account ${address} does not exist`, null, 'WF_API_NO_RESOURCE');
             } else {
-                resBody.meta.account = address;
-                resBody.meta.info = arr.addItem(resBody.meta.info, 'Blockchain account details');
+                resBody.meta.resource.id = address;
+                resBody.meta.resource.location = `${resBody.meta.request.url}`;
+                resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
+                resBody.meta.info = arr.addItem(resBody.meta.info, `Details of blockchain account on ${blockchain}`);
                 resData = bcState.accounts[index];
             }
         }
@@ -229,17 +237,16 @@ function createAccount(req, res, operationId, callback) {
     wfBlockchains.createAccount(blockchain, secret, function opsCreateAccountCb(err, result) {
         // Create response body and preserve information before responding
         let resData = {};
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_ACCOUNT);
 
         // Check results
-        if (result?.address) {
-            resBody.meta.resource = `/blockchains/${blockchain}/accounts/${result.address}`;
-        } else if (!err) {
+        if (!err &amp;&amp; !result?.address) {
             err = new Error('Could not determine address of created blockchain account');
         }
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.account = result.address;
+            resBody.meta.resource.id = result.address;
+            resBody.meta.resource.location = `${resBody.meta.request.url}/${resBody.meta.resource.id}`;
+            resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
             resBody.meta.info = arr.addItem(resBody.meta.info, `Created blockchain account on ${blockchain}`);
             resData = result;
         }
@@ -265,12 +272,13 @@ function updateAccount(req, res, operationId, callback) {
     wfBlockchains.updateAccount(account, address, blockchain, function opsUpdateAccountCb(err, result) {
          // Create response body and preserve information before responding
         let resData = {};
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_ACCOUNT);
 
         // Send response using common endpoint response function
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.account = address;
+            resBody.meta.resource.id =  address;
+            resBody.meta.resource.location = `${resBody.meta.request.url}`;
+            resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
             if (result) {
                 resBody.meta.info = arr.addItem(resBody.meta.info, `Updated blockchain account on ${blockchain}`);
                 resData = result;
@@ -297,14 +305,14 @@ function deleteAccount(req, res, operationId, callback) {
     wfBlockchains.deleteAccount(address, blockchain, function opsDeleteAccountCb(err, result) {
         // Create response body and preserve information before responding
         let resData = {};
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_ACCOUNT);
 
         // Send response using common endpoint response function
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.account = address;
+            resBody.meta.resource.id =  address;
+            resBody.meta = addRelatedResource(blockchain, null, null, resBody.meta);
             if (result) {
-                resBody.meta.info = arr.addItem(resBody.meta.info, `Deleted lockchain account on ${blockchain}`);
+                resBody.meta.info = arr.addItem(resBody.meta.info, `Deleted blockchain account on ${blockchain}`);
                 resData = result;
             } else {
                 resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Did not receive result of account deletion');
@@ -329,19 +337,17 @@ function createSignature(req, res, operationId, callback) {
     const signPayload = req.body;
     wfAuthenticate.sign(signPayload, address, blockchain, function opsCreateSignatureCb(err, wfSignature, wfSignDecoded) {
         // Create response body and preserve information before responding
-        let resBody = createBody(req, operationId);
+        let resBody = createBody(req, operationId, R_SIGNATURE);
 
         // Send response using common endpoint response function
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.account = address;
+            resBody.meta = addRelatedResource(blockchain, address, null, resBody.meta);
             if (!wfSignature || !wfSignDecoded) {
                 err = new Error('Did not receive valid signature for blockchain account');
             }
         }
         if (wfSignDecoded) {
             resBody.meta.info = arr.addItem(resBody.meta.info, `Signature for blockchain account on ${blockchain}`);
-            resBody.meta.decoded = wfSignDecoded;
         }
         return sendImperative(res, err, resBody, wfSignature, callback);
     });
@@ -367,16 +373,11 @@ function transferFunds(req, res, operationId, callback) {
 
         // Check results and send response using common endpoint response function
         if (!err) {
-            resBody.meta.blockchain = blockchain;
-            resBody.meta.account = address;
+            resBody.meta = addRelatedResource(blockchain, address, null, resBody.meta);
             resData = transfer;
-            if (txHash) {
-                resData.transactionHash = txHash;
-                resBody.meta.info = arr.addItem(resBody.meta.info, `Submitted transaction for a transfer on ${blockchain}`);
-            } else {
-                resBody.meta.warnings = arr.addItem(resBody.meta.warnings, 'Could not retrieve transaction hash');
-            }
             if (blockNumber) resData.blockNumber = blockNumber;
+            if (txHash) resData.transactionHash = txHash;
+            resBody.meta.info = arr.addItem(resBody.meta.info, `Submitted transaction for a transfer on ${blockchain}`);
         }
         return sendImperative(res, err, resBody, resData, callback);
     });
@@ -391,13 +392,13 @@ function transferFunds(req, res, operationId, callback) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 21:45:24 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:28 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

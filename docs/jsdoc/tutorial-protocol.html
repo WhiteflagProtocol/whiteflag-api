@@ -28,7 +28,9 @@
 </header>
 
 <article>
-    <h1>Whiteflag API Protocol Implementation</h1>
+    <h1>Whiteflag Protocol Implementation</h1>
+<p>| <a href="../index.md">WF API Documentation Home</a> | <a href="jsdoc/index.html">WF API JSDoc Reference</a> | <a href="openapi.md">WF API Interface</a> | <a href="https://standard.whiteflagprotocol.org">Whiteflag Specification</a> |</p>
+<h2>Overview</h2>
 <p>The Whiteflag protocol is implemented with a series of interdependent modules
 that can be found under <code>lib/protocol</code>. These modules are:</p>
 <table>
@@ -82,7 +84,7 @@ that can be found under <code>lib/protocol</code>. These modules are:</p>
 </tbody>
 </table>
 <p>Protocol specific configuration parameters are in <code>whiteflag.toml</code> which can be
-found in the <code>config/</code> directory. Static protocol data, such as json schemas
+found in the <code>config/</code> directory. Static protocol data, such as JSON schemas
 can be found under <code>static/protocol/</code>.</p>
 <h2>Message Format</h2>
 <p>The format of Whiteflag messages is verified against the protocol specification
@@ -99,7 +101,7 @@ messages.</p>
 <p>The references of Whiteflag messages are verified against the protocol
 specification by the <code>validation.js</code> module. To do this, the module first tries
 to retrieve the referenced message using the <code>retrieval.js</code> module, and then
-checks the refrenence against the Whiteflag message schema provided with the
+checks the reference against the Whiteflag message schema provided with the
 protocol. If the message reference is valid, the parameter <code>referenceValid</code> in
 the metaheader is set to true, and otherwise to <code>false</code>.</p>
 <p>The verification of references may be skipped for all incoming and/or outgoing
@@ -126,7 +128,7 @@ should not be done for operational use.</p>
 <p>The originator of certain message types cannot be verified, and originator
 verification of those message is therefore always skipped:</p>
 <ul>
-<li><code>A1</code> and <code>A2</code> messages, which are self-authenticing</li>
+<li><code>A1</code> and <code>A2</code> messages, which are self-authenticating</li>
 </ul>
 <h2>Handling of Management Messages</h2>
 <p>The handling of management messages is done by <code>management.js</code>. This includes:</p>
@@ -137,13 +139,13 @@ chain;</li>
 <li>automatic generation and transmission of messages as required by the
 protocol specification.</li>
 </ul>
-<p>Specifically, this inludes:</p>
+<p>Specifically, this includes:</p>
 <ul>
 <li>authentication of originators upon reception of authentication messages</li>
 <li>automatically sending ECDH public keys after an own authentication message</li>
 <li>processing received ECDH public keys to compute shared secret</li>
-<li>automatically sending initialisation vectors with encrypted messages</li>
-<li>processing received initialisation vectors</li>
+<li>automatically sending initialization vectors with encrypted messages</li>
+<li>processing received initialization vectors</li>
 </ul>
 <h2>Authentication</h2>
 <p>The authenticity of an originator is validated with the information from
@@ -157,10 +159,10 @@ the <code>state.js</code> module.</p>
 <h2>Encryption</h2>
 <p>The <code>codec.js</code> module always passes outgoing and incoming message to the
 <code>crypto.js</code> module for encryption and decryption. If no encryption or
-decrytpion is required, i.e. when the <code>EncryptionIndicator</code> in the message
+decryption is required, i.e. when the <code>EncryptionIndicator</code> in the message
 header is set to <code>0</code>, the <code>crypto.js</code> just passes the message to the
 callback.</p>
-<p>If the encyrption indicator is set to a valid value, the crypto module encrypts
+<p>If the encryption indicator is set to a valid value, the crypto module encrypts
 or decrypts the message. The <code>recipientAddress</code> in the <code>MetaHeader</code> is used to
 determine which encryption secret is to be used as input key material:</p>
 <ul>
@@ -172,11 +174,11 @@ a shared secret when an authentication message is sent, except when the
 authentication message is encrypted or sent under duress. The module also
 handles incoming ECDH public keys.</p>
 <p>The API has an endpoint to provide a pre-shared secret key for each originator.
-Instead of specifing the recipient in the metaheader, the pre-shared key for
+Instead of specifying the recipient in the metaheader, the pre-shared key for
 method 2 may also be provided with the <code>encryptionKeyInput</code> in the metaheader,
 or otherwise the default key in <code>config/whiteflag.toml</code> is used.</p>
-<p>The <code>management.js</code> module automatically sends initialisation vectors with
-encrypted messages and also manages incoming initialisation vectors.</p>
+<p>The <code>management.js</code> module automatically sends initialization vectors with
+encrypted messages and also manages incoming initialization vectors.</p>
 </article>
 
 </section>
@@ -184,13 +186,13 @@ encrypted messages and also manages incoming initialisation vectors.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 21:45:24 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:29 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
