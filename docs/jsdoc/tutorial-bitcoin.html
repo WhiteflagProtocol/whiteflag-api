@@ -68,9 +68,9 @@ blockchain.</p>
 </tr>
 </tbody>
 </table>
-<p>Note that curve <code>secp256k1</code> for the ECDSA signature algorthm is officially not
-specified to be used with JWS for Whiteflag authentication method 1. Instead,
-the JWS specification in <a href="https://www.rfc-editor.org/rfc/rfc7518">RFC 7518</a>
+<p>Note that curve <code>secp256k1</code> for the ECDSA signature algorithm is officially
+not specified to be used with JWS for Whiteflag authentication method 1.
+Instead, the JWS specification in <a href="https://www.rfc-editor.org/rfc/rfc7518">RFC 7518</a>
 requires curve <code>secp256r1</code> a.k.a. <code>prime256v1</code>. However, Whiteflag is using
 JSON Web Tokens just as a structure. For Whiteflag authentication method 1 to
 work, it is essential that the key pair and curve of the blockchain is used
@@ -85,7 +85,7 @@ Therefore, what the API calls an account is nothing else than what sometimes
 is referred to as a &quot;wallet&quot;.</p>
 <p>For the purposes of (testing) Whiteflag, the same account, i.e. Bitcoin
 address, is reused. This is not a good practice for several reasons, such as
-anonimity. However, for Whiteflag it is necessary that different transactions
+anonymity. However, for Whiteflag it is necessary that different transactions
 can be linked to the same originator. Therefore, it is strongly recommended
 NOT to use the Whiteflag account for anything else, such as payments or
 transfers.</p>
@@ -95,7 +95,7 @@ the Bitcoin specific parameters in one of its <code>[[blockchains]]</code> secti
 <ul>
 <li><code>name</code>: the name according to the naming convention: <code>{name}-{network}</code>, e.g. <code>bitcoin-main</code> or <code>bitcoin-testnet</code></li>
 <li><code>module</code>: the Bitcoin module in <code>lib/blockchains</code>, which should be &quot;bitcoin&quot;</li>
-<li><code>testnet</code>: whether the Bitcoin testnet is used insted of the main network</li>
+<li><code>testnet</code>: whether the Bitcoin testnet is used instead of the main network</li>
 <li><code>active</code>: whether the blockchain is active or should be ignored</li>
 </ul>
 <p>These parameters manage Bitcoin blockchain accounts (i.e. wallets):</p>
@@ -105,14 +105,14 @@ the Bitcoin specific parameters in one of its <code>[[blockchains]]</code> secti
 <p>For retrieving transactions containing Whiteflag messages from the blockchain,
 these parameters may be provided, otherwise default values are used:</p>
 <ul>
-<li><code>blockRetrievalInterval</code>: the time in milliseconds before the Bitcoin listener tries to retireve the next block; the default is <code>60000</code> ms</li>
+<li><code>blockRetrievalInterval</code>: the time in milliseconds before the Bitcoin listener tries to retrieve the next block; the default is <code>60000</code> ms</li>
 <li><code>blockRetrievalStart</code>: the starting block from where to retrieve transactions; if <code>0</code> (default) the API resumes a number of blocks before the highest block as configured below</li>
 <li><code>blockRetrievalEnd</code>: the last block from where to retrieve transactions; if <code>0</code> (default) the API catches up with the highest block on the node</li>
 <li><code>blockRetrievalRestart</code>: how many blocks before the current highest block the API should look back when (re)starting the API; this prevents that blocks are missed when the API is stopped for a short period</li>
 <li><code>blockMaxRetries</code>: how many times the API should retry to process a block if it fails, e.g. because of a node timeout; default is <code>0</code>, which means unlimited retries</li>
 <li><code>transactionBatchSize</code>: how many transactions from a single block the API may process in parallel; default is <code>128</code></li>
-<li><code>transactionFee</code>: the (minimum) value of a transaction fee when sending a Whiteflag message, used if the fee cannot be estimated or if the estimated fee is lower; default is 1000 satoshis</li>
-<li><code>transactionPriority</code>: the priority used to estimate the transaction fee and defined by the number of blocks by which confirmation is desired: <code>1</code> is highest priority, but also a higher transaction fee, if <code>0</code> the fixed transaction fee is used</li>
+<li><code>transactionFee</code>: the (minimum) value of a transaction fee when sending a Whiteflag message, used if the fee cannot be estimated or if the estimated fee is lower; default is 1000 Satoshi</li>
+<li><code>transactionPriority</code>: the priority used to estimate the transaction fee and defined by the number of blocks by which confirmation is desired: <code>1</code> is the highest priority, but also a higher transaction fee; if <code>0</code> the fixed transaction fee is used</li>
 <li><code>traceRawTransaction</code>: whether to show each individual transaction when the loglevel is set to <code>6</code> (trace); default is <code>false</code> because this results in massive logging</li>
 </ul>
 <p>To send and receive Whiteflag messages, the API must be connected to a Bitcoin
@@ -140,7 +140,7 @@ configure the connection:</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 23 2025 23:01:54 GMT+0100 (Central European Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:29 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

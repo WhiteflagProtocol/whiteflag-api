@@ -30,10 +30,16 @@ The current version is based on **v1-draft.6** of the Whiteflag protocol. The
 supported Whiteflag protocol features are described in `SCOPE.md`.
 
 Note that the Whiteflag API is a so-called Minimum Viable Product (MVP).
-This means that it only supports the core features of the Whiteflag protocol
-and nothing more. As such, it serves as the reference implementation of the
-Whiteflag protocol, but it is not designed and tested for secure usage
+This means that it only supports the development and testing of the
+Whiteflag protocol. It currently still serves as the reference implementation
+of the protocol, but it is not designed and tested for secure usage
 and performance in a production environment.
+
+Starting from version 1.3.0, the API will be gradually refactored. All
+protocol functionality will be transferred to the [Whiteflag JavaScript Library (WFJSL)](https://js.whiteflagprotocol.org/),
+which will become the new reference implementation. The WFJSL is available as
+an [NPM package](https://www.npmjs.com/package/@whiteflagprotocol/main)
+and will be added to this project as a dependency.
 
 ## Documentation
 
@@ -146,7 +152,8 @@ does not change anything in the current state. For example, providing an
 encoded message to `/message/decode` returns a decoded message, but does
 not store or alter anything in the state.
 
-A general overview of the endpoints (see the API definition for all details):
+A general overview of the endpoints since version 1.2.0
+(see the API definition for all details):
 
 ### Collections
 
@@ -212,7 +219,7 @@ can be used for manual testing. This is a simple example using cURL from the
 command line, sending an `A1` message from a file:
 
 ```shell
-curl http://localhost:5746/messages/send -X POST -H "Content-Type:application/json" -d @A1.message.json
+curl http://localhost:5746/messages -X POST -H "Content-Type:application/json" -d @A1.message.json
 ```
 
 The API also exposes a webpage with an embedded client side socket listener
