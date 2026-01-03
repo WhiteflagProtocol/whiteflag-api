@@ -28,9 +28,11 @@
 </header>
 
 <article>
-    <h1>Whiteflag API JavaScript Modules</h1>
+    <h1>Modules</h1>
+<p>| <a href="../index.md">WF API Documentation Home</a> | <a href="jsdoc/index.html">WF API JSDoc Reference</a> | <a href="openapi.md">WF API Interface</a> | <a href="https://standard.whiteflagprotocol.org">Whiteflag Specification</a> |</p>
+<h2>Overview</h2>
 <p>The Whiteflag API is written in JavaScript to run on <a href="https://nodejs.org/en/about/">Node.js</a>.
-The source code of the Whiteflag API is organised in modules. Each module
+The source code of the Whiteflag API is organized in modules. Each module
 corresponds with a <code>.js</code> source code file. The source code files / modules
 are structured in the following directory tree:</p>
 <table>
@@ -71,17 +73,17 @@ are structured in the following directory tree:</p>
 <code>CONTRIBUTING.md</code> for a description of the repository structure and
 development guidelines for the source code.</p>
 <h2>Main modules</h2>
-<p>The main Whiteflag API module is <code>whiteflag.js</code>, which initialises all
+<p>The main Whiteflag API module is <code>whiteflag.js</code>, which initializes all
 other main modules in <code>lib/</code>:</p>
 <ul>
-<li><code>config.js</code>: the module that reads the api configuration from <code>config/api.toml</code></li>
+<li><code>config.js</code>: the module that reads the API configuration from <code>config/api.toml</code></li>
 <li><code>server.js</code>: the module that opens the network connections and connects the routes and methods to the correct handlers in the endpoints modules</li>
 <li><code>blockchains.js</code>: the module that implements the blockchain abstraction layer, and handles all requests to the configured blockchains</li>
 <li><code>datastores.js</code>: the module that implements the datastores abstraction layer, and handles all requests to the configured databases</li>
 </ul>
 <h2>Common modules</h2>
 <p>Common modules in <code>lib/_common</code> are used for function and class definitions
-shared by multiple modules across the project. Common modules may not require
+shared by multiple modules across the project. These modules may not require
 other project modules outside <code>lib/_common</code> to function. Submodules may also
 have a <code>_common/</code> subdirectory, and a <code>_static/</code> subdirectory for static data.</p>
 <h2>Endpoints modules</h2>
@@ -92,7 +94,7 @@ different endpoint handler functions to the correct endpoint routes and
 methods.</p>
 <h2>Protocol modules</h2>
 <p>All Whiteflag protocol features and logic is implemented in the protocol
-modules in <code>lib/protocol</code>. The protocol implementation is described seperately
+modules in <code>lib/protocol</code>. The protocol implementation is described separately
 in <a href="protocol.md"><code>protocol.md</code></a>.</p>
 <h2>Blockchain modules</h2>
 <p>The blockchain modules in <code>lib/blockchains</code> implement the connections with
@@ -105,13 +107,13 @@ blockchain through the callback function is correct.</p>
 <p>A template for creating a new blockchain module to connect to a specific
 database is available with <code>lib/blockchains/static/blockchain.template.js</code>.
 Note that the function names in a blockchain module should reflect the function
-names in de main <code>blockchains.js</code> module.</p>
-<p>The configuration of the blcockchains and the blockchain modules can be found in
+names in the main <code>blockchains.js</code> module.</p>
+<p>The configuration of the blockchains and the blockchain modules can be found in
 <code>config/blockchains.toml</code>. This configuration file has a section <code>[[blockchains]]</code>
 for each blockchain.</p>
 <h2>Datastore modules</h2>
 <p>The datastore modules in lib/datastores implement the connections with the
-unbderlying blockchains. There is one module per supported datastore.
+underlying blockchains. There is one module per supported datastore.
 Functions in a specific datastore module are called by the main module
 <code>datastores.js</code>, which forms the datastore abstraction layer.</p>
 <p>The main module <code>datastores.js</code> should check whether any request to one of
@@ -120,7 +122,7 @@ datastore through the callback function is correct.</p>
 <p>A template for creating a new datastore module to connect to a specific
 database is available with <code>lib/datastores/static/datastore.template.js</code>.
 Note that the function names in a datastore module should reflect the function
-names in de main <code>datastores.js</code> module.</p>
+names in the main <code>datastores.js</code> module.</p>
 <p>The configuration of the datastores and the datastore modules can be found in
 <code>config/datastores.toml</code>. This configuration file has a section <code>[[databases]]</code>
 for each datastore.</p>
@@ -131,13 +133,13 @@ for each datastore.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 21:45:24 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:29 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

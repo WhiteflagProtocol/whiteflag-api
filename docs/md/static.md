@@ -1,26 +1,30 @@
-# Whiteflag API Static Components
+# Static Components
+
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Description
 
 The directory `static/` contains static data provided by the API when running.
 This data consists of the Whiteflag API definition, a socket listener for
 Whiteflag messages and a Whiteflag signs and signals icon set. The server
 provides the static content on the `/` root endpoint, e.g. `http://localhost:5746/`.
 
-In addition, protocol specific static content, such as json schemas, are in
+In addition, protocol specific static content, such as JSON schemas, are in
 `static/protocol/`. The server provides the static protocol data on the
 `/protocol` endpoint, e.g. `http://localhost:5746/protocol/`.
 
-Other static data in `static/` subdirectories may also exists, but this data is
+Other static data in `static/` subdirectories may also exist, but this data is
 not provided by the server to clients. For example, there is also a
 `test/static/` directory, which contains static data for testing, such as the
 JSON core schema meta-schema to validate the Whiteflag JSON schemas, which is
 done by the `test/static.js` test script.
 
-## Whitflag API Definition
+## Whiteflag API Definition
 
 The API definition is specified in `static/openapi.json` in accordance with the
 [OpenAPI specification](https://swagger.io/specification/). The `index.html`
 uses a standalone JavaScript version of [Redoc](https://github.com/Rebilly/ReDoc)
-to render the API defintion into a human readible webpage.
+to render the API definition into a human-readable webpage.
 
 Redoc is not maintained as an NPM package and the following files must
 therefore be manually be updated from the source repository
@@ -29,7 +33,7 @@ therefore be manually be updated from the source repository
 * `static/js/redoc.standalone.js`
 * `static/js/redoc.standalone.js.map`
 
-## Whitflag API Message Listener
+## Whiteflag API Message Listener
 
 A simple web based message listener is available in `static/listen/`. The
 server provides the listener on the `/listen` endpoint,

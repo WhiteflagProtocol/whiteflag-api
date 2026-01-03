@@ -1,11 +1,12 @@
-# Whiteflag API Logging
+# Logging
 
-The common module `lib/common/logger.js` exposes functions to be used
-throughout the source code for logging messages from the running API.
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
 
 ## Loglevel functions
 
-The logging module exposes a logging function for each loglevel.
+The common module `lib/common/logger.js` exposes functions to be used
+throughout the source code for logging messages from the running API
+for each loglevel.
 
 | Level | Name    | Usage                                                                                     |
 |-------|---------|-------------------------------------------------------------------------------------------|

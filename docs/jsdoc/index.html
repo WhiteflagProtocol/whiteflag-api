@@ -69,13 +69,18 @@ blockchain.</li>
 </ul>
 <p>The current version is based on <strong>v1-draft.6</strong> of the Whiteflag protocol. The
 supported Whiteflag protocol features are described in <code>SCOPE.md</code>.</p>
-<p>Note that the Whiteflag API is a so called Minimum Viable Product (MVP).
-This means that it only supports the core features of the Whiteflag protocol
-and nothing more. As such, it serves as the reference implementation of the
-Whiteflag protocol, but it is not designed and tested for secure usage
+<p>Note that the Whiteflag API is a so-called Minimum Viable Product (MVP).
+This means that it only supports the development and testing of the
+Whiteflag protocol. It currently still serves as the reference implementation
+of the protocol, but it is not designed and tested for secure usage
 and performance in a production environment.</p>
+<p>Starting from version 1.3.0, the API will be gradually refactored. All
+protocol functionality will be transferred to the <a href="https://js.whiteflagprotocol.org/">Whiteflag JavaScript Library (WFJSL)</a>,
+which will become the new reference implementation. The WFJSL is available as
+an <a href="https://www.npmjs.com/package/@whiteflagprotocol/main">NPM package</a>
+and will be added to this project as a dependency.</p>
 <h2>Documentation</h2>
-<p>More detailed documentation of the API is available at <a href="https://whiteflagprotocol.github.io/whiteflag-api/">Github Pages</a></p>
+<p>More detailed documentation of the API is available at <a href="https://whiteflagprotocol.github.io/whiteflag-api/">GitHub Pages</a></p>
 <p>This documentation is also found in the markdown files in the <code>docs/</code>
 directory. When the API is running, the server will also provide the OpenAPI
 definition at the URL root (e.g. <code>http://localhost:5746/</code>).</p>
@@ -86,7 +91,7 @@ described in <code>CONTRIBUTING.md</code>.</p>
 under the <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons CC0-1.0 Universal Public Domain Dedication</a>
 statement. See <code>LICENSE.md</code> for details.</p>
 <p>The Whiteflag API software requires third party software packages, which are
-not part of this distribution and may be licenced differently.</p>
+not part of this distribution and may be licensed differently.</p>
 <h2>Installation</h2>
 <h3>Prerequisites</h3>
 <p>To deploy the Whiteflag API, make sure the following prerequisite software
@@ -97,7 +102,7 @@ is installed:</p>
 <p>Since version 1.0.1, the Whiteflag API has a lightweight embedded datastore,
 making MongoDB an optional dependency:</p>
 <ul>
-<li><a href="https://www.mongodb.com/what-is-mongodb">MongoDB</a>, currently only fullt tested with legacy <a href="https://www.mongodb.com/evolved#mdbthreesix">verson 3.6</a>, but higher versions seem to work as well</li>
+<li><a href="https://www.mongodb.com/what-is-mongodb">MongoDB</a>, currently only fully tested with legacy <a href="https://www.mongodb.com/evolved#mdbthreesix">version 3.6</a>, but higher versions seem to work as well</li>
 </ul>
 <h3>Deployment and Testing</h3>
 <p>First, copy the repository to the deployment directory, such as
@@ -135,44 +140,70 @@ command in the deployment directory:</p>
 </code></pre>
 <p>Using the <code>npm start</code> command in the deployment directory will also work.</p>
 <p>Alternatively, a service may be created. An example <code>whiteflag-api.service</code>
-for linux systems using <code>systemctl</code> cound be found in <code>etc/</code>. Enable the
-and start the service with:</p>
+for Linux systems using <code>systemctl</code> can be found in <code>etc/</code>. Enable and start
+the service with:</p>
 <pre class="prettyprint source lang-shell"><code>sudo systemctl enable ./etc/whiteflag-api.service
 sudo service whiteflag-api start
 </code></pre>
 <h2>API Functionality</h2>
 <p>The detailed <a href="https://swagger.io/specification/">OpenAPI</a> definition can be
-found in <code>static/openapi.json</code>. The API definition is provided in human
-readible format at the root endpoint by the running API; just go to
+found in <code>static/openapi.json</code>. The API definition is provided in
+human-readable format at the root endpoint by the running API; just go to
 <code>http://localhost:5746/</code> with a browser.</p>
-<p>Some of the endpoint functionalities
-(see the API defintion for all details):</p>
-<h3>Messages</h3>
+<p>The API has two sorts of operations: on collections and on singletons.
+An operation on a collection shows or changes the current state. For example,
+a GET request to <code>/orginators</code> provides the currently known originators,
+and a POST request to <code>/tokens</code> stores a token that will be used for
+authentication.</p>
+<p>An operation on a singleton returns a result for the provided input data, but
+does not change anything in the current state. For example, providing an
+encoded message to <code>/message/decode</code> returns a decoded message, but does
+not store or alter anything in the state.</p>
+<p>A general overview of the endpoints since version 1.2.0
+(see the API definition for all details):</p>
+<h3>Collections</h3>
+<h4>Message resource operations</h4>
 <ul>
-<li><code>/messages</code>: endpoint to GET an array of all messages contained in the API database</li>
-<li><code>/messages/send</code>: endpoint to POST a new Whiteflag message to be transmitted on the blockchain</li>
-<li><code>/messages/send</code>: endpoint to POST a new Whiteflag as if received the blockchain</li>
-<li><code>/messages/encode</code>: endpoint to POST a Whiteflag message to be encoded</li>
-<li><code>/messages/decode</code>: endpoint to POST a Whiteflag message to be decoded</li>
-<li><code>/messages/validate</code>: endpoint to POST a Whiteflag message to be checked for valid format and reference</li>
-<li><code>/messages?transactionHash=&lt;transaction hash&gt;</code>: endpoint to GET a specific message by its transaction hash</li>
+<li><code>/messages</code>: endpoint to GET all messages contained in the API database, or perform a query</li>
+<li><code>/messages</code>: endpoint to POST a new Whiteflag message to be transmitted on the blockchain</li>
+<li><code>/messages/{transactionHash}</code>: endpoint to GET or PUT a specific Whiteflag message in the API database</li>
 </ul>
-<h3>Blockchains</h3>
+<h4>Blockchain resource operations</h4>
 <ul>
 <li><code>/blockchains</code>: endpoint to GET the current configuration and state of all blockchains</li>
 <li><code>/blockchains/{blockchain}</code>: endpoint to GET the configuration and state of the specified blockchain</li>
+<li><code>/blockchains/{blockchain}/scan?from={block}&amp;to={block}</code>: endpoint to GET messages from a range of blocks</li>
+</ul>
+<h4>Account resource operations</h4>
+<ul>
 <li><code>/blockchains/{blockchain}/accounts</code>: endpoint to GET account details or POST a new blockchain account</li>
 <li><code>/blockchains/{blockchain}/accounts/{address}</code> endpoint to PATCH or DELETE to update or remove the specified blockchain account</li>
 <li><code>/blockchains/{blockchain}/accounts/{address}/sign</code>: endpoint to POST a payload to be signed as a Whiteflag authentication signature</li>
 <li><code>/blockchains/{blockchain}/accounts/{address}/transfer</code>: endpoint to POST a transaction to transfer value to another account</li>
-<li><code>/blockchains/{blockchain}/scan?from={block}&amp;to={block}</code>: endpoint to GET messages from a range of blocks</li>
 </ul>
-<h3>Originators</h3>
+<h4>Originator resource operations</h4>
 <ul>
-<li><code>/originators</code>: endpoint to GET the currently known originators</li>
+<li><code>/originators</code>: endpoint to GET all currently known originators</li>
 <li><code>/originators/{address}</code>: endpoint to GET details of the specified originator</li>
 </ul>
-<h3>Signature operations</h3>
+<h4>Token resource operations</h4>
+<ul>
+<li><code>/tokens</code>: endpoint to GET all pre-shared authentication tokens</li>
+<li><code>/tokens</code>: endpoint to POST a pre-shared authentication token</li>
+<li><code>/tokens/{tokenId}</code>: endpoint to GET or DELETE a pre-shared authentication token</li>
+</ul>
+<h3>Singletons</h3>
+<h4>Message operations</h4>
+<ul>
+<li><code>/message/encode</code>: endpoint to POST a Whiteflag message to be encoded</li>
+<li><code>/message/decode</code>: endpoint to POST a Whiteflag message to be decoded</li>
+<li><code>/message/validate</code>: endpoint to POST a Whiteflag message to be checked for valid format and reference</li>
+</ul>
+<h4>Tokens operations</h4>
+<ul>
+<li><code>/token/verify</code>: endpoint to POST a pre-shared authentication token to generate verification data</li>
+</ul>
+<h4>Signature operations</h4>
 <ul>
 <li><code>/signature/decode</code>: endpoint to POST a Whiteflag authentication signature to be decoded</li>
 <li><code>/signature/validate</code>: endpoint to POST a Whiteflag authentication signature to be validated</li>
@@ -186,7 +217,7 @@ following NPM command in the project root:</p>
 <p>Any REST client, such as <a href="https://www.getpostman.com/">Postman</a> or <a href="https://everything.curl.dev/">cURL</a>
 can be used for manual testing. This is a simple example using cURL from the
 command line, sending an <code>A1</code> message from a file:</p>
-<pre class="prettyprint source lang-shell"><code>curl http://localhost:5746/messages/send -X POST -H &quot;Content-Type:application/json&quot; -d @A1.message.json
+<pre class="prettyprint source lang-shell"><code>curl http://localhost:5746/messages -X POST -H &quot;Content-Type:application/json&quot; -d @A1.message.json
 </code></pre>
 <p>The API also exposes a webpage with an embedded client side socket listener
 that is available on <code>http://localhost:5746/listen</code> (default URL) when the
@@ -204,13 +235,13 @@ to <code>true</code> to prevent the accidental transmission of real messages.</p
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_signatures.html">lib/operations/signatures</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_blockchains.html">lib/blockchains</a></li><li><a href="module-lib_blockchains_.html">lib/blockchains/</a></li><li><a href="module-lib_blockchains_bitcoin.html">lib/blockchains/bitcoin</a></li><li><a href="module-lib_blockchains_bitcoin_accounts.html">lib/blockchains/bitcoin/accounts</a></li><li><a href="module-lib_blockchains_bitcoin_listener.html">lib/blockchains/bitcoin/listener</a></li><li><a href="module-lib_blockchains_bitcoin_rpc.html">lib/blockchains/bitcoin/rpc</a></li><li><a href="module-lib_blockchains_bitcoin_transactions.html">lib/blockchains/bitcoin/transactions</a></li><li><a href="module-lib_blockchains_ethereum.html">lib/blockchains/ethereum</a></li><li><a href="module-lib_blockchains_ethereum_accounts.html">lib/blockchains/ethereum/accounts</a></li><li><a href="module-lib_blockchains_ethereum_listener.html">lib/blockchains/ethereum/listener</a></li><li><a href="module-lib_blockchains_ethereum_rpc.html">lib/blockchains/ethereum/rpc</a></li><li><a href="module-lib_blockchains_ethereum_transactions.html">lib/blockchains/ethereum/transactions</a></li><li><a href="module-lib_blockchains_fennel_accounts.html">lib/blockchains/fennel/accounts</a></li><li><a href="module-lib_blockchains_fennel_listener.html">lib/blockchains/fennel/listener</a></li><li><a href="module-lib_blockchains_fennel_rpc.html">lib/blockchains/fennel/rpc</a></li><li><a href="module-lib_blockchains_fennel_transactions.html">lib/blockchains/fennel/transactions</a></li><li><a href="module-lib_config.html">lib/config</a></li><li><a href="module-lib_datastores.html">lib/datastores</a></li><li><a href="module-lib_datastores_embeddb.html">lib/datastores/embeddb</a></li><li><a href="module-lib_datastores_mongodb.html">lib/datastores/mongodb</a></li><li><a href="module-lib_operations_blockchains.html">lib/operations/blockchains</a></li><li><a href="module-lib_operations_messages.html">lib/operations/messages</a></li><li><a href="module-lib_operations_originators.html">lib/operations/originators</a></li><li><a href="module-lib_operations_queue.html">lib/operations/queue</a></li><li><a href="module-lib_operations_singletons.html">lib/operations/singletons</a></li><li><a href="module-lib_operations_tokens.html">lib/operations/tokens</a></li><li><a href="module-lib_protocol_authenticate.html">lib/protocol/authenticate</a></li><li><a href="module-lib_protocol_codec.html">lib/protocol/codec</a></li><li><a href="module-lib_protocol_config.html">lib/protocol/config</a></li><li><a href="module-lib_protocol_crypto.html">lib/protocol/crypto</a></li><li><a href="module-lib_protocol_events.html">lib/protocol/events</a></li><li><a href="module-lib_protocol_management.html">lib/protocol/management</a></li><li><a href="module-lib_protocol_receive.html">lib/protocol/receive</a></li><li><a href="module-lib_protocol_references.html">lib/protocol/references</a></li><li><a href="module-lib_protocol_retrieve.html">lib/protocol/retrieve</a></li><li><a href="module-lib_protocol_state.html">lib/protocol/state</a></li><li><a href="module-lib_protocol_transmit.html">lib/protocol/transmit</a></li><li><a href="module-lib_server.html">lib/server</a></li></ul><h3>Tutorials</h3><ul><li><a href="tutorial-bitcoin.html">bitcoin</a></li><li><a href="tutorial-configuration.html">configuration</a></li><li><a href="tutorial-errors.html">errors</a></li><li><a href="tutorial-ethereum.html">ethereum</a></li><li><a href="tutorial-events.html">events</a></li><li><a href="tutorial-fennel.html">fennel</a></li><li><a href="tutorial-installation.html">installation</a></li><li><a href="tutorial-logging.html">logging</a></li><li><a href="tutorial-modules.html">modules</a></li><li><a href="tutorial-openapi.html">openapi</a></li><li><a href="tutorial-protocol.html">protocol</a></li><li><a href="tutorial-state.html">state</a></li><li><a href="tutorial-static.html">static</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Oct 22 2025 21:45:24 GMT+0200 (Central European Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 03 2026 10:48:28 GMT+0100 (Central European Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

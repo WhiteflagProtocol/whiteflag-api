@@ -1,6 +1,10 @@
-# Whiteflag API Protocol State
+# Whiteflag Protocol State
 
-The API has to keep its state of the Whiteflag protocol. This inludes keeping
+| [WF API Documentation Home](../index.md) | [WF API JSDoc Reference](jsdoc/index.html) | [WF API Interface](openapi.md) | [Whiteflag Specification](https://standard.whiteflagprotocol.org) |
+
+## Description
+
+The API has to keep its state of the Whiteflag protocol. This includes keeping
 track of its blockchain status and accounts, known originators, encryption keys
 etc. The state is implemented as an in-memory object which is managed by
 `lib/protocol/state.js`. The structure of the state is defined in
@@ -14,7 +18,7 @@ All state configuration parameters are in the `[state]` section of the
 ## State preservation
 
 To preserve the state across restarts of the API, the state object is stored in
-the primary datastore. When the API starts and initialises the state, the state
+the primary datastore. When the API starts and initializes the state, the state
 is restored from the primary datastore. If no state is found in the datastore,
 the API starts with an empty state.
 
@@ -32,9 +36,9 @@ key specific attributes such as blockchain account and originator address.
 
 The state as a whole can (and should) also be encrypted when stored in a file
 or in the primary datastore if `encryption` parameter is set to `true` in the
-configuration file. The state will then be encrytpted with a Data Encryption
+configuration file. The state will then be encrypted with a Data Encryption
 Key (DEK) which is also derived from the MEK.
 
-Currently it is not possible to change the MEK without losing the state. Also,
-please be aware that losing the MEK results in unobtainable keys, including
-private blockchain keys and pre-shared encryption keys!
+Currently, it is not possible to change the MEK without losing the state.
+Also, please be aware that losing the MEK results in unobtainable keys,
+including private blockchain keys and pre-shared encryption keys!
